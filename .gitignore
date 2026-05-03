@@ -1,7 +1,9 @@
-# 데이터 파일
+# 데이터 파일 (원본/가공 CSV는 제외, 분리된 split 파일만 추적)
 data/*.csv
 data/*.xlsx
 data/*.parquet
+!data/train.csv
+!data/test.csv
 
 # 모델 파일
 *.pkl
