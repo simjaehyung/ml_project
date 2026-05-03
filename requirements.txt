@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+xgboost
+shap
+streamlit
+requests
+requests-cache
+matplotlib
+seaborn
+jupyter
+ipykernel
