@@ -105,3 +105,14 @@
 - **받은 결과 요약**: 6-9페이지 발표 대본 (3분~3분30초), `docs/cheatsheet_presentation.{py,png}` A4 치트시트, `dashboard/streamlit_practice.py` 4패턴 골격
 - **실제 반영 여부**: 전부 반영 — 발표 톤은 Dev A 본인이 직접 다듬어 사용
 - **팀원**: 이고은 (Dev A)
+
+---
+
+## 2026-05-08 | Claude Code | Week 2 STEP 2 previous_cancellations EDA + 정의 어긋남 분석 (Dev A)
+
+- **사용 도구**: Claude Code
+- **목적**: PM 가이드 (연도별 분포 + ≥1 취소율 90%+) + design_04 미결 항목 C (정의 어긋남 패턴 분석)
+- **입력 요청 요약**: train.csv 기반 EDA 스크립트 작성. `is_repeated_guest=0` & `previous_cancellations≥1` 행의 호텔/세그먼트/lead_time 분포 분석
+- **받은 결과 요약**: `src/03_prev_cancel_eda.py` 작성·실행. ① 2016년 ≥1 그룹 취소율 84.98%로 90% 미만 (PM 보고 안건). ② 정의 어긋남 5,520건이 `deposit_type=Non Refund`와 동일한 B2B 블록 패턴 (취소율 99.15%, lead_time 217일, Groups+Offline TA/TO 85.2%) 임을 확인. ③ Week 3 SHAP 감시 항목 + Phase 2 ablation 권고.
+- **실제 반영 여부**: 전부 반영 — 결과 문서 `docs/week2_eda_prev_cancel.md` 작성, design_04 미결 항목 C 해소로 갱신
+- **팀원**: 이고은 (Dev A)

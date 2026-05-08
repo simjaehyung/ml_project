@@ -312,7 +312,7 @@ test_processed:  40,687행 × 34컬럼  NaN 0건  취소율 38.7%
 |---|------|------|------|
 | A | `deposit_type` Non Refund — SHAP 기여도 1~2위 독식 여부 | 팀 | Week 3 SHAP |
 | B | `precipitation_sum` vs `precipitation_hours` 상관 0.82 — LR 계수 영향 확인 | 김나리 | Week 2 |
-| C | `previous_cancellations` is_repeated_guest 정의 어긋남 2,674건 해석 | 이고은 | Week 2 EDA |
+| C | `previous_cancellations` is_repeated_guest 정의 어긋남 해석 | 이고은 | ✅ 2026-05-08 해소 — `docs/week2_eda_prev_cancel.md` 참조. train 기준 5,520건 (전체 7%) 이 `deposit_type=Non Refund` 와 동일한 B2B 블록 패턴 (취소율 99.15%, lead_time 2.15배, Groups+Offline TA/TO 85%) 으로 확인. `previous_cancellations≥1` 신호의 89% 가 재방문 이력이 아닌 B2B 블록임. → Week 3 SHAP에서 `deposit_type` 와 중복 기여 여부 감시 (항목 A 확장) |
 | D | `meal "Undefined"` → `"SC"` 통합 — 파이프라인 한 줄 추가 | 심재형 | 다음 파이프라인 업데이트 |
 | E | `previous_cancellations` 제거 ablation | 이고은 | Week 5 Phase 2 |
 | F | `country` 인코딩 재설계 (SHAP 결과 보고 결정) | 팀 | Week 6 Phase 2 |
@@ -330,6 +330,7 @@ test_processed:  40,687행 × 34컬럼  NaN 0건  취소율 38.7%
 | 2026-05-07 | 심재형 — country Top10+Other 확정, meal Undefined→SC 미결로 남김 |
 | 2026-05-08 | 심재형 — 이 문서 작성 (전체 결정 흔적 통합) |
 | 2026-05-08 | 심재형 — design_02_leakage_decisions 원시 검증 데이터 Appendix로 통합, design_02 삭제 |
+| 2026-05-08 | 이고은 — Week 2 STEP 2 EDA 완료, 미결 항목 C 해소 (`docs/week2_eda_prev_cancel.md`) |
 
 ---
 
