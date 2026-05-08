@@ -39,7 +39,7 @@
 학부생으로서 이 데이터에서 발견한 **4가지 어려움을 정직하게 다룬 분석 과정** 자체가 차별 포인트.
 
 ### ① 데이터 누수 (Target Leakage)
-원본 32개 컬럼 중 도착일 이후 갱신되는 컬럼(`reservation_status_date` 등)을 식별하고 drop. [상세](docs/leakage_columns_review.md)
+원본 32개 컬럼 중 도착일 이후 갱신되는 컬럼(`reservation_status_date` 등)을 식별하고 drop. [상세](leakage_columns_review.md)
 
 ### ② 외부 데이터의 시간 비대칭성 ⭐
 학습 시점엔 도착일 실제 날씨가 확정값이지만, 손님 의사결정 시점엔 일기예보(불확실값). `lead_time` 평균이 104일이라 "손님이 도착일 날씨를 알고 결정"한다는 가정이 깨짐. **모델에 가설을 강제로 주입하지 않고 SHAP interaction으로 lead_time별 영향 차이를 정량화**하는 방향 선택. [검증기록 #3 참조](#)

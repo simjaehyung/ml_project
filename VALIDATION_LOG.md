@@ -65,18 +65,35 @@
 
 ---
 
-## #6. assigned_room_type — (a) 단순 drop 대신 (b) reserved_room_type만 사용
+## #6. 날씨 변수 다중공선성 — 3개 DROP 확정
+
+- **날짜**: 2026-05-03
+- **담당자**: 심재형 (김나리 제안 반영)
+- **김나리 제안**: 날씨 변수 내 중복 측정값 정리 필요
+  - `precipitation_sum` vs `rain_sum` — 포르투갈(온대기후)에서 사실상 동일 측정값
+  - `temperature_2m_mean` — max·min에서 이미 충분히 표현됨
+  - `wind_speed_10m_mean` — max가 더 직접적인 영향 지표
+- **검증 내용**:
+  - `rain_sum`: 포르투갈은 강수가 대부분 비(눈 거의 없음) → precipitation_sum과 상관관계 거의 1.0. 정보 중복.
+  - `temperature_2m_mean` = (max + min) / 2 에 근사 → max·min으로 이미 내포됨
+  - `wind_speed_10m_mean`: 취소 영향은 극단값(돌풍)이 더 직접적. mean은 max의 선형 함수에 가까움.
+- **결정**: `rain_sum`, `temperature_2m_mean`, `wind_speed_10m_mean` DROP
+- **이유**: 다중공선성 완화, feature 수 불필요한 증가 방지. 날씨 변수 10개 → 7개로 축소.
+
+---
+
+## #7. assigned_room_type — 단순 drop 대신 reserved_room_type만 사용
 
 - **날짜**: 2026-05-03
 - **담당자**: 이고은
 - **AI 제안**: 누수 컬럼 단순 drop
 - **검증 내용**: [Y1] 검증 결과 정상 체크인 건 18.78% / 취소 건 1.81% 불일치율 — 취소건은 reserved=assigned 디폴트, 정상건만 체크인 시점 갱신. 파생 변수 `room_changed = (reserved≠assigned)` 옵션은 정상건에서만 의미 있어 타깃 종속(가설 주입 순환 함정)으로 사전 배제.
-- **결정**: (b) `reserved_room_type` 만 모델 입력으로 사용 (예약 시점 확정값)
+- **결정**: `reserved_room_type` 만 모델 입력으로 사용 (예약 시점 확정값)
 - **이유**: 단순 drop은 정보 손실. 같은 의미를 담은 시점 안전 컬럼이 존재하므로 그것을 대체로 사용.
 
 ---
 
-## #7. previous_cancellations 정의 어긋남 발견 — Week 2 EDA 안건으로
+## #8. previous_cancellations 정의 어긋남 발견 — Week 2 EDA 안건으로
 
 - **날짜**: 2026-05-03
 - **담당자**: 이고은
@@ -84,3 +101,14 @@
 - **검증 내용**: 손님 ID 대리키 자체가 추가 가정이라 가설 주입 함정 위험 — 시도 안 함. 대신 [Y3] 분포 분석에서 의외 발견: `is_repeated_guest=0`인데 `previous_cancellations≥1`인 행 약 2,674개 존재 → 두 컬럼 정의가 어긋나는 부분 확인.
 - **결정**: AI 제안(대리키) 폐기 + 정의 어긋남 사실을 Week 2 EDA 재검증 안건으로 정리
 - **이유**: 가설 주입 회피 원칙 일관성 유지 (검증기록 #3 흐름과 동일). 데이터 자체의 정합성 모순은 EDA로 풀고 결정.
+
+---
+
+## #9. deposit_type "Non Refund" — 누수 후보 격상, Phase 2 ablation 예약
+
+- **날짜**: 2026-05-07
+- **담당자**: 심재형
+- **AI 제안**: deposit_type을 포함한 전처리 파이프라인 실행
+- **검증 내용**: train 데이터에서 deposit_type=Non Refund 취소율 99.2% (10,461건 중 10,376건 취소). 시장 세그먼트 확인 결과 Groups 61%, Offline TA/TO 37% — 단체 예약 블록이 대부분. lead_time 평균 226일 (전체 평균 101일의 2.2배). 두 가지 가능성: (A) 단체 블록 운영 방식에서 발생하는 실제 패턴, (B) 취소 처리 이후 deposit_type이 "Non Refund"로 사후 업데이트되는 역방향 오염. 원본 데이터에 타임스탬프 없어 A/B 구분 불가.
+- **결정**: MVP에서 `deposit_type` 포함 유지. Week 3 SHAP 결과에서 기여도 모니터링. Phase 2(Week 5)에서 deposit_type 제외 ablation 실험 필수.
+- **이유**: 99.2% 취소율은 정상적인 예측 신호 범위를 벗어남. 모델이 이 컬럼에 과도하게 의존할 경우 SHAP 해석 왜곡. 단, 단체 예약 취소는 비즈니스 실제 현상이므로 사전 제거보다 데이터로 확인 후 결정.

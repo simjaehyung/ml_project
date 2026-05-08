@@ -75,6 +75,28 @@
 
 ---
 
+## 2026-05-03 | Claude Code | 날씨 변수 다중공선성 정리 및 CSV 재생성
+
+- **사용 도구**: Claude Code (로컬 파일 분석 + 스크립트 실행)
+- **목적**: 김나리 제안(precipitation/temperature/wind 중복 변수 정리) 반영 및 데이터 재생성
+- **입력 요청 요약**: "precipitation vs rain 하나만, temperature mean drop, wind mean drop — 김나리 제안 반영해줘"
+- **받은 결과 요약**: weather_data.csv 컬럼 확인 후 rain_sum·temperature_2m_mean·wind_speed_10m_mean DROP 결정 근거 제시. bookings_weather_pm.csv 및 train/test CSV 자동 재생성.
+- **실제 반영 여부**: 전부 반영 — 3개 컬럼 drop, CSV 재생성
+- **팀원**: 심재형
+
+---
+
+## 2026-05-07 | Claude Code | 전처리 파이프라인 구현 + deposit_type 이상 패턴 발견
+
+- **사용 도구**: Claude Code (로컬 파일 분석 + 스크립트 실행)
+- **목적**: Week 2 STEP 1 전처리 파이프라인 완성 및 데이터 품질 이슈 점검
+- **입력 요청 요약**: "전처리 결정사항 실행 — 날씨 3개 DROP, country Top10+Other OHE, children NaN 처리, month 숫자 변환"
+- **받은 결과 요약**: `src/preprocessing_pipeline.py` 생성, train/test_processed.csv 출력. 추가로 deposit_type=Non Refund 취소율 99.2% 이상 패턴 발견 — 단체 예약 블록 운영 방식 또는 사후 기록 가능성 제기.
+- **실제 반영 여부**: 파이프라인 전부 반영. deposit_type은 누수 후보로 격상하여 VALIDATION_LOG 기록, Phase 2 ablation 예약.
+- **팀원**: 심재형
+
+---
+
 ## 2026-05-08 | Claude Code | Week 1 발표 대본·치트시트 + Week 2 STEP 1 Streamlit 학습 (Dev A)
 
 - **사용 도구**: Claude Code
