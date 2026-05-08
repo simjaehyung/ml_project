@@ -57,7 +57,7 @@
 
 ### 확정된 피처 처리
 
-**DROP 확정 (5개)**
+**DROP 확정 (6개)**
 
 | 컬럼 | 이유 |
 |------|------|
@@ -66,6 +66,7 @@
 | `assigned_room_type` | 체크인 시 배정값 — 미래 정보 |
 | `days_in_waiting_list` | 타인 취소 결과가 간접 반영 |
 | `previous_bookings_not_canceled` | 재방문자 25.5%가 값 0 — 모순, 신호 없음 |
+| `deposit_type` | Non Refund 99.2% 취소율 — 사후 기록 오염 의심, A/B 구분 불가 (2026-05-08) |
 
 **날씨 DROP 확정 (3개)**
 

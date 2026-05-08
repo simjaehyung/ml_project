@@ -92,11 +92,11 @@ Week 3에서 SHAP을 보면 deposit_type이 맨 위에 있을 것이다.
 그러면 "이 모델은 deposit_type만 보는 모델"이 돼버리고,
 나머지 lead_time, 날씨 같은 변수들은 묻힌다.
 
-### 지금 결정: 포함하되 감시
+### 결정: DROP (2026-05-08 확정)
 
-일단 MVP에 포함. 제거하면 데이터를 잃는 것이고 A/B 판단도 안 됐으니.
-**Week 3 SHAP에서 deposit_type 기여도 확인 후 재논의.**
-Phase 2 ablation 실험 예약: deposit_type 빼고 학습했을 때 PR-AUC가 얼마나 떨어지는지.
+A/B 구분이 불가능한 상황 = 이 컬럼을 신뢰할 수 없는 상황.
+포함하면 모델이 deposit_type 하나에 매달릴 가능성이 높고, 그게 누수라면 현장에서 쓸 수 없는 모델이 된다.
+**`preprocessing_pipeline.py`에 DROP 반영 완료.**
 
 ---
 
@@ -157,7 +157,7 @@ python src/preprocessing_pipeline.py
 
 | # | 안건 | 결정 시점 | 핵심 질문 |
 |---|------|----------|-----------|
-| A | deposit_type 제거 여부 | Week 3 SHAP 확인 후 | SHAP에서 상위 1~2위 독식하면 제거 |
+| A | deposit_type | ✅ DROP 확정 (2026-05-08) | 파이프라인 반영 완료 |
 | B | meal "Undefined" → SC 통합 | 다음 파이프라인 업데이트 시 | 한 줄 추가로 끝나는 작업 |
 | C | previous_cancellations EDA 결과 | 이고은 STEP 2 완료 후 | is_repeated_guest 정의 어긋남 2,674건 해석 |
 | D | precipitation 다중공선성 | 김나리 LR 완료 후 | 0.9 이상이면 하나 제거 검토 |

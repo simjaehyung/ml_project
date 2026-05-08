@@ -104,11 +104,11 @@
 
 ---
 
-## #9. deposit_type "Non Refund" — 누수 후보 격상, Phase 2 ablation 예약
+## #9. deposit_type — DROP 확정
 
-- **날짜**: 2026-05-07
+- **날짜**: 2026-05-07 발견 → 2026-05-08 DROP 확정
 - **담당자**: 심재형
 - **AI 제안**: deposit_type을 포함한 전처리 파이프라인 실행
 - **검증 내용**: train 데이터에서 deposit_type=Non Refund 취소율 99.2% (10,461건 중 10,376건 취소). 시장 세그먼트 확인 결과 Groups 61%, Offline TA/TO 37% — 단체 예약 블록이 대부분. lead_time 평균 226일 (전체 평균 101일의 2.2배). 두 가지 가능성: (A) 단체 블록 운영 방식에서 발생하는 실제 패턴, (B) 취소 처리 이후 deposit_type이 "Non Refund"로 사후 업데이트되는 역방향 오염. 원본 데이터에 타임스탬프 없어 A/B 구분 불가.
-- **결정**: MVP에서 `deposit_type` 포함 유지. Week 3 SHAP 결과에서 기여도 모니터링. Phase 2(Week 5)에서 deposit_type 제외 ablation 실험 필수.
-- **이유**: 99.2% 취소율은 정상적인 예측 신호 범위를 벗어남. 모델이 이 컬럼에 과도하게 의존할 경우 SHAP 해석 왜곡. 단, 단체 예약 취소는 비즈니스 실제 현상이므로 사전 제거보다 데이터로 확인 후 결정.
+- **결정**: `deposit_type` DROP. `src/preprocessing_pipeline.py`에 반영.
+- **이유**: 99.2% 취소율은 정상 예측 신호 범위 초과. A/B 구분 불가한 상황에서 포함 시 모델이 단일 컬럼에 과도 의존 → SHAP 해석 왜곡. 구분 불가 = 신뢰 불가 = 제거.

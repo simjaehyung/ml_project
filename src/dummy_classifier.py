@@ -26,7 +26,7 @@ train = pd.read_csv(DATA / "train_processed.csv")
 test  = pd.read_csv(DATA / "test_processed.csv")
 
 cat_cols = ["hotel", "meal", "market_segment", "distribution_channel",
-            "reserved_room_type", "deposit_type", "customer_type", "country_grouped"]
+            "reserved_room_type", "customer_type", "country_grouped"]
 
 train_e = pd.get_dummies(train, columns=cat_cols)
 test_e  = pd.get_dummies(test,  columns=cat_cols)
