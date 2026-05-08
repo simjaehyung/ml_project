@@ -61,3 +61,25 @@
 - **받은 결과 요약**: 연도별 비율 추세, is_repeated_guest 정합성, 값 분포 4가지 검증 수행. previous_cancellations 감소 추세 발견. previous_bookings_not_canceled 정합성 모순 25% 발견. days_in_waiting_list 간접 누수 가능성 지적.
 - **실제 반영 여부**: 전부 반영 — drop 3개(assigned_room_type, previous_bookings_not_canceled, days_in_waiting_list), keep 4개(booking_changes, previous_cancellations 조건부, agent·company 인디케이터)
 - **팀원**: 심재형
+
+---
+
+## 2026-05-03 | Claude Code | Week 1 누수 후보 분류표 검증·작성 (Dev A)
+
+- **사용 도구**: Claude Code
+- **목적**: 32개 컬럼 누수 검증 스크립트 작성 + 분류표 문서화
+- **입력 요청 요약**: "보류 컬럼별 데이터 기반 검증 [Y1~Y4] 작성 + 분류표 220줄 정리"
+- **받은 결과 요약**: `notebooks/02_leakage_check.py` 검증 스크립트, `docs/leakage_candidates.md` 분류표 (정상건 reserved≠assigned 18.78%, prev_cancel≥1 그룹 91.64% 등 수치 검증)
+- **실제 반영 여부**: 전부 반영 — 검증 결과는 스크립트 직접 실행으로 확인, 분류 결정은 Dev A가 직접
+- **팀원**: 이고은 (Dev A)
+
+---
+
+## 2026-05-08 | Claude Code | Week 1 발표 대본·치트시트 + Week 2 STEP 1 Streamlit 학습 (Dev A)
+
+- **사용 도구**: Claude Code
+- **목적**: 6-9페이지 발표 대본 작성 + A4 치트시트 PNG 생성 + Streamlit 4패턴 학습
+- **입력 요청 요약**: 발표 대본 톤·길이 조절, 컬럼명 한국어 풀이, 출처 모호한 숫자 두루뭉실 처리, Streamlit `tabs`/`dataframe`/`form`/`metric` 단계별 학습
+- **받은 결과 요약**: 6-9페이지 발표 대본 (3분~3분30초), `docs/cheatsheet_presentation.{py,png}` A4 치트시트, `dashboard/streamlit_practice.py` 4패턴 골격
+- **실제 반영 여부**: 전부 반영 — 발표 톤은 Dev A 본인이 직접 다듬어 사용
+- **팀원**: 이고은 (Dev A)
