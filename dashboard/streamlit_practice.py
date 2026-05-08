@@ -12,7 +12,7 @@ import streamlit as st
 # train.csv는 PM이 시간 분할로 만든 파일이라 repo에 추적됨 → 팀원도 바로 실행 가능.
 @st.cache_data
 def load_bookings():
-    return pd.read_csv("data/train.csv")
+    return pd.read_csv("data/train_processed.csv")
 
 # 가장 단순한 화면 — streamlit이 잘 뜨는지 확인용
 st.title("호텔 No-Show DSS · 연습장")
@@ -30,7 +30,7 @@ with tab1:
     # csv 로드 후 핵심 컬럼만 골라 상위 20건 표시.
     # Week 4에서는 여기에 모델 예측 점수가 붙어 위험 순으로 정렬될 예정.
     df = load_bookings()
-    st.write(f"총 **{len(df):,}건**의 예약 데이터 (학습용 미리보기)")
+    st.write(f"총 **{len(df):,}건**의 예약 데이터 (전처리 완료본 미리보기)")
 
     cols_show = ["hotel", "lead_time", "arrival_date_month",
                  "adr", "reserved_room_type", "is_canceled"]
