@@ -116,3 +116,14 @@
 - **받은 결과 요약**: `src/03_prev_cancel_eda.py` 작성·실행. ① 2016년 ≥1 그룹 취소율 84.98%로 90% 미만 (PM 보고 안건). ② 정의 어긋남 5,520건이 `deposit_type=Non Refund`와 동일한 B2B 블록 패턴 (취소율 99.15%, lead_time 217일, Groups+Offline TA/TO 85.2%) 임을 확인. ③ Week 3 SHAP 감시 항목 + Phase 2 ablation 권고.
 - **실제 반영 여부**: 전부 반영 — 결과 문서 `docs/week2_eda_prev_cancel.md` 작성, design_04 미결 항목 C 해소로 갱신
 - **팀원**: 이고은 (Dev A)
+
+---
+
+## 2026-05-08 | Claude Code | Week 2 STEP 2 대시보드 와이어프레임 (Dev A)
+
+- **사용 도구**: Claude Code
+- **목적**: Week 4 Streamlit 본 앱 (`dashboard/app.py`) 시작점이 될 두 탭 화면 명세 작성
+- **입력 요청 요약**: STEP 1 4패턴(`tabs`/`dataframe`/`form`/`metric`) + design_05/06 기반으로 탭1(예약 우선순위) + 탭2(Flexi 라우팅) 화면 레이아웃·위젯·데이터 의존성·미결 안건 정리
+- **받은 결과 요약**: `docs/wireframe_dashboard.md` 작성 — 박스 레이아웃 + Streamlit 위젯 매핑 + 팀원별 데이터 의존성 명시 + Week 3 미결 안건 5건
+- **실제 반영 여부**: 전부 반영 — Week 4 본 앱 시작 시 이 문서를 시작점으로 사용
+- **팀원**: 이고은 (Dev A)
