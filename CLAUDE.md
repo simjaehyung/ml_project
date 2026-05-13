@@ -85,7 +85,7 @@
 | # | 항목 | 담당 | 마감 | 페이즈 |
 |---|------|------|------|--------|
 | 1 | `country` 처리 방식 — **Top 10 + "Other" OHE 확정** (SHAP 결과 보고 Phase 2 재설계) | PM | ✅ 완료 | MVP |
-| 2 | `precipitation_sum` vs `precipitation_hours` 상관 0.82 — LR 영향 여부 | 김나리 | Week 2 | MVP |
+| 2 | `precipitation_sum` vs `precipitation_hours` 상관 0.82 — LR 영향 여부 | 김나리 | ✅ 완료 | MVP |
 | 3 | 모델 확정 기준 합의 — PR-AUC 최고값 vs 속도·해석 고려 | PM | Week 3 초 | MVP |
 | 4 | 임계값 결정 — Flexi 라우팅 기준선 (빈 방 손실 vs 오버부킹 비용 비율 추정) | PM | Week 4 | MVP |
 | 5 | ACTION 규칙 설계 — 확률 구간 × SHAP 주요 피처 → 행동 매핑 | PM | Week 4 | MVP |
@@ -105,7 +105,7 @@
 | 주차 | 기간 | 핵심 목표 | 담당 |
 |------|------|----------|------|
 | Week 2 | 5/5~5/11(월) | 파이프라인 + Baseline(Dummy·LR·RF) + **MVP 가정 확정** | 심재형(파이프라인+Dummy) / 김나리(LR) / 이고은(RF) |
-| Week 3 | 5/12~5/18(월) | XGBoost + LightGBM → **모델 동결** | 이고은(XGBoost) / 김나리(LightGBM) / 심재형(비교 정리) |
+| Week 3 | 5/12~5/18(월) | XGBoost + LightGBM → **모델 동결** | 심재형(XGBoost) / 김나리(LightGBM) / 이고은(탭1 구현 시작) |
 | Week 4 | 5/19~5/25(월) | SHAP 연동 + 앱 → **MVP 배포** | 심재형(SHAP+앱 토대 + Flexi 라우팅 탭) / 팀 하루 스프린트(5/22~24 중) |
 | 발표 | 5/26~5/27 | 중간발표 | — |
 

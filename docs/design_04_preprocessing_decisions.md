@@ -16,12 +16,12 @@ bookings_weather.csv (119,390 × 43)
           ↓ 확정 누수 2개 DROP + PM 추가 결정 3개 DROP + agent/company 인디케이터 변환
 bookings_weather_pm.csv (119,390 × 38)   ← Week 2 EDA 시작점
           ↓ preprocessing_pipeline.py
-          ↓ 날씨 3개 DROP / country 그룹핑 / children NaN→0 / month 숫자화 / arrival_date 제거
-train_processed.csv (78,703 × 34)
-test_processed.csv  (40,687 × 34)
+          ↓ 날씨 3개 DROP / deposit_type DROP / country 그룹핑 / children NaN→0 / meal Undefined→SC / month 숫자화 / arrival_date 제거
+train_processed.csv (78,703 × 33)
+test_processed.csv  (40,687 × 33)
 ```
 
-**최종 컬럼 수 변화:** 32 → 43 → 38 → 34
+**최종 컬럼 수 변화:** 32 → 43 → 38 → 33
 
 ---
 
@@ -153,7 +153,7 @@ test_processed.csv  (40,687 × 34)
 
 ---
 
-### 2-6. 🔴 감시 중 — 판단 보류 (deposit_type)
+### 2-6. ❌ DROP 확정 (deposit_type)
 
 #### `deposit_type` — Non Refund 취소율 99.2%
 
@@ -173,9 +173,9 @@ test_processed.csv  (40,687 × 34)
   - 99.2% 취소율이 경제적으로 성립하는 이유: 여행사는 돈을 잃는 게 아니라 미판매 블록을 반납하는 것.
 - **가설 B:** 사후 기록 오염. 취소 이후 시스템이 deposit_type을 "Non Refund"로 업데이트 → 미래 정보가 역으로 섞임. (배제하지 않지만, 가설 A로 운영)
 - **판단 불가 이유:** 데이터에 타임스탬프 없음. 원본 논문(Antonio et al. 2019)도 명시 안 함.
-- **팀 입장:** **가설 A를 채택하고 인지한 상태로 진행.** "Non Refund 취소 = B2B 블록 반납 패턴"이라는 가정 하에 모델에 포함. 발표 시 이 가정을 명시.
-- **위험:** XGBoost/LightGBM이 이 컬럼 하나에 과도하게 의존 → SHAP에서 deposit_type이 독식 → 다른 변수(lead_time, 날씨) 신호가 묻힘.
-- **현재 결정:** MVP에 포함. Week 3 SHAP에서 feature importance 1~2위 독식 여부 모니터링. Phase 2(Week 5) ablation 실험 필수.
+- **최종 결정 (2026-05-08): DROP.** 어느 가설이 맞든 A/B 구분이 불가한 상태에서 모델에 포함하면 "B2B 블록 반납 = 취소" 신호가 과도하게 학습됨. 제거가 더 방어 가능한 선택. `preprocessing_pipeline.py`에 반영 완료.
+- **발표 방어:** "Non Refund 99.2%는 B2B allotment 패턴 또는 사후 기록 오염 — 둘 다 모델 오염 위험이 있어 DROP"
+- **Phase 2(Week 5):** deposit_type 포함 vs 제외 ablation 실험으로 기여분 정량화 예정.
 
 ---
 
@@ -207,10 +207,10 @@ test_processed.csv  (40,687 × 34)
 - 계절별 날씨 가중치 주입 제안 → 기각. "날씨가 중요하다"는 가설을 사전에 넣는 순환 논리.
 - 날씨를 프로젝트 메인 프레임으로 설정 제안 → 기각. lead_time 평균 104일 환경에서 실제 날씨로 학습하는 것 자체가 시간 비대칭성 문제. 어떤 결과가 나와도 valid하도록 "외부 변수 중 하나"로 격하.
 
-### 미결: `precipitation_sum` vs `precipitation_hours` 상관 0.82
+### ✅ 해소: `precipitation_sum` vs `precipitation_hours` 상관
 
-LR에서 계수에 실질적 영향을 주는지 확인 필요. 0.9 이상이면 하나 제거 검토.  
-→ **김나리 Week 2 담당.**
+실측 상관: **0.824** (0.9 미만) → 현재 단계에서 제거 불필요.  
+→ Phase 2에서 변수 중요도 확인 후 재판단.
 
 ### 날씨 데이터의 근본 가정 (MVP 기준)
 
@@ -238,7 +238,7 @@ lead_time > 90일:  강수량 vs 취소율 무관 (상관 없음)
 | `market_segment` | OHE | |
 | `distribution_channel` | OHE | |
 | `reserved_room_type` | OHE | `assigned_room_type` 대신 사용 |
-| `deposit_type` | OHE (감시 중) | Non Refund 99.2% 이슈 있음 → 섹션 2-6 참조 |
+| `deposit_type` | ❌ DROP | Non Refund 99.2% — B2B allotment 패턴 또는 사후 기록 오염 → DROP 확정 (2026-05-08) → 섹션 2-6 참조 |
 | `customer_type` | OHE | |
 | `agent` | 0/1 인디케이터 | 결측=직접 예약 신호 |
 | `company` | 0/1 인디케이터 | 결측=비법인 예약 신호 |
@@ -287,22 +287,23 @@ lead_time > 90일:  강수량 vs 취소율 무관 (상관 없음)
 | `temperature_2m_mean` | max·min으로 충분 | preprocessing_pipeline.py |
 | `wind_speed_10m_mean` | max로 대체 | preprocessing_pipeline.py |
 | `arrival_date` | time_split 임시 컬럼, ML 불필요 | preprocessing_pipeline.py |
+| `deposit_type` | Non Refund 99.2% — B2B 패턴 또는 사후 기록 오염, A/B 구분 불가 | preprocessing_pipeline.py |
 
-**총 제거:** 9개 (날씨 3 + 누수 5 + 임시 1)  
-**최종 컬럼 수:** 34개 (OHE 전)
+**총 제거:** 10개 (날씨 3 + 누수 5 + 임시 1 + deposit_type 1)  
+**최종 컬럼 수:** 33개 (OHE 전)
 
 ---
 
 ## 8. 전처리 후 데이터 상태
 
 ```
-train_processed: 78,703행 × 34컬럼  NaN 0건  취소율 36.6%
-test_processed:  40,687행 × 34컬럼  NaN 0건  취소율 38.7%
+train_processed: 78,703행 × 33컬럼  NaN 0건  취소율 36.6%
+test_processed:  40,687행 × 33컬럼  NaN 0건  취소율 38.7%
 ```
 
 **OHE 적용 후 예상 컬럼 수 (참고):**
-- country_grouped (11) + meal (5) + hotel (2) + market_segment + distribution_channel + reserved_room_type (8) + deposit_type (3) + customer_type (4) 등
-- 대략 60~70개 예상
+- country_grouped (11) + meal (5) + hotel (2) + market_segment + distribution_channel + reserved_room_type (8) + customer_type (4) 등 (deposit_type 제외)
+- 대략 65~70개 예상 (실제 OHE 후: 70컬럼 확인됨)
 
 ---
 
@@ -310,9 +311,9 @@ test_processed:  40,687행 × 34컬럼  NaN 0건  취소율 38.7%
 
 | # | 항목 | 담당 | 시점 |
 |---|------|------|------|
-| A | `deposit_type` Non Refund — SHAP 기여도 1~2위 독식 여부 | 팀 | Week 3 SHAP |
-| B | `precipitation_sum` vs `precipitation_hours` 상관 0.82 — LR 계수 영향 확인 | 김나리 | Week 2 |
-| C | `previous_cancellations` is_repeated_guest 정의 어긋남 해석 | 이고은 | ✅ 2026-05-08 해소 — `docs/week2_eda_prev_cancel.md` 참조. train 기준 5,520건 (전체 7%) 이 `deposit_type=Non Refund` 와 동일한 B2B 블록 패턴 (취소율 99.15%, lead_time 2.15배, Groups+Offline TA/TO 85%) 으로 확인. `previous_cancellations≥1` 신호의 89% 가 재방문 이력이 아닌 B2B 블록임. → Week 3 SHAP에서 `deposit_type` 와 중복 기여 여부 감시 (항목 A 확장) |
+| A | `deposit_type` — ✅ DROP 확정 (2026-05-08). Phase 2(Week 5) ablation으로 기여분 정량화 예정 | 심재형 | ✅ 완료 |
+| B | `precipitation_sum` vs `precipitation_hours` 상관 0.82 — LR 계수 영향 확인 | 김나리 | ✅ 완료 (0.824, 0.9 미만 — 제거 불필요) |
+| C | `previous_cancellations` is_repeated_guest 정의 어긋남 해석 | 이고은 | ✅ 2026-05-08 해소 — `docs/week2_eda_prev_cancel.md` 참조. 5,520건이 deposit_type=Non Refund와 동일한 B2B 블록 패턴 (취소율 99.15%, lead_time 2.15배, Groups+Offline 85%) → ≥1 신호의 89%가 재방문 이력 아닌 B2B 블록. Week 3 SHAP에서 두 변수 동시 기여 여부 감시 |
 | D | `meal "Undefined"` → `"SC"` 통합 — 파이프라인 한 줄 추가 | 심재형 | 다음 파이프라인 업데이트 |
 | E | `previous_cancellations` 제거 ablation | 이고은 | Week 5 Phase 2 |
 | F | `country` 인코딩 재설계 (SHAP 결과 보고 결정) | 팀 | Week 6 Phase 2 |
@@ -331,6 +332,7 @@ test_processed:  40,687행 × 34컬럼  NaN 0건  취소율 38.7%
 | 2026-05-08 | 심재형 — 이 문서 작성 (전체 결정 흔적 통합) |
 | 2026-05-08 | 심재형 — design_02_leakage_decisions 원시 검증 데이터 Appendix로 통합, design_02 삭제 |
 | 2026-05-08 | 이고은 — Week 2 STEP 2 EDA 완료, 미결 항목 C 해소 (`docs/week2_eda_prev_cancel.md`) |
+| 2026-05-11 | 심재형 — deposit_type DROP 확정 반영 (섹션 2-6, 4, 7, 8), 컬럼 수 34→33, precipitation 미결 해소 |
 
 ---
 

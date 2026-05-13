@@ -3,7 +3,7 @@ preprocessing_pipeline.py
 데이터 확인 결과 (2026-05-07):
   - reservation_status 등 확정 DROP 5개: bookings_weather_pm 단계에서 이미 제거됨
   - agent / company: 이미 0/1 인디케이터로 변환됨
-  - 이 스크립트에서 처리할 것: 날씨 3개 DROP, deposit_type DROP, country 그룹핑, children NaN, month 숫자, arrival_date 제거
+  - 이 스크립트에서 처리할 것: 날씨 3개 DROP, deposit_type DROP, country 그룹핑, children NaN, meal Undefined→SC, month 숫자, arrival_date 제거
 
 실행: 프로젝트 루트에서
     python src/preprocessing_pipeline.py
@@ -38,7 +38,11 @@ test  = test.drop(columns=["arrival_date"])
 train["children"] = train["children"].fillna(0)
 test["children"]  = test["children"].fillna(0)
 
-# ── 6. arrival_date_month 숫자 변환 ───────────────────────────────────────────
+# ── 6. meal "Undefined" → "SC" (식사 없음 동일 의미) ──────────────────────────
+train["meal"] = train["meal"].replace("Undefined", "SC")
+test["meal"]  = test["meal"].replace("Undefined", "SC")
+
+# ── 7. arrival_date_month 숫자 변환 ───────────────────────────────────────────
 month_map = {
     "January": 1, "February": 2, "March": 3, "April": 4,
     "May": 5, "June": 6, "July": 7, "August": 8,
