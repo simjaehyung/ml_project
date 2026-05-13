@@ -63,10 +63,17 @@ def load_model_and_data() -> pd.DataFrame:
     return df
 
 
-# ── 고위험 샘플링 ─────────────────────────────────────────────────────────────
-def sample_high_risk(df: pd.DataFrame, min_prob: float, n: int, seed: int = 42) -> pd.DataFrame:
+# ── 고위험 선택 (샘플링 또는 전수) ──────────────────────────────────────────────
+def select_agents(
+    df:       pd.DataFrame,
+    min_prob: float,
+    n:        int,
+    use_all:  bool = False,
+    seed:     int  = 42,
+) -> pd.DataFrame:
     pool = df[df["cancel_prob"] >= min_prob]
-    n    = min(n, len(pool))
+    if use_all or n <= 0 or n >= len(pool):
+        return pool.reset_index(drop=True)
     return pool.sample(n=n, random_state=seed).reset_index(drop=True)
 
 
@@ -128,10 +135,12 @@ def run_batch(
 # ── 메인 ─────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="Flexi LLM 에이전트 시뮬레이션")
-    parser.add_argument("--n",        type=int,   default=99999,
-                        help="시뮬레이션 에이전트 수 (기본: 고위험 풀 전체)")
-    parser.add_argument("--min-prob", type=float, default=0.50,
-                        help="샘플링 최소 취소 확률 (기본 0.50)")
+    parser.add_argument("--n",        type=int,   default=500,
+                        help="에이전트 수 (--all 미지정 시 적용, 기본 500)")
+    parser.add_argument("--all",      action="store_true",
+                        help="고위험 풀 전수 실행 (~20,000건, 야간 권장)")
+    parser.add_argument("--min-prob", type=float, default=0.40,
+                        help="최소 취소 확률 (기본 0.40 → ~20,000건)")
     parser.add_argument("--workers",  type=int,   default=16,
                         help="병렬 스레드 수 (기본 16)")
     parser.add_argument("--base-url", type=str,
@@ -156,9 +165,11 @@ def main():
     print(f"  테스트셋:    {len(df):,}행")
     print(f"  고위험 풀:   {n_high:,}건 (cancel_prob ≥ {args.min_prob})")
 
-    # 2. 샘플링
-    sample = sample_high_risk(df, args.min_prob, args.n, args.seed)
-    print(f"  샘플:        {len(sample)}건")
+    # 2. 에이전트 선택 (전수 or 샘플)
+    mode   = "전수" if args.all else f"샘플 {args.n}건"
+    sample = select_agents(df, args.min_prob, args.n, use_all=args.all, seed=args.seed)
+    print(f"  모드:        {mode}")
+    print(f"  에이전트:    {len(sample):,}건")
     print(f"  cancel_prob: {sample['cancel_prob'].min():.3f} ~ "
           f"{sample['cancel_prob'].max():.3f}  "
           f"(mean {sample['cancel_prob'].mean():.3f})")

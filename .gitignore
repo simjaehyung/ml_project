@@ -17,6 +17,9 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
+# 시뮬레이션 대용량 응답 파일
+results/*.jsonl
+
 # 시스템
 .DS_Store
 Thumbs.db
