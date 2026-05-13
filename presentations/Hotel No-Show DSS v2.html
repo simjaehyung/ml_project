@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel No-Show DSS · v3</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#0d0d0d; color:#f0f0f0;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  overflow:hidden; height:100vh; width:100vw;
+}
+#deck { width:100%; height:100%; position:relative; }
+.slide {
+  position:absolute; width:100%; height:100%;
+  display:none; flex-direction:column;
+  padding:44px 80px 54px;
+}
+.slide.active { display:flex; }
+.slide-header {
+  display:flex; justify-content:space-between; align-items:flex-start;
+  margin-bottom:32px;
+}
+.brand { font-size:11px; letter-spacing:3px; color:#555; text-transform:uppercase; }
+.brand span { color:#c9a84c; }
+.slide-num { font-size:11px; letter-spacing:2px; color:#333; }
+.section-label { font-size:10px; letter-spacing:4px; color:#c9a84c; text-transform:uppercase; margin-bottom:12px; }
+h1.main { font-size:38px; font-weight:300; line-height:1.25; color:#f0f0f0; margin-bottom:12px; }
+h1.main strong { font-weight:600; color:#fff; }
+h2.sub { font-size:16px; font-weight:300; color:#777; margin-bottom:24px; line-height:1.6; }
+.content { flex:1; display:flex; flex-direction:column; justify-content:center; }
+.divider { width:36px; height:1px; background:#c9a84c; margin:14px 0; }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th { text-align:left; padding:8px 14px; color:#c9a84c; font-weight:500; font-size:10px; letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid #1e1e1e; }
+td { padding:10px 14px; color:#bbb; border-bottom:1px solid #181818; line-height:1.5; }
+td strong { color:#eee; }
+tr:last-child td { border-bottom:none; }
+code { color:#c9a84c; font-family:'Courier New', monospace; font-size:13px; }
+.three-card { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+.two-col    { display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+.card { background:#111; border:1px solid #1e1e1e; padding:20px; }
+.card .num { font-size:26px; font-weight:700; color:#c9a84c; margin-bottom:6px; }
+.card .label { font-size:11px; color:#666; letter-spacing:1px; }
+.card .desc { font-size:13px; color:#aaa; margin-top:8px; line-height:1.6; }
+.highlight-box { background:#111; border-left:3px solid #c9a84c; padding:16px 20px; font-size:14px; color:#bbb; line-height:1.8; }
+.highlight-box strong { color:#f0f0f0; }
+.flow-block { background:#0a0a0a; border:1px solid #1e1e1e; padding:20px 24px; font-family:'Courier New', monospace; font-size:13px; color:#888; line-height:2.0; }
+.flow-block .acc { color:#c9a84c; }
+.flow-block .pos { color:#72b572; }
+.flow-block .neg { color:#c97070; }
+.flow-block .dim { color:#333; }
+.num-list { list-style:none; }
+.num-list li { display:flex; gap:14px; margin-bottom:14px; align-items:flex-start; }
+.num-list .n { min-width:26px; height:26px; border:1px solid #2a2a2a; color:#c9a84c; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.num-list .text { font-size:14px; color:#bbb; line-height:1.6; }
+.num-list .text strong { color:#eee; display:block; margin-bottom:2px; }
+.tag { display:inline-block; padding:2px 8px; background:#161310; border:1px solid #c9a84c33; color:#c9a84c; font-size:10px; letter-spacing:1px; }
+.phase-row { display:flex; gap:0; margin-bottom:12px; }
+.phase-label { min-width:82px; font-size:10px; letter-spacing:2px; color:#c9a84c; padding-top:2px; }
+.phase-content { font-size:13px; color:#888; line-height:1.7; flex:1; }
+.phase-content strong { color:#ccc; }
+#nav { position:fixed; bottom:24px; right:36px; display:flex; gap:10px; z-index:100; }
+#nav button { background:#151515; border:1px solid #2a2a2a; color:#666; width:34px; height:34px; cursor:pointer; font-size:13px; transition:all .15s; }
+#nav button:hover { background:#1e1e1e; color:#c9a84c; border-color:#c9a84c44; }
+#progress { position:fixed; bottom:0; left:0; height:2px; background:#c9a84c; transition:width .3s; }
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- ═══════════════════════════════ 01 TITLE ══ -->
+<section class="slide active" id="s01">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS</div>
+    <div class="slide-num">01 / 12</div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;">
+    <div>
+      <div class="section-label">2026 · 데이터과학 PROJECT</div>
+      <h1 style="font-size:50px;font-weight:200;letter-spacing:2px;margin-bottom:10px;">
+        HOTEL CANCELLATION<br>
+        <span style="color:#c9a84c;">DECISION SUPPORT</span>
+      </h1>
+      <div class="divider"></div>
+      <div style="font-size:17px;color:#888;font-weight:300;margin-bottom:6px;">데이터 분석 기반</div>
+      <div style="font-size:21px;color:#ccc;font-weight:300;margin-bottom:44px;">취소 위험 예약 우선순위화 · Flexi Rate 시스템</div>
+      <div style="font-size:11px;color:#444;letter-spacing:2px;">한양대학교 · 데이터사이언스 &nbsp;·&nbsp; 심재형 · 이고은 · 김나리</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 02 PROBLEM ══ -->
+<section class="slide" id="s02">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 02 · PROBLEM</div>
+    <div class="slide-num">02 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">The Problem</div>
+    <h1 class="main">빈 방과 오버부킹,<br><strong>둘 다 매출 손실이다</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col">
+      <div>
+        <table>
+          <thead><tr><th>상황</th><th>행동</th><th>결과</th></tr></thead>
+          <tbody>
+            <tr><td>취소 예약을 놓침</td><td>개입 안 함</td><td><strong>빈 방 → 매출 손실</strong></td></tr>
+            <tr><td>정상 예약에 개입</td><td>잘못 건드림</td><td><strong>오버부킹 → 보상 비용</strong></td></tr>
+            <tr style="background:#0f0f0a;"><td style="color:#c9a84c;">위험 예약을 식별</td><td style="color:#c9a84c;">손님과 합의 → Flexi</td><td><strong style="color:#c9a84c;">양쪽 모두 이득</strong></td></tr>
+          </tbody>
+        </table>
+        <div class="highlight-box" style="margin-top:18px;">
+          어느 예약이 위험한지 미리 알 수 없다면<br>둘 중 하나는 항상 틀린다.
+        </div>
+        <div style="font-size:11px;color:#333;margin-top:14px;line-height:1.8;padding-left:4px;">
+          예측 대상: <strong style="color:#444;">취소(Cancellation)</strong> — 체크인 전 사전 통보하는 철회. 타깃 변수 <code>is_canceled</code>.<br>
+          당일 No-show는 사후 확인이라 사전 개입이 불가능하므로 예측 범위 외.
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="num">41.7%</div>
+          <div class="label">City Hotel · 리스본</div>
+          <div class="desc">예약 10개 중 4개 이상이 취소</div>
+        </div>
+        <div class="card">
+          <div class="num">27.8%</div>
+          <div class="label">Resort Hotel · 알가르브</div>
+          <div class="desc">3개 중 1개 취소</div>
+        </div>
+        <div class="card" style="background:#0a0a0a;">
+          <div class="num" style="font-size:17px;font-weight:500;">119,390건</div>
+          <div class="label">2015.07 — 2017.08 · 26개월</div>
+          <div class="desc">Kaggle Hotel Booking Demand</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 03 AS-IS ══ -->
+<section class="slide" id="s03">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 03 · AS-IS</div>
+    <div class="slide-num">03 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">지금 이 결정은 누가 하는가</div>
+    <h1 class="main" style="font-size:36px;">"이 예약,<br><strong>받을까 말까."</strong></h1>
+    <div class="divider"></div>
+    <h2 class="sub">매일 수십 번. 매니저의 경력과 감(感)에 의존한 한 줄의 판단.<br>근거도, 확률도, 과정도 남지 않는다.</h2>
+    <div class="three-card">
+      <div class="card">
+        <div class="num" style="font-size:15px;font-weight:500;">기준 없음</div>
+        <div class="desc">어떤 예약이 위험한지 판단하는 기준이 없다</div>
+      </div>
+      <div class="card">
+        <div class="num" style="font-size:15px;font-weight:500;">기록 없음</div>
+        <div class="desc">왜 그렇게 판단했는지 남는 것이 없다</div>
+      </div>
+      <div class="card">
+        <div class="num" style="font-size:15px;font-weight:500;">설명 불가</div>
+        <div class="desc">같은 매니저도 날마다 다른 결론이 나온다</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 04 PROBLEM DEFINITION ══ -->
+<section class="slide" id="s04">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 04 · PROBLEM DEFINITION</div>
+    <div class="slide-num">04 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">우리가 정의하는 문제 — 두 층위</div>
+    <div style="display:flex;gap:20px;margin-bottom:20px;align-items:stretch;">
+      <div class="highlight-box" style="flex:1;font-size:16px;line-height:1.9;padding:20px 24px;">
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;margin-bottom:10px;">LAYER 1 · 기존 예약</div>
+        "체크인이 다가오는 예약들 중,<br>
+        <strong>오늘 먼저 확인해야 할 예약이 어떤 건지</strong><br>
+        어떻게 아는가?"
+      </div>
+      <div class="highlight-box" style="flex:1;font-size:16px;line-height:1.9;padding:20px 24px;border-left-color:#c9a84c66;">
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;margin-bottom:10px;">LAYER 2 · 신규 예약</div>
+        "들어오는 예약을<br>
+        <strong>위험도에 따라 Standard와 Flexi로</strong><br>
+        어떻게 분기할 것인가?"
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>기존 방식</th><th>우리 방식</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>예약 1건 입력 → 확률 조회</td>
+          <td><strong>오늘 예약 전체 → 위험 순위 리스트</strong></td>
+        </tr>
+        <tr>
+          <td>매니저가 직접 골라서 확인</td>
+          <td><strong>시스템이 먼저 걸러서 제시 + 행동 권장</strong></td>
+        </tr>
+        <tr>
+          <td>신규 예약 → 일괄 Standard 배정</td>
+          <td><strong style="color:#c9a84c;">신규 예약 → 위험 기반 Standard / Flexi 분기</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:16px;font-size:12px;color:#444;line-height:1.8;">
+      하나의 위험 예측 엔진이 두 문제를 동시에 해결한다. 기존 예약에서는 우선순위를, 신규 예약에서는 상품 분기를.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 05 TO-BE + OUTPUT ══ -->
+<section class="slide" id="s05">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 05 · LAYER 1 OUTPUT</div>
+    <div class="slide-num">05 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">Layer 1 — 기존 예약 우선순위화</div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div class="flow-block" style="font-size:12px;line-height:2.1;">
+          <div style="color:#444;font-size:10px;letter-spacing:3px;margin-bottom:12px;">오늘 확인이 필요한 예약</div>
+          <div><span class="acc">1위</span>  D-2  취소확률 <span class="neg">84%</span>  lead_time 길다 · 이전 취소 이력  →  <span class="acc">사전 연락 권장</span></div>
+          <div><span class="acc">2위</span>  D-3  취소확률 <span class="neg">71%</span>  보증금 없음 · 성수기            →  <span class="acc">보증 정책 검토</span></div>
+          <div><span class="acc">3위</span>  D-5  취소확률 <span class="neg">63%</span>  단체 예약 · 날씨 악천후          →  <span class="acc">모니터링 유지</span></div>
+          <div><span class="acc">4위</span>  <span style="color:#c9a84c88;">신규</span>  취소확률 <span class="neg">78%</span>  lead 350일 · 환불 가능          →  <span style="color:#c9a84c;">Flexi 풀 라우팅 제안</span></div>
+          <div class="dim">5위  취소확률 31%  ···</div>
+        </div>
+        <div style="display:flex;gap:0;margin-top:14px;">
+          <div style="font-size:13px;color:#555;padding:12px 16px;background:#0a0a0a;border:1px solid #181818;flex:1;">
+            <div style="color:#444;font-size:10px;margin-bottom:6px;">Before</div>
+            감으로 전체를 훑는다
+          </div>
+          <div style="font-size:13px;color:#ccc;padding:12px 16px;background:#111;border:1px solid #1e1e1e;border-left:none;flex:1;">
+            <div style="color:#c9a84c;font-size:10px;margin-bottom:6px;">After</div>
+            리스트 상위부터 처리한다
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;margin-bottom:10px;">SYSTEM OUTPUT 구조</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.1;">
+          <div class="dim" style="margin-bottom:4px;">INPUT &nbsp;예약 정보 + 도착일 날씨</div>
+          <div class="dim">↓ &nbsp;[모델]</div>
+          <div><span class="acc">PROBABILITY</span>&nbsp; 취소 확률 0.84</div>
+          <div><span class="acc">EXPLANATION</span>&nbsp; lead_time 길다&nbsp;&nbsp;&nbsp;<span class="pos">+0.21</span></div>
+          <div style="padding-left:84px;">이전 취소 이력&nbsp;&nbsp;<span class="pos">+0.15</span></div>
+          <div style="padding-left:84px;">보증금 없음&nbsp;&nbsp;&nbsp;&nbsp;<span class="pos">+0.09</span></div>
+          <div style="padding-left:84px;" class="dim">─────────────</div>
+          <div style="padding-left:84px;color:#444;font-size:11px;">기준 0.37 → 예측 0.84</div>
+          <div><span class="acc">ACTION</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ 사전 연락 권장</div>
+        </div>
+        <div style="font-size:12px;color:#444;line-height:1.7;margin-top:10px;padding-left:4px;">
+          TreeSHAP — 예측 이탈량 f(x)−E[f(X)]을 피처별로 완전 분해.<br>
+          설명 합산 = 예측값. 누락 없음.<br>
+          <strong style="color:#555;">최종 결정은 항상 매니저 권한.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 06 FLEXI CONCEPT ══ -->
+<section class="slide" id="s06">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 06 · FLEXI RATE</div>
+    <div class="slide-num">06 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">Layer 2 — 정밀 오버부킹</div>
+    <div class="two-col" style="align-items:start;margin-bottom:16px;">
+      <div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;margin-bottom:12px;">
+          <div style="color:#555;font-size:10px;letter-spacing:2px;margin-bottom:8px;">기존 — 블라인드 오버부킹</div>
+          <div>과거 평균 취소율 35%</div>
+          <div class="dim">→ 전체 예약의 35%를 일괄 초과 판매</div>
+          <div class="neg">→ 어느 예약이 취소될지 모르고 찍는 것</div>
+        </div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;border-color:#c9a84c33;background:#0a0a06;">
+          <div style="color:#c9a84c;font-size:10px;letter-spacing:2px;margin-bottom:8px;">Flexi — 정밀 오버부킹</div>
+          <div>모델 → "이 예약들이 취소될 가능성이 높다"</div>
+          <div class="dim">→ 그 자리에만 Flexi 예약 추가 판매</div>
+          <div class="pos">→ 예측 정확도가 높을수록 walk 없이 방을 채운다</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;margin-bottom:12px;">손님이 보는 화면 (가격 조건 차이만)</div>
+        <div style="background:#111;border:1px solid #2a2a2a;padding:16px 20px;margin-bottom:10px;">
+          <div style="font-size:11px;color:#666;margin-bottom:6px;letter-spacing:1px;">STANDARD RATE</div>
+          <div style="font-size:22px;color:#eee;font-weight:300;margin-bottom:8px;">€120 <span style="font-size:13px;color:#555;">/ 박</span></div>
+          <div style="font-size:12px;color:#555;line-height:1.8;">✓ 즉시 객실 확정 &nbsp;·&nbsp; ✓ 무료 취소</div>
+        </div>
+        <div style="background:#0f0e09;border:1px solid #c9a84c44;padding:16px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:11px;color:#c9a84c;letter-spacing:1px;">FLEXI RATE</div>
+            <div style="font-size:10px;color:#c9a84c88;background:#161208;border:1px solid #c9a84c33;padding:2px 8px;">−15%</div>
+          </div>
+          <div style="font-size:22px;color:#c9a84c;font-weight:300;margin-bottom:8px;">€102 <span style="font-size:13px;color:#888;">/ 박</span></div>
+          <div style="font-size:12px;color:#666;line-height:1.8;">
+            ✓ 동일 등급 객실<br>
+            ℹ 객실 최종 배정: 체크인 전날<br>
+            ✓ 미배정 시 전액 환불 + 보상
+          </div>
+        </div>
+        <div style="font-size:11px;color:#333;margin-top:10px;line-height:1.7;">
+          모든 손님에게 두 옵션이 보인다. 내부적으로 Flexi 재고를 모델이 조정한다.
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box" style="font-size:13px;">
+      <strong>핵심:</strong> 모델 성능(PR-AUC)이 높을수록 walk 없이 더 많은 방을 채운다.
+      <span style="font-size:12px;color:#555;margin-left:8px;">PR-AUC는 성능 수치가 아니라 실제 운영 수익과 직결된다.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 07 FLEXI OPERATION ══ -->
+<section class="slide" id="s07">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 07 · FLEXI OPERATION</div>
+    <div class="slide-num">07 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">두 풀(Pool) 구조</div>
+    <div style="display:flex;gap:16px;margin-bottom:18px;align-items:stretch;">
+      <div style="flex:1;background:#0a0a0a;border:1px solid #1e1e1e;padding:16px 20px;font-family:'Courier New',monospace;font-size:12px;line-height:2.0;color:#888;">
+        <div style="color:#777;font-size:10px;letter-spacing:2px;margin-bottom:10px;">POOL A — 기존 예약자 (실제 데이터)</div>
+        <div>테스트셋 예약 전체</div>
+        <div style="color:#333;">↓ 모델 위험 예측</div>
+        <div>Low/Med Risk → Standard 확정</div>
+        <div>High Risk &nbsp;&nbsp;&nbsp;→ <span style="color:#c9a84c;">Flexi 슬롯 생성</span></div>
+        <div style="color:#444;font-size:11px;padding-top:4px;">슬롯 수 = Σ P(취소 | 예약_i) for all i where P &gt; threshold</div>
+      </div>
+      <div style="display:flex;align-items:center;color:#333;font-size:20px;padding:0 4px;">→</div>
+      <div style="flex:1;background:#0a0a06;border:1px solid #c9a84c22;padding:16px 20px;font-family:'Courier New',monospace;font-size:12px;line-height:2.0;color:#888;">
+        <div style="color:#c9a84c;font-size:10px;letter-spacing:2px;margin-bottom:10px;">POOL B — 신규 Flexi 구매자 (외부 유입)</div>
+        <div>슬롯 × <span style="color:#c9a84c;">전환율 85%</span> = 실제 판매</div>
+        <div>판매 × (1 − noshow 5%) = <span style="color:#72b572;">실제 입주</span></div>
+        <div style="color:#333;">↓</div>
+        <div>Pool A 취소 ≥ Pool B 도착 → <span style="color:#72b572;">walk 0, 수익 증가</span></div>
+        <div>Pool A 취소 &lt; Pool B 도착 → <span style="color:#c97070;">walk → 보상 발동</span></div>
+      </div>
+    </div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#c9a84c;margin-bottom:10px;">할인율 공식</div>
+        <div style="font-family:'Courier New',monospace;font-size:12px;color:#888;background:#0a0a0a;border:1px solid #1e1e1e;padding:10px 14px;margin-bottom:10px;line-height:1.9;">
+          할인율 = 5% + (위험점수 − 0.5) × 26%<br>
+          <span style="color:#444;font-size:11px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;단, 5% ≤ 할인율 ≤ 18%</span>
+        </div>
+        <table style="font-size:12px;">
+          <thead><tr><th>위험 점수</th><th>할인율</th></tr></thead>
+          <tbody>
+            <tr><td>0.60</td><td><strong>7%</strong></td></tr>
+            <tr><td>0.75</td><td><strong>11.5%</strong></td></tr>
+            <tr><td>0.90</td><td><strong>18%</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#c9a84c;margin-bottom:10px;">WALK 발생 시 보상 패키지</div>
+        <table style="font-size:12px;">
+          <thead><tr><th>항목</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>숙박</td><td><strong>동급 인근 호텔 1박 (호텔 부담)</strong></td></tr>
+            <tr><td>이동</td><td>택시 / 셔틀 제공</td></tr>
+            <tr><td>환불</td><td>원 예약 1박 100%</td></tr>
+            <tr><td>크레딧</td><td>€30 ~ 50</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:#333;margin-top:10px;line-height:1.6;">
+          경제성 조건: 보상 단가 &lt; 취소로 잃는 ADR<br>
+          GDPR Art.22 — 최종 확정은 매니저 승인 후 발송
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 08 FLEXI SIMULATION ══ -->
+<section class="slide" id="s08">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 08 · SIMULATION</div>
+    <div class="slide-num">08 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">시뮬레이션으로 검증한다</div>
+    <table style="margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th>시나리오</th>
+          <th>Pool B 전략</th>
+          <th>walk_rate</th>
+          <th>수익</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Baseline</strong></td>
+          <td>Pool B 없음 — 취소 = 빈 방 손실</td>
+          <td><strong>0%</strong> <span style="color:#444;font-size:11px;">(내보내는 손님 없음)</span></td>
+          <td>취소 손실 고스란히</td>
+        </tr>
+        <tr>
+          <td><strong>블라인드 OB</strong></td>
+          <td>취소율 37% 기반 일괄 초과판매</td>
+          <td style="color:#c97070;"><strong>3–6%</strong></td>
+          <td>보상 비용 큼</td>
+        </tr>
+        <tr style="background:#0a0a06;">
+          <td style="color:#c9a84c;"><strong>Flexi 시스템</strong></td>
+          <td>모델 예측 기반 정밀 Pool B 유치</td>
+          <td style="color:#72b572;"><strong>&lt; 2%</strong> (목표)</td>
+          <td style="color:#72b572;">net_gain &gt; 0</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="three-card" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="label" style="margin-bottom:8px;">지표 1 · 점유율</div>
+        <div class="num" style="font-size:15px;font-weight:500;color:#72b572;">occupancy_gain</div>
+        <div class="desc">Pool B 실제 입주 수. Flexi 없을 때 빈 방이 된 자리를 얼마나 채우는가.</div>
+      </div>
+      <div class="card">
+        <div class="label" style="margin-bottom:8px;">지표 2 · 안정성</div>
+        <div class="num" style="font-size:15px;font-weight:500;color:#c9a84c;">walk_rate &lt; 2%</div>
+        <div class="desc">walks ÷ flexi_new_arrivals. 이 선 안에서만 운영 가능.</div>
+      </div>
+      <div class="card">
+        <div class="label" style="margin-bottom:8px;">지표 3 · 수익성</div>
+        <div class="num" style="font-size:15px;font-weight:500;color:#72b572;">net_gain &gt; 0</div>
+        <div class="desc">Flexi 수익 − 보상 비용. 보상 주고도 남는가.</div>
+      </div>
+    </div>
+    <div class="highlight-box" style="font-size:13px;">
+      threshold 0.50–0.85를 sweep하며 세 지표를 동시에 추적한다.<br>
+      <strong>PR-AUC가 높을수록 같은 walk_rate에서 더 많은 방을 채운다</strong> — 모델 성능의 가치를 수익으로 환산한다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 09 WHAT WE BUILD ══ -->
+<section class="slide" id="s09">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 09 · WHAT WE BUILD</div>
+    <div class="slide-num">09 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">우리가 만드는 것</div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;margin-bottom:12px;">STREAMLIT APP — 2 탭</div>
+        <div style="background:#111;border:1px solid #1e1e1e;padding:16px 20px;margin-bottom:12px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#888;margin-bottom:8px;">TAB 1 · 기존 예약 우선순위</div>
+          <div style="font-size:13px;color:#aaa;line-height:1.9;">
+            오늘 도착 예정 예약 전체 로드<br>
+            → 취소 확률 순 정렬<br>
+            → SHAP Top 3 기여 요인 표시<br>
+            → 권장 행동 태그 (연락 / 검토 / 모니터링)
+          </div>
+        </div>
+        <div style="background:#0f0e09;border:1px solid #c9a84c33;padding:16px 20px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#c9a84c;margin-bottom:8px;">TAB 2 · 신규 예약 Flexi 라우팅</div>
+          <div style="font-size:13px;color:#aaa;line-height:1.9;">
+            신규 예약 정보 입력 폼<br>
+            → 모델 예측 → 취소 확률<br>
+            → 임계값 초과: Flexi 권장 + 할인율 + SHAP 근거<br>
+            → Claude API 자연어 설명<br>
+            → 매니저 승인 후 확정
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;margin-bottom:12px;">범위 경계</div>
+        <table style="font-size:13px;margin-bottom:16px;">
+          <thead><tr><th>항목</th><th>범위</th></tr></thead>
+          <tbody>
+            <tr><td><strong>위험 예측 엔진</strong></td><td style="color:#72b572;">✓ 이 프로젝트</td></tr>
+            <tr><td><strong>SHAP 위험 근거 출력</strong></td><td style="color:#72b572;">✓ 이 프로젝트</td></tr>
+            <tr><td><strong>Flexi 라우팅 권장 UI</strong></td><td style="color:#72b572;">✓ 이 프로젝트</td></tr>
+            <tr><td><strong>Flexi 운영 시뮬레이션</strong></td><td style="color:#72b572;">✓ 이 프로젝트</td></tr>
+            <tr><td>PMS 연동 · 결제</td><td style="color:#333;">호텔 인프라</td></tr>
+            <tr><td>협력 호텔 네트워크</td><td style="color:#333;">호텔 인프라</td></tr>
+            <tr><td>OTA 채널 연동</td><td style="color:#333;">단계적 확장</td></tr>
+          </tbody>
+        </table>
+        <div class="highlight-box" style="font-size:13px;line-height:1.8;">
+          우리는 <strong>두뇌를 만든다.</strong><br>
+          예측 엔진 + 시뮬레이션으로<br>이 시스템이 실제로 작동하는지를 데이터로 증명한다.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 10 DATA & DECISIONS ══ -->
+<section class="slide" id="s10">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 10 · DATA & DECISIONS</div>
+    <div class="slide-num">10 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">데이터 & 핵심 설계 결정</div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#c9a84c;margin-bottom:10px;">데이터</div>
+        <table style="font-size:13px;margin-bottom:16px;">
+          <tbody>
+            <tr><td style="color:#555;width:60px;">출처</td><td><strong>Kaggle Hotel Booking Demand</strong></td></tr>
+            <tr><td style="color:#555;">대상</td><td><strong>포르투갈 2개 호텔</strong><br><span style="color:#444;font-size:12px;">City Hotel(리스본) / Resort Hotel(알가르브)</span></td></tr>
+            <tr><td style="color:#555;">기간</td><td><strong>2015.07 — 2017.08</strong> (26개월)</td></tr>
+            <tr><td style="color:#555;">규모</td><td><strong>119,390건 · 32컬럼</strong></td></tr>
+            <tr><td style="color:#555;">외부</td><td><strong>Open-Meteo API</strong> — 도착일 날씨 7변수 결합 (매칭률 100%)</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:#333;line-height:1.8;padding:10px 14px;background:#0a0a0a;border-left:2px solid #1e1e1e;">
+          다른 호텔·지역으로의 일반화는 목표가 아니다.<br>이 데이터셋에서 접근법의 유효성 확인이 전체 범위다.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#c9a84c;margin-bottom:10px;">핵심 설계 결정</div>
+        <ul class="num-list">
+          <li>
+            <div class="n">1</div>
+            <div class="text">
+              <strong>시간 기반 Train/Test Split</strong>
+              마지막 6개월(2017.03–08)을 Test로 고정. 무작위 분할은 미래 정보 오염으로 성능을 과대평가한다.
+            </div>
+          </li>
+          <li>
+            <div class="n">2</div>
+            <div class="text">
+              <strong>누수 컬럼 5개 제거</strong>
+              reservation_status (타깃 동치) · reservation_status_date · assigned_room_type 외 2개. 체크인 이후에야 채워지는 값은 모두 제거.
+            </div>
+          </li>
+          <li>
+            <div class="n">3</div>
+            <div class="text">
+              <strong>평가 지표: PR-AUC (메인)</strong>
+              빈 방 손실(FN)과 오버부킹 보상(FP) 비용이 비대칭. 임계값 선택에 직접 활용 가능.
+            </div>
+          </li>
+          <li>
+            <div class="n">4</div>
+            <div class="text">
+              <strong>TreeSHAP 선택</strong>
+              샘플링 없이 정확 계산. XGBoost·LightGBM 전용. Phase 2에서 LIME 비교 실험 예정.
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 11 ROADMAP ══ -->
+<section class="slide" id="s11">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 11 · ROADMAP</div>
+    <div class="slide-num">11 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">6주 프로젝트 계획</div>
+    <div class="two-col" style="align-items:start;margin-bottom:18px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;border-bottom:1px solid #1e1e1e;padding-bottom:8px;margin-bottom:14px;">PHASE 1 — MVP &nbsp;~ 2026-05-27 중간발표</div>
+        <div class="phase-row">
+          <div class="phase-label">WEEK 2</div>
+          <div class="phase-content">전처리 파이프라인 + <strong>Baseline 3종</strong> (Dummy / LR / RF) PR-AUC 비교</div>
+        </div>
+        <div class="phase-row">
+          <div class="phase-label">WEEK 3</div>
+          <div class="phase-content"><strong>XGBoost + LightGBM</strong> → 5/18 모델 동결 (이후 피처·모델 변경 금지)</div>
+        </div>
+        <div class="phase-row">
+          <div class="phase-label">WEEK 4</div>
+          <div class="phase-content"><strong>SHAP + Claude API + 앱 완성</strong> → Flexi 시뮬레이션 → MVP 배포</div>
+        </div>
+        <div style="font-size:11px;color:#c9a84c88;padding:8px 12px;border:1px solid #c9a84c22;margin-top:6px;line-height:1.7;">
+          중간발표 5/27 — PR-AUC 비교 + SHAP 1차 + Flexi 시뮬레이션 + MVP 데모
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#555;border-bottom:1px solid #1a1a1a;padding-bottom:8px;margin-bottom:14px;">PHASE 2 — 가정 검증 &nbsp;~ 2026-06-10 최종발표</div>
+        <div class="phase-row">
+          <div class="phase-label" style="color:#666;">WEEK 5</div>
+          <div class="phase-content" style="color:#555;">SHAP 기반 가정 검증<br>날씨 윈도우 / previous_cancellations / LIME 비교</div>
+        </div>
+        <div class="phase-row">
+          <div class="phase-label" style="color:#666;">WEEK 6</div>
+          <div class="phase-content" style="color:#555;">최적 가정 확정 + 앱 반영 + 발표 준비</div>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:#333;line-height:1.8;padding:12px 14px;background:#0a0a0a;border-left:2px solid #1e1e1e;">
+          Phase 2 검증 대상 가정<br>
+          · 날씨 윈도우 (도착일 1일 → 체류기간 전체)<br>
+          · previous_cancellations 포함/제거<br>
+          · country 인코딩 방식 (Top-10 OHE → 재설계)<br>
+          · 날씨 ablation (포함 vs 미포함 PR-AUC 비교)
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box" style="font-size:13px;">
+      이 프로젝트에서 <strong>튜닝의 주체는 하이퍼파라미터가 아니라 가정이다.</strong><br>
+      <span style="font-size:12px;color:#555;">Phase 1에서 가장 단순한 가정을 고정하고, Phase 2에서 SHAP 결과를 나침반 삼아 하나씩 검증한다.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ 12 WHAT WE PROVE ══ -->
+<section class="slide" id="s12">
+  <div class="slide-header">
+    <div class="brand"><span>N</span> NO-SHOW · DSS &nbsp;·&nbsp; 12 · WHAT WE PROVE</div>
+    <div class="slide-num">12 / 12</div>
+  </div>
+  <div class="content">
+    <div class="section-label">예약 한 건이 의사결정으로 도착하기까지</div>
+    <div class="two-col" style="align-items:start;gap:40px;">
+      <div class="flow-block" style="font-size:13px;line-height:2.5;align-self:stretch;">
+        예약 정보 입력 + 도착일 날씨<br>
+        <span class="dim">↓</span><br>
+        모델 → 취소 확률 (XGBoost / LightGBM)<br>
+        <span class="dim">↓</span><br>
+        TreeSHAP → 기여 요인 분해<br>
+        <span class="dim">↓</span><br>
+        <span class="acc">기존 예약 → 우선순위 리스트 출력</span><br>
+        <span style="color:#c9a84c88;">신규 예약 → Flexi 풀 라우팅 권장</span><br>
+        <span class="dim">↓</span><br>
+        매니저 → 연락 / 오버부킹 조정 / Flexi 확정<br>
+        <span class="dim">↓</span><br>
+        Flexi 시뮬레이션 → RevPAR 개선 + walk_rate 검증
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#c9a84c;margin-bottom:16px;">이 프로젝트가 증명하는 것</div>
+        <ul class="num-list">
+          <li>
+            <div class="n">1</div>
+            <div class="text">취소 위험 예약을 데이터로 먼저 찾을 수 있다</div>
+          </li>
+          <li>
+            <div class="n">2</div>
+            <div class="text">그 이유를 매니저가 읽을 수 있는 언어로 설명할 수 있다</div>
+          </li>
+          <li>
+            <div class="n">3</div>
+            <div class="text">확률에서 행동으로 이어지는 구조를 만들 수 있다</div>
+          </li>
+          <li>
+            <div class="n">4</div>
+            <div class="text">정밀 오버부킹(Flexi)이 walk &lt; 2% + net_gain &gt; 0으로 운영 가능함을 시뮬레이션으로 증명할 수 있다</div>
+          </li>
+        </ul>
+        <div class="highlight-box" style="margin-top:20px;font-size:14px;">
+          이 접근법이 해당 데이터셋에서<br>
+          <strong>유효하게 작동함을 이 프로젝트로 증명한다.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button onclick="go(-1)">←</button>
+  <button onclick="go(1)">→</button>
+</div>
+<div id="progress"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const prog   = document.getElementById('progress');
+  let cur = 0;
+
+  function go(dir) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(slides.length - 1, cur + dir));
+    slides[cur].classList.add('active');
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') go(-1);
+  });
+
+  prog.style.width = (1 / slides.length * 100) + '%';
+</script>
+</body>
+</html>

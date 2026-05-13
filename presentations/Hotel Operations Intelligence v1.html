@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel Operations Intelligence · v1</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#f8f8f6; color:#1a1918;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  overflow:hidden; height:100vh; width:100vw;
+}
+#deck { width:100%; height:100%; position:relative; }
+.slide {
+  position:absolute; width:100%; height:100%;
+  display:none; flex-direction:column;
+  padding:44px 80px 54px;
+}
+.slide.active { display:flex; }
+.slide-header {
+  display:flex; justify-content:space-between; align-items:flex-start;
+  margin-bottom:32px;
+}
+.brand { font-size:11px; letter-spacing:3px; color:#888; text-transform:uppercase; }
+.brand span { color:#9a7b1e; }
+.slide-num { font-size:11px; letter-spacing:2px; color:#999; }
+.section-label { font-size:10px; letter-spacing:4px; color:#9a7b1e; text-transform:uppercase; margin-bottom:12px; }
+h1.main { font-size:38px; font-weight:300; line-height:1.25; color:#1a1918; margin-bottom:12px; }
+h1.main strong { font-weight:600; color:#0d0c0b; }
+h2.sub { font-size:16px; font-weight:300; color:#555; margin-bottom:24px; line-height:1.6; }
+.content { flex:1; display:flex; flex-direction:column; justify-content:center; }
+.divider { width:36px; height:1px; background:#9a7b1e; margin:14px 0; }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th { text-align:left; padding:8px 14px; color:#9a7b1e; font-weight:500; font-size:10px; letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid #dddbd7; }
+td { padding:10px 14px; color:#444; border-bottom:1px solid #eeede9; line-height:1.5; }
+td strong { color:#111; }
+tr:last-child td { border-bottom:none; }
+code { color:#9a7b1e; font-family:'Courier New', monospace; font-size:13px; }
+.three-card { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+.two-col    { display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+.card { background:#f2f1ee; border:1px solid #dddbd7; padding:20px; }
+.card .num { font-size:26px; font-weight:700; color:#9a7b1e; margin-bottom:6px; }
+.card .label { font-size:11px; color:#777; letter-spacing:1px; }
+.card .desc { font-size:13px; color:#555; margin-top:8px; line-height:1.6; }
+.highlight-box { background:#f4f0e6; border-left:3px solid #9a7b1e; padding:16px 20px; font-size:14px; color:#444; line-height:1.8; }
+.highlight-box strong { color:#1a1918; }
+.flow-block { background:#eeede9; border:1px solid #dddbd7; padding:20px 24px; font-family:'Courier New', monospace; font-size:13px; color:#555; line-height:2.0; }
+.flow-block .acc { color:#9a7b1e; }
+.flow-block .pos { color:#2e6e2e; }
+.flow-block .neg { color:#a03030; }
+.flow-block .dim { color:#aaa; }
+.num-list { list-style:none; }
+.num-list li { display:flex; gap:14px; margin-bottom:14px; align-items:flex-start; }
+.num-list .n { min-width:26px; height:26px; border:1px solid #c8c7c3; color:#9a7b1e; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.num-list .text { font-size:14px; color:#444; line-height:1.6; }
+.num-list .text strong { color:#111; display:block; margin-bottom:2px; }
+.tag { display:inline-block; padding:2px 8px; background:#f0ebe0; border:1px solid #9a7b1e33; color:#9a7b1e; font-size:10px; letter-spacing:1px; }
+.phase-row { display:flex; gap:0; margin-bottom:12px; }
+.phase-label { min-width:82px; font-size:10px; letter-spacing:2px; color:#9a7b1e; padding-top:2px; }
+.phase-content { font-size:13px; color:#555; line-height:1.7; flex:1; }
+.phase-content strong { color:#333; }
+#nav { position:fixed; bottom:24px; right:36px; display:flex; gap:10px; z-index:100; }
+#nav button { background:#f2f1ee; border:1px solid #c8c7c3; color:#777; width:34px; height:34px; cursor:pointer; font-size:13px; transition:all .15s; }
+#nav button:hover { background:#ede9de; color:#9a7b1e; border-color:#9a7b1e44; }
+#progress { position:fixed; bottom:0; left:0; height:2px; background:#9a7b1e; transition:width .3s; }
+.dir-badge { display:inline-block; padding:3px 10px; font-size:9px; letter-spacing:3px; border:1px solid #9a7b1e66; color:#9a7b1e; text-transform:uppercase; margin-bottom:12px; }
+.intel-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; border:1px solid #dddbd7; }
+.intel-col { padding:20px; border-right:1px solid #dddbd7; }
+.intel-col:last-child { border-right:none; }
+.intel-num { font-size:11px; letter-spacing:3px; color:#999; margin-bottom:8px; }
+.intel-title { font-size:14px; color:#9a7b1e; font-weight:600; margin-bottom:8px; }
+.intel-desc { font-size:12px; color:#666; line-height:1.7; }
+.ref-block { background:#f4f3ef; border:1px solid #dddbd7; padding:10px 14px; margin-top:12px; }
+.ref-item { font-size:11px; color:#666; line-height:1.8; padding:4px 0; border-bottom:1px solid #eeecea; }
+.ref-item:last-child { border-bottom:none; padding-bottom:0; }
+.ref-item strong { color:#333; }
+.ref-label { font-size:9px; letter-spacing:2px; color:#9a7b1e; text-transform:uppercase; margin-bottom:6px; }
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- ═══ 01 TITLE ══ -->
+<section class="slide active" id="s01">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE</div>
+    <div class="slide-num">01 / 13</div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;">
+    <div>
+      <div class="section-label">2026 · 데이터과학 PROJECT</div>
+      <h1 style="font-size:46px;font-weight:200;letter-spacing:2px;margin-bottom:10px;line-height:1.2;color:#1a1918;">
+        HOTEL OPERATIONS<br>
+        <span style="color:#9a7b1e;">INTELLIGENCE</span>
+      </h1>
+      <div class="divider"></div>
+      <div style="font-size:15px;color:#555;font-weight:300;margin-bottom:6px;line-height:1.8;">
+        취소 예측을 넘어 &nbsp;—&nbsp; 호텔 운영 전반을 다루는 의사결정 지원 시스템
+      </div>
+      <div style="font-size:13px;color:#777;font-weight:300;margin-bottom:36px;line-height:1.9;">
+        채널 실효 수익 분석 &nbsp;·&nbsp; 예약 품질 점수 &nbsp;·&nbsp; 음식 낭비 예측 &amp; ESG
+      </div>
+      <div style="display:flex;gap:28px;margin-bottom:40px;align-items:stretch;">
+        <div style="border-left:2px solid #dddbd7;padding-left:14px;">
+          <div style="font-size:10px;color:#999;letter-spacing:2px;margin-bottom:4px;">DATA</div>
+          <div style="font-size:13px;color:#555;">119,390건 · Kaggle Hotel Booking</div>
+        </div>
+        <div style="border-left:2px solid #dddbd7;padding-left:14px;">
+          <div style="font-size:10px;color:#999;letter-spacing:2px;margin-bottom:4px;">MODEL</div>
+          <div style="font-size:13px;color:#555;">XGBoost / LightGBM + TreeSHAP</div>
+        </div>
+        <div style="border-left:2px solid #dddbd7;padding-left:14px;">
+          <div style="font-size:10px;color:#999;letter-spacing:2px;margin-bottom:4px;">METRIC</div>
+          <div style="font-size:13px;color:#555;">PR-AUC (메인) · F1@0.5 (보조)</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#777;letter-spacing:2px;">한양대학교 · 데이터사이언스 &nbsp;·&nbsp; 심재형 · 이고은 · 김나리</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 THE THREE QUESTIONS ══ -->
+<section class="slide" id="s02">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 02 · THE PROBLEM</div>
+    <div class="slide-num">02 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">호텔 매니저가 매일 답하지 못하는 것들</div>
+    <h1 class="main" style="font-size:34px;margin-bottom:24px;">
+      "어느 채널이 <strong>진짜</strong> 수익을 내는가?<br>
+      어떤 예약을 <strong>지켜야</strong> 하는가?<br>
+      취소가 만드는 <strong>낭비를</strong> 줄일 수 있는가?"
+    </h1>
+    <div class="divider"></div>
+    <div class="intel-grid" style="margin-top:18px;">
+      <div class="intel-col">
+        <div class="intel-num">01 &nbsp;·&nbsp; CHANNEL</div>
+        <div class="intel-title">채널 실효 수익</div>
+        <div style="font-family:'Courier New',monospace;font-size:12px;color:#555;margin-bottom:10px;line-height:1.9;background:#eeede9;padding:10px 12px;border:1px solid #dddbd7;">
+          Online TA &nbsp; ADR €95 &nbsp; 취소 42%<br>
+          <span style="color:#a03030;">→ 실효 수익 €55</span><br>
+          Direct &nbsp;&nbsp;&nbsp;&nbsp; ADR €105 취소 18%<br>
+          <span style="color:#2e6e2e;">→ 실효 수익 €86</span>
+        </div>
+        <div class="intel-desc">취소 비용이 빠진 액면 ADR만 보면 채널 전략이 틀린다</div>
+      </div>
+      <div class="intel-col">
+        <div class="intel-num">02 &nbsp;·&nbsp; QUALITY</div>
+        <div class="intel-title">예약 품질 점수</div>
+        <div style="font-family:'Courier New',monospace;font-size:12px;color:#555;margin-bottom:10px;line-height:1.9;background:#eeede9;padding:10px 12px;border:1px solid #dddbd7;">
+          ADR 높음 + 장기체류 + 특별요청 3건<br>
+          <span style="color:#9a7b1e;">→ 품질 高 · 지켜야 할 예약</span><br>
+          ADR 낮음 + 1박 + 요청 없음<br>
+          <span style="color:#888;">→ 품질 低 · Flexi 우선</span>
+        </div>
+        <div class="intel-desc">취소 확률만으로는 "이 예약이 가치 있는가"를 알 수 없다</div>
+      </div>
+      <div class="intel-col" style="border-right:none;">
+        <div class="intel-num">03 &nbsp;·&nbsp; ESG</div>
+        <div class="intel-title">음식 낭비 예측</div>
+        <div style="font-family:'Courier New',monospace;font-size:12px;color:#555;margin-bottom:10px;line-height:1.9;background:#eeede9;padding:10px 12px;border:1px solid #dddbd7;">
+          HB 예약 34건 중 고위험 12건<br>
+          <span style="color:#2e6e2e;">→ 발주 -25% 권고</span><br>
+          절감 식재료 €180 / CO₂ 14kg<br>
+          <span style="color:#666;">EU CSRD 보고 항목</span>
+        </div>
+        <div class="intel-desc">취소 예측이 있으면 식재료 발주 최적화가 가능하다</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 AS-IS ══ -->
+<section class="slide" id="s03">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 03 · AS-IS</div>
+    <div class="slide-num">03 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">지금 이 결정은 어떻게 이루어지는가</div>
+    <h1 class="main" style="font-size:36px;">"경험과 감(感)으로<br><strong>전부 처리한다."</strong></h1>
+    <div class="divider"></div>
+    <h2 class="sub">채널 전략, 예약 우선순위, 식재료 발주 — 매일 수십 번의 판단이 이루어지지만<br>근거도, 확률도, 과정도 남지 않는다.</h2>
+    <div class="three-card">
+      <div class="card">
+        <div class="num" style="font-size:14px;font-weight:600;margin-bottom:10px;">채널 전략</div>
+        <div style="font-size:12px;color:#555;line-height:1.8;">"Online TA가 가장 많이 팔아준다"<br>→ 취소 비용은 계산 안 함<br>→ 실효 수익이 가장 낮은 채널을<br>&nbsp;&nbsp;&nbsp;핵심 채널로 오해하는 중</div>
+      </div>
+      <div class="card">
+        <div class="num" style="font-size:14px;font-weight:600;margin-bottom:10px;">예약 우선순위</div>
+        <div style="font-size:12px;color:#555;line-height:1.8;">"오늘 확인해야 할 예약"을<br>직관으로 선택<br>→ 고품질 예약 취소 직전 방치<br>→ 저품질 예약에 리소스 낭비</div>
+      </div>
+      <div class="card">
+        <div class="num" style="font-size:14px;font-weight:600;margin-bottom:10px;">식재료 발주</div>
+        <div style="font-size:12px;color:#555;line-height:1.8;">예약 수 × 과거 평균으로 발주<br>→ 취소 위험 예약은 고려 안 함<br>→ 당일 취소 발생 시<br>&nbsp;&nbsp;&nbsp;식재료 낭비 사후 인식</div>
+      </div>
+    </div>
+    <div class="highlight-box" style="margin-top:20px;font-size:13px;">
+      <strong>공통 구조:</strong> 예약 데이터가 있음에도 불구하고, 데이터로 답할 수 있는 질문들을 감으로 처리하고 있다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 RESEARCH FOUNDATION ══ -->
+<section class="slide" id="s04">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 04 · RESEARCH</div>
+    <div class="slide-num">04 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">선행연구 — 세 방향의 학문적 근거</div>
+    <div class="three-card" style="margin-bottom:14px;">
+      <div class="card" style="padding:16px 18px;">
+        <div style="font-size:10px;letter-spacing:3px;color:#9a7b1e;margin-bottom:10px;">01 · 채널 수익 &amp; 세그먼테이션</div>
+        <div class="ref-item">
+          <strong>Talluri &amp; van Ryzin (2004)</strong><br>
+          <em>The Theory and Practice of Revenue Management</em><br>
+          채널별 수익 최적화의 이론 기반. 취소율을 반영한 Effective Revenue 개념의 원형.
+        </div>
+        <div class="ref-item">
+          <strong>ScienceDirect (2022)</strong><br>
+          <em>Data-driven market segmentation in hospitality using unsupervised ML</em><br>
+          예약 채널·고객 속성 기반 마이크로세그먼테이션의 실증 근거.
+        </div>
+        <div class="ref-item">
+          <strong>Hospitality Net (2025)</strong><br>
+          <em>Guest segmentation in 2025: Moving beyond broad-brush marketing with AI</em><br>
+          채널 × 행동 패턴 결합이 2025년 핵심 트렌드로 확인됨.
+        </div>
+      </div>
+      <div class="card" style="padding:16px 18px;">
+        <div style="font-size:10px;letter-spacing:3px;color:#9a7b1e;margin-bottom:10px;">02 · 예약 품질 &amp; 고객 행동</div>
+        <div class="ref-item">
+          <strong>Kahneman &amp; Tversky (1979)</strong><br>
+          <em>Prospect Theory: An Analysis of Decision under Risk. Econometrica.</em><br>
+          특별요청이 많은 손님은 손실 회피 심리가 강해 예약 이행 가능성이 높다. BQS의 이론적 근거.
+        </div>
+        <div class="ref-item">
+          <strong>Antonio et al. (2019)</strong><br>
+          <em>Hotel booking demand datasets. Data in Brief.</em><br>
+          이 프로젝트의 데이터셋 원 논문. lead_time·특별요청이 취소 예측에 유효한 신호임을 확인.
+        </div>
+        <div class="ref-item">
+          <strong>Lundberg &amp; Lee (2017)</strong><br>
+          <em>A unified approach to interpreting model predictions. NeurIPS.</em><br>
+          TreeSHAP 이론 기반. 피처 기여도 분해의 수학적 정합성(Efficiency 공리) 보증.
+        </div>
+      </div>
+      <div class="card" style="padding:16px 18px;">
+        <div style="font-size:10px;letter-spacing:3px;color:#9a7b1e;margin-bottom:10px;">03 · 음식 낭비 &amp; ESG</div>
+        <div class="ref-item">
+          <strong>Frontiers AI (2024)</strong><br>
+          <em>AI-driven food waste management strategies in hospitality</em><br>
+          전 세계 호텔 음식 낭비 연간 1,000억 달러 이상 추정. 예측 기반 개입의 효과성 검토.
+        </div>
+        <div class="ref-item">
+          <strong>Journal of Sustainable Tourism (2024)</strong><br>
+          <em>Digital innovation for food waste reduction in hotels</em><br>
+          예약 데이터 기반 사전 예측이 사후 모니터링(Leanpath, Winnow) 대비 효과적임을 제안.
+        </div>
+        <div class="ref-item">
+          <strong>EU CSRD (2024)</strong><br>
+          <em>Corporate Sustainability Reporting Directive</em><br>
+          2024년부터 대형 기업, 2025~26년 중소 호텔까지 음식 낭비 보고 의무화 확대.
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box" style="font-size:13px;">
+      <strong>공통점:</strong> 세 방향 모두 취소 확률(cancel_probability) 하나를 공유한다. 별도 모델 없이 기존 연구들이 제안한 분석 프레임을 이 데이터셋에 직접 적용할 수 있다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 FROM SYMPTOM TO STRUCTURE ══ -->
+<section class="slide" id="s05">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 05 · APPROACH</div>
+    <div class="slide-num">05 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">취소 예측은 증상을 다룬다 — 우리는 구조를 다룬다</div>
+    <div class="two-col" style="align-items:start;gap:40px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#888;margin-bottom:14px;border-bottom:1px solid #e0deda;padding-bottom:8px;">기존 접근 — 예측 1건</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.1;margin-bottom:16px;">
+          <div>예약 1건 입력</div>
+          <div class="dim">↓</div>
+          <div>취소 확률 출력</div>
+          <div class="dim">↓</div>
+          <div class="neg">끝.</div>
+        </div>
+        <div style="font-size:12px;color:#555;line-height:1.8;padding:10px 14px;background:#f4f3ef;border-left:2px solid #d8d7d3;">
+          증상: "이 예약이 취소될 것 같다"<br>
+          구조적 질문들은 여전히 답 없음
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#9a7b1e;margin-bottom:14px;border-bottom:1px solid #e0d4b0;padding-bottom:8px;">우리 접근 — 운영 인텔리전스</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.1;border-color:#e0d4b0;background:#faf6eb;">
+          <div class="acc">취소 예측 엔진 (cancel_probability)</div>
+          <div class="dim">&nbsp;&nbsp;│</div>
+          <div class="dim">&nbsp;&nbsp;├── <span style="color:#555;">채널 × ADR × 취소율 → 실효 수익</span></div>
+          <div class="dim">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"어느 채널에서 어떤 예약을 받을 것인가"</div>
+          <div class="dim">&nbsp;&nbsp;│</div>
+          <div class="dim">&nbsp;&nbsp;├── <span style="color:#555;">ADR + 체류 + 특별요청 + cancel_prob</span></div>
+          <div class="dim">&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"이 예약을 지킬 것인가, Flexi로 보낼 것인가"</div>
+          <div class="dim">&nbsp;&nbsp;│</div>
+          <div class="dim">&nbsp;&nbsp;└── <span style="color:#555;">meal × cancel_probability</span></div>
+          <div class="dim">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"식재료를 얼마나 발주할 것인가"</div>
+        </div>
+        <div class="highlight-box" style="margin-top:12px;font-size:12px;">
+          <strong>핵심:</strong> 세 방향 모두 새로운 ML 모델이 필요 없다.<br>
+          하나의 엔진이 세 가지 운영 문제를 동시에 푼다.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 THE ENGINE ══ -->
+<section class="slide" id="s06">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 06 · THE ENGINE</div>
+    <div class="slide-num">06 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">모든 것의 기반 — 취소 예측 엔진</div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">데이터</div>
+        <table style="font-size:13px;margin-bottom:16px;">
+          <tbody>
+            <tr><td style="color:#777;width:70px;">출처</td><td><strong>Kaggle Hotel Booking Demand</strong></td></tr>
+            <tr><td style="color:#777;">대상</td><td><strong>포르투갈 2개 호텔</strong><br><span style="color:#666;font-size:12px;">City Hotel(리스본 · 취소 41.7%) / Resort Hotel(알가르브 · 27.8%)</span></td></tr>
+            <tr><td style="color:#777;">기간</td><td><strong>2015.07 — 2017.08</strong> (26개월)</td></tr>
+            <tr><td style="color:#777;">규모</td><td><strong>119,390건 · 32컬럼</strong></td></tr>
+            <tr><td style="color:#777;">외부</td><td><strong>Open-Meteo API</strong> — 도착일 날씨 7변수 결합 (매칭 100%)</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">핵심 설계 결정</div>
+        <ul class="num-list">
+          <li>
+            <div class="n">1</div>
+            <div class="text"><strong>시간 기반 Split</strong> — 마지막 6개월(2017.03–08)을 Test 고정. 무작위 분할은 미래 정보 오염.</div>
+          </li>
+          <li>
+            <div class="n">2</div>
+            <div class="text"><strong>누수 컬럼 6개 제거</strong> — reservation_status(타깃 동치) 외 체크인 이후에야 채워지는 값 전부.</div>
+          </li>
+          <li>
+            <div class="n">3</div>
+            <div class="text"><strong>PR-AUC 메인 지표</strong> — FN·FP 비용 비대칭. 임계값 선택과 직결.</div>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">엔진 출력 구조</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.2;margin-bottom:14px;background:#faf6eb;border-color:#e0d4b0;">
+          <div class="dim">INPUT &nbsp;예약 정보 + 도착일 날씨</div>
+          <div class="dim">↓ &nbsp;[XGBoost / LightGBM]</div>
+          <div><span class="acc">PROBABILITY</span>&nbsp; cancel_probability 0.84</div>
+          <div><span class="acc">SHAP EXPLAIN</span>&nbsp; lead_time 길다 &nbsp;<span class="pos">+0.21</span></div>
+          <div style="padding-left:90px;">이전 취소 이력&nbsp;&nbsp;<span class="pos">+0.15</span></div>
+          <div style="padding-left:90px;">보증금 없음&nbsp;&nbsp;&nbsp;&nbsp;<span class="pos">+0.09</span></div>
+          <div class="dim">↓</div>
+          <div><span class="acc">DOWNSTREAM</span>&nbsp; 채널 수익 | 품질 점수 | 식재료 발주</div>
+        </div>
+        <div style="font-size:11px;color:#555;line-height:1.7;padding:10px 14px;background:#f4f3ef;border-left:2px solid #d8d7d3;">
+          <strong>Lundberg &amp; Lee (NeurIPS 2017)</strong> — TreeSHAP<br>
+          샘플링 없는 정확 계산. Efficiency 공리: 설명 합산 = 예측값. 누락 없음.<br>
+          최종 결정은 항상 매니저 권한 (GDPR Art.22).
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 DIRECTION 1 ══ -->
+<section class="slide" id="s07">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 07 · CHANNEL YIELD</div>
+    <div class="slide-num">07 / 13</div>
+  </div>
+  <div class="content">
+    <div class="dir-badge">Direction 01 &nbsp;·&nbsp; Channel Effective Yield</div>
+    <h1 class="main" style="font-size:32px;">어느 채널이<br><strong>실제로 수익을 내는가</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">계산 구조</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;margin-bottom:14px;background:#faf6eb;border-color:#e0d4b0;">
+          <div class="acc">Effective ADR = ADR × (1 − cancel_rate)</div>
+          <div class="dim" style="margin:6px 0;">──────────────────────────</div>
+          <div>Online TA &nbsp;&nbsp;&nbsp;ADR €95 &nbsp; 취소 42% → <span class="neg">€55.1</span></div>
+          <div>Direct &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ADR €105 취소 18% → <span class="pos">€86.1</span></div>
+          <div>Corporate &nbsp;&nbsp;ADR €88 &nbsp; 취소  9% → <span class="pos">€80.1</span></div>
+          <div>GDS &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ADR €112 취소 28% → <span class="pos">€80.6</span></div>
+        </div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:8px;">lead_time 교차 분석</div>
+        <div class="flow-block" style="font-size:12px;line-height:1.9;">
+          <div>Online TA × lead_time &gt; 90일</div>
+          <div class="dim">&nbsp;&nbsp;→ 가격 탐색형 · 더 싼 딜 나오면 이탈</div>
+          <div>Online TA × lead_time &lt; 14일</div>
+          <div class="dim">&nbsp;&nbsp;→ 목적 있는 막판 예약 · 이탈 낮음</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">이 분석이 바꾸는 것</div>
+        <ul class="num-list" style="margin-bottom:12px;">
+          <li>
+            <div class="n">1</div>
+            <div class="text"><strong>마케팅 예산 배분</strong> 실효 수익이 낮은 채널 의존도 줄이기 — 액면 ADR이 아닌 실효 ADR 기준</div>
+          </li>
+          <li>
+            <div class="n">2</div>
+            <div class="text"><strong>Direct 채널 육성 투자</strong> ADR ↑ + 취소율 ↓ 의 복리 효과를 데이터로 보여준다</div>
+          </li>
+          <li>
+            <div class="n">3</div>
+            <div class="text"><strong>Flexi 오퍼 우선순위</strong> 고취소 채널 예약에 먼저 Flexi를 제안 — 채널 전략과 운영 전술의 연결</div>
+          </li>
+        </ul>
+        <div class="ref-block">
+          <div class="ref-label">참고 문헌</div>
+          <div class="ref-item"><strong>Talluri &amp; van Ryzin (2004)</strong> — 채널별 수익 최적화 이론. Effective ADR 계산 프레임의 기반.</div>
+          <div class="ref-item"><strong>ScienceDirect (2022)</strong> — Data-driven market segmentation in hospitality using unsupervised ML. 채널 × 행동 패턴 결합의 실증 근거.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 DIRECTION 2 ══ -->
+<section class="slide" id="s08">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 08 · BOOKING QUALITY</div>
+    <div class="slide-num">08 / 13</div>
+  </div>
+  <div class="content">
+    <div class="dir-badge">Direction 02 &nbsp;·&nbsp; Booking Quality Score</div>
+    <h1 class="main" style="font-size:32px;">어떤 예약을<br><strong>지켜야 하는가</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">점수 구성 요소</div>
+        <table style="font-size:12px;margin-bottom:12px;">
+          <thead><tr><th>변수</th><th>방향</th><th>의미</th></tr></thead>
+          <tbody>
+            <tr><td><code>adr</code></td><td style="color:#2e6e2e;">높을수록 ↑</td><td>직접 수익</td></tr>
+            <tr><td>stays_nights</td><td style="color:#2e6e2e;">길수록 ↑</td><td>고정비 대비 수익</td></tr>
+            <tr><td>special_requests</td><td style="color:#2e6e2e;">많을수록 ↑</td><td>예약 몰입도 신호</td></tr>
+            <tr><td>is_repeated_guest</td><td style="color:#2e6e2e;">재방문 ↑</td><td>충성 고객</td></tr>
+            <tr><td>distribution_channel</td><td style="color:#9a7b1e;">Direct 우선</td><td>채널 신뢰도</td></tr>
+            <tr><td>cancel_probability</td><td style="color:#2e6e2e;">낮을수록 ↑</td><td>취소 위험 (엔진)</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:#444;line-height:1.7;padding:10px 14px;background:#f4f3ef;border-left:2px solid #d8d7d3;margin-bottom:0;">
+          special_requests = 0 → 이 손님은 가격으로 걸렸다. 더 싼 옵션이 나오면 이탈.<br>
+          special_requests = 3+ → 침대·층수·전망까지 챙겼다. <strong>이 호텔에 와야 할 이유가 있는 손님.</strong>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">2×2 운영 매트릭스</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #dddbd7;margin-bottom:12px;">
+          <div style="padding:12px;border-right:1px solid #dddbd7;border-bottom:1px solid #dddbd7;background:#faf6eb;">
+            <div style="font-size:9px;color:#888;letter-spacing:2px;margin-bottom:4px;">품질 高 · 위험 高</div>
+            <div style="font-size:12px;color:#9a7b1e;line-height:1.6;font-weight:600;">리텐션 개입 대상<br><span style="font-weight:400;">업그레이드 · 웰컴 패키지</span></div>
+          </div>
+          <div style="padding:12px;border-bottom:1px solid #dddbd7;background:#f2f8f2;">
+            <div style="font-size:9px;color:#888;letter-spacing:2px;margin-bottom:4px;">품질 高 · 위험 低</div>
+            <div style="font-size:12px;color:#2e6e2e;line-height:1.6;font-weight:600;">터치하지 않는다<br><span style="font-weight:400;">Standard 확정</span></div>
+          </div>
+          <div style="padding:12px;border-right:1px solid #dddbd7;background:#f8f8f6;">
+            <div style="font-size:9px;color:#888;letter-spacing:2px;margin-bottom:4px;">품질 低 · 위험 高</div>
+            <div style="font-size:12px;color:#555;line-height:1.6;">Flexi 오퍼 우선<br>오버부킹 슬롯으로 관리</div>
+          </div>
+          <div style="padding:12px;background:#f8f8f6;">
+            <div style="font-size:9px;color:#888;letter-spacing:2px;margin-bottom:4px;">품질 低 · 위험 低</div>
+            <div style="font-size:12px;color:#888;line-height:1.6;">일반 관리<br>리소스 최소 배분</div>
+          </div>
+        </div>
+        <div class="ref-block">
+          <div class="ref-label">참고 문헌</div>
+          <div class="ref-item"><strong>Kahneman &amp; Tversky (1979)</strong> — Prospect Theory. 손실 회피 심리가 강한 손님(특별요청 多)은 예약 이행 가능성이 높다. BQS 설계의 이론적 근거.</div>
+          <div class="ref-item"><strong>Antonio et al. (2019)</strong> — lead_time, special_requests가 취소 예측의 핵심 신호임을 원 데이터셋 논문에서 확인.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 DIRECTION 3 ══ -->
+<section class="slide" id="s09">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 09 · FOOD WASTE</div>
+    <div class="slide-num">09 / 13</div>
+  </div>
+  <div class="content">
+    <div class="dir-badge">Direction 03 &nbsp;·&nbsp; Food Waste &amp; ESG</div>
+    <h1 class="main" style="font-size:32px;">취소가 만드는 <strong>낭비를</strong><br>어떻게 줄이는가</h1>
+    <div class="divider"></div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">문제 구조</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;margin-bottom:14px;">
+          <div>HB(조식+석식) 예약 &nbsp;→ 취소 발생</div>
+          <div class="dim">↓</div>
+          <div class="neg">이미 발주된 식재료 → 낭비</div>
+          <div class="neg">조리 인력 배치 &nbsp;&nbsp;&nbsp;&nbsp;→ 낭비</div>
+          <div class="neg">탄소발자국 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ESG 보고 항목</div>
+        </div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:8px;">예측 → 발주 조정</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;background:#faf6eb;border-color:#e0d4b0;">
+          <div>이번 주 HB/FB 예약 34건</div>
+          <div>cancel_prob &gt; 0.65 &nbsp;→ 고위험 12건 (35%)</div>
+          <div class="dim">↓</div>
+          <div class="pos">발주 권고: 정상 대비 −25%</div>
+          <div class="pos">절감 €180 / CO₂ 14kg</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">왜 이게 의미 있는가</div>
+        <ul class="num-list" style="margin-bottom:12px;">
+          <li>
+            <div class="n">1</div>
+            <div class="text"><strong>ESG 보고 의무화</strong> EU CSRD 2024~26년 단계적 확대. 음식 낭비 데이터가 실제 법적 보고 항목이 된다.</div>
+          </li>
+          <li>
+            <div class="n">2</div>
+            <div class="text"><strong>비용 절감 방향이 다르다</strong> 취소 예측 = 수익 지키기. 음식 낭비 예측 = 비용 줄이기. 같은 모델, 다른 방향.</div>
+          </li>
+          <li>
+            <div class="n">3</div>
+            <div class="text"><strong>연구 공백이 차별화 포인트</strong> 사후 모니터링(Leanpath, Winnow)은 있으나 예약 단계 사전 예측은 초기 단계.</div>
+          </li>
+        </ul>
+        <div class="ref-block">
+          <div class="ref-label">참고 문헌</div>
+          <div class="ref-item"><strong>Frontiers AI (2024)</strong> — AI-driven food waste management in hospitality. 전 세계 호텔 음식 낭비 연간 1,000억 달러 이상. 예측 기반 사전 개입의 효과성 제안.</div>
+          <div class="ref-item"><strong>Journal of Sustainable Tourism (2024)</strong> — Digital innovation for food waste reduction. 예약 데이터 기반 예측이 사후 모니터링 대비 우위임을 논증.</div>
+          <div class="ref-item"><strong>EU CSRD (2024)</strong> — 음식 낭비를 포함한 ESG 보고 의무화. 2025~26년 중소 호텔까지 확대 예정.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 SYSTEM ARCHITECTURE ══ -->
+<section class="slide" id="s10">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 10 · SYSTEM</div>
+    <div class="slide-num">10 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">하나의 엔진 · 세 가지 인텔리전스 · 두 가지 앱 레이어</div>
+    <div style="margin-bottom:20px;">
+      <div class="flow-block" style="font-size:12px;line-height:2.0;padding:18px 24px;">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0 20px;align-items:start;">
+          <div style="color:#9a7b1e;padding-right:14px;border-right:1px solid #dddbd7;text-align:right;line-height:2.8;font-weight:600;">ENGINE</div>
+          <div>
+            <div class="acc">취소 예측 모델 → cancel_probability (XGBoost / LightGBM + TreeSHAP)</div>
+          </div>
+          <div style="color:#777;padding-right:14px;border-right:1px solid #dddbd7;text-align:right;padding-top:4px;font-weight:600;">INTEL</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:4px 0;">
+            <div style="background:#faf6eb;border:1px solid #e0d4b0;padding:8px 12px;">
+              <div style="color:#9a7b1e;font-size:10px;margin-bottom:4px;font-weight:600;">01 · CHANNEL</div>
+              <div style="color:#555;">채널 실효 수익 분석</div>
+            </div>
+            <div style="background:#faf6eb;border:1px solid #e0d4b0;padding:8px 12px;">
+              <div style="color:#9a7b1e;font-size:10px;margin-bottom:4px;font-weight:600;">02 · QUALITY</div>
+              <div style="color:#555;">예약 품질 점수</div>
+            </div>
+            <div style="background:#faf6eb;border:1px solid #e0d4b0;padding:8px 12px;">
+              <div style="color:#9a7b1e;font-size:10px;margin-bottom:4px;font-weight:600;">03 · ESG</div>
+              <div style="color:#555;">음식 낭비 예측</div>
+            </div>
+          </div>
+          <div style="color:#777;padding-right:14px;border-right:1px solid #dddbd7;text-align:right;padding-top:4px;font-weight:600;">APP</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 0;">
+            <div style="background:#f4f0e6;border:1px solid #e0d4b0;padding:8px 12px;">
+              <div style="color:#9a7b1e;font-size:10px;margin-bottom:4px;font-weight:600;">TAB 1 · 기존 예약</div>
+              <div style="color:#555;">취소 위험 순위 리스트<br>SHAP 근거 + 행동 권장</div>
+            </div>
+            <div style="background:#f4f0e6;border:1px solid #e0d4b0;padding:8px 12px;">
+              <div style="color:#9a7b1e;font-size:10px;margin-bottom:4px;font-weight:600;">TAB 2 · 신규 예약</div>
+              <div style="color:#555;">Flexi 라우팅 권장<br>할인율 + 매니저 승인</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="two-col" style="align-items:start;">
+      <div class="highlight-box" style="font-size:13px;">
+        <strong>우리가 만드는 것:</strong> 두뇌 (예측 엔진 + 운영 인텔리전스)<br>
+        PMS 연동 · 결제 · OTA 채널 연동은 호텔 인프라 영역.
+      </div>
+      <div class="highlight-box" style="font-size:13px;border-left-color:#2e6e2e;background:#f2f8f2;">
+        <strong>새로운 ML 모델 불필요:</strong> 세 방향 모두 cancel_probability 재활용<br>
+        또는 기존 데이터의 집계 분석만으로 도출 가능.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 FLEXI RATE ══ -->
+<section class="slide" id="s11">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 11 · FLEXI RATE</div>
+    <div class="slide-num">11 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">App Layer 2 — 신규 예약 Flexi 라우팅</div>
+    <div class="two-col" style="align-items:start;margin-bottom:16px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">기존 vs 정밀 오버부킹</div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;margin-bottom:10px;">
+          <div style="color:#777;font-size:10px;letter-spacing:2px;margin-bottom:6px;">기존 — 블라인드 오버부킹</div>
+          <div>과거 평균 취소율 37% → 일괄 초과판매</div>
+          <div class="neg">→ 어느 예약이 취소될지 모르고 찍는 것</div>
+        </div>
+        <div class="flow-block" style="font-size:12px;line-height:2.0;border-color:#e0d4b0;background:#faf6eb;">
+          <div style="color:#9a7b1e;font-size:10px;letter-spacing:2px;margin-bottom:6px;">Flexi — 정밀 오버부킹</div>
+          <div>모델 → "이 예약들이 취소 가능성 높다"</div>
+          <div class="dim">→ 그 자리에만 Flexi 예약 추가 판매</div>
+          <div class="pos">→ 예측 정확도가 높을수록 walk 없이 방을 채운다</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:12px;">
+          <div style="padding:10px 14px;background:#f4f3ef;border:1px solid #dddbd7;">
+            <div style="font-size:10px;color:#777;margin-bottom:4px;">할인율 공식</div>
+            <div style="font-family:'Courier New',monospace;color:#555;line-height:1.8;font-size:11px;">
+              5% + (위험 − 0.5) × 26%<br>
+              위험 0.75 → <span style="color:#9a7b1e;font-weight:600;">11.5%</span>
+            </div>
+          </div>
+          <div style="padding:10px 14px;background:#f4f3ef;border:1px solid #dddbd7;">
+            <div style="font-size:10px;color:#777;margin-bottom:4px;">목표 지표</div>
+            <div style="font-family:'Courier New',monospace;color:#555;line-height:1.8;font-size:11px;">
+              walk_rate &lt; <span style="color:#2e6e2e;font-weight:600;">2%</span><br>
+              net_gain &gt; <span style="color:#2e6e2e;font-weight:600;">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:10px;">손님이 보는 화면</div>
+        <div style="background:#f8f8f6;border:1px solid #d8d7d3;padding:14px 18px;margin-bottom:8px;">
+          <div style="font-size:10px;color:#888;margin-bottom:4px;letter-spacing:1px;">STANDARD RATE</div>
+          <div style="font-size:20px;color:#333;font-weight:300;margin-bottom:6px;">€120 <span style="font-size:12px;color:#888;">/ 박</span></div>
+          <div style="font-size:11px;color:#666;">✓ 즉시 객실 확정 &nbsp;·&nbsp; ✓ 무료 취소</div>
+        </div>
+        <div style="background:#faf6eb;border:1px solid #e0d4b0;padding:14px 18px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <div style="font-size:10px;color:#9a7b1e;letter-spacing:1px;font-weight:600;">FLEXI RATE</div>
+            <div style="font-size:9px;color:#9a7b1e;background:#f4f0e4;border:1px solid #e0d4b0;padding:2px 8px;font-weight:600;">−15%</div>
+          </div>
+          <div style="font-size:20px;color:#9a7b1e;font-weight:400;margin-bottom:6px;">€102 <span style="font-size:12px;color:#888;">/ 박</span></div>
+          <div style="font-size:11px;color:#666;line-height:1.8;">✓ 동일 등급 객실&nbsp;&nbsp;&nbsp;ℹ 배정: 체크인 전날<br>✓ 미배정 시 전액 환불 + 보상</div>
+        </div>
+        <div style="font-size:11px;color:#666;line-height:1.7;">
+          GDPR Art.22 — 자동화된 권장이지만<br>
+          최종 결정은 항상 매니저 승인 후 확정.
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box" style="font-size:13px;">
+      <strong>핵심:</strong> PR-AUC가 높을수록 walk 없이 더 많은 방을 채운다. PR-AUC는 성능 수치가 아니라 실제 운영 수익과 직결된다.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 WHAT WE BUILD ══ -->
+<section class="slide" id="s12">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 12 · WHAT WE BUILD</div>
+    <div class="slide-num">12 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">우리가 만드는 것 — Streamlit App</div>
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:12px;">MVP (~ 중간발표 5/27)</div>
+        <div style="background:#f8f8f6;border:1px solid #dddbd7;padding:16px 20px;margin-bottom:10px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#777;margin-bottom:8px;font-weight:600;">TAB 1 · 기존 예약 우선순위</div>
+          <div style="font-size:13px;color:#444;line-height:1.9;">
+            오늘 도착 예정 예약 전체 로드<br>
+            → 취소 확률 순 정렬<br>
+            → SHAP Top 3 기여 요인 표시<br>
+            → 권장 행동 태그 (연락 / 검토 / 모니터링)
+          </div>
+        </div>
+        <div style="background:#faf6eb;border:1px solid #e0d4b0;padding:16px 20px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:8px;font-weight:600;">TAB 2 · 신규 예약 Flexi 라우팅</div>
+          <div style="font-size:13px;color:#444;line-height:1.9;">
+            신규 예약 정보 입력 폼<br>
+            → 취소 확률 출력 + SHAP 근거<br>
+            → 임계값 초과: Flexi 권장 + 할인율<br>
+            → 매니저 승인 후 확정
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#777;margin-bottom:12px;font-weight:600;">Phase 2 확장 (~ 최종발표 6/10)</div>
+        <div style="background:#f4f3ef;border:1px solid #dddbd7;padding:16px 20px;margin-bottom:10px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#777;margin-bottom:8px;font-weight:600;">채널 실효 수익 대시보드</div>
+          <div style="font-size:13px;color:#555;line-height:1.9;">
+            채널 × lead_time × Effective ADR 매트릭스<br>
+            → 집계 분석 + 시각화 (1~2일 추가 작업)
+          </div>
+        </div>
+        <div style="background:#f4f3ef;border:1px solid #dddbd7;padding:16px 20px;margin-bottom:10px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#777;margin-bottom:8px;font-weight:600;">예약 품질 점수 연동</div>
+          <div style="font-size:13px;color:#555;line-height:1.9;">
+            SHAP 결과 기반 특별요청 가중치 검증<br>
+            → 품질 × 위험 2×2 필터 UI
+          </div>
+        </div>
+        <div style="background:#f4f3ef;border:1px solid #dddbd7;padding:16px 20px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#777;margin-bottom:8px;font-weight:600;">음식 낭비 알림 탭 (optional)</div>
+          <div style="font-size:13px;color:#555;line-height:1.9;">
+            HB/FB 고위험 예약 필터<br>
+            → 주간 발주 권고 + CO₂ 절감 수치
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 WHAT WE PROVE ══ -->
+<section class="slide" id="s13">
+  <div class="slide-header">
+    <div class="brand"><span>H</span> HOTEL OPERATIONS INTELLIGENCE &nbsp;·&nbsp; 13 · WHAT WE PROVE</div>
+    <div class="slide-num">13 / 13</div>
+  </div>
+  <div class="content">
+    <div class="section-label">이 프로젝트가 증명하는 것</div>
+    <div class="two-col" style="align-items:start;gap:40px;">
+      <div class="flow-block" style="font-size:13px;line-height:2.4;align-self:stretch;background:#faf6eb;border-color:#e0d4b0;">
+        예약 데이터 + 날씨<br>
+        <span class="dim">↓ &nbsp;[취소 예측 엔진]</span><br>
+        <span class="acc">cancel_probability × TreeSHAP</span><br>
+        <span class="dim">↓</span><br>
+        <span class="acc">01 · 채널 실효 수익 분석</span><br>
+        <span style="color:#666;font-size:11px;">&nbsp;&nbsp;&nbsp;&nbsp;어느 채널 × 어느 lead_time이 실제 수익을 내는가</span><br>
+        <span class="acc">02 · 예약 품질 점수</span><br>
+        <span style="color:#666;font-size:11px;">&nbsp;&nbsp;&nbsp;&nbsp;어떤 예약을 지키고, 어떤 예약에 Flexi를 제안하는가</span><br>
+        <span class="acc">03 · 음식 낭비 예측</span><br>
+        <span style="color:#666;font-size:11px;">&nbsp;&nbsp;&nbsp;&nbsp;취소 위험 기반 발주 최적화 + ESG 수치</span><br>
+        <span class="dim">↓ &nbsp;[Flexi 시뮬레이션]</span><br>
+        <span class="pos">walk &lt; 2% + net_gain &gt; 0</span>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:#9a7b1e;margin-bottom:16px;">증명 항목</div>
+        <ul class="num-list">
+          <li>
+            <div class="n">1</div>
+            <div class="text">취소 위험 예약을 데이터로 먼저 찾고, 이유를 매니저가 읽을 수 있는 언어로 설명할 수 있다</div>
+          </li>
+          <li>
+            <div class="n">2</div>
+            <div class="text">같은 데이터로 채널 전략의 근거를 바꿀 수 있다 — 액면 ADR이 아닌 실효 수익 기준</div>
+          </li>
+          <li>
+            <div class="n">3</div>
+            <div class="text">취소 확률과 품질 점수의 결합으로 예약별 차별화된 운영 행동을 제안할 수 있다</div>
+          </li>
+          <li>
+            <div class="n">4</div>
+            <div class="text">정밀 오버부킹(Flexi)이 walk &lt; 2% + net_gain &gt; 0으로 운영 가능함을 시뮬레이션으로 증명할 수 있다</div>
+          </li>
+        </ul>
+        <div class="highlight-box" style="margin-top:20px;font-size:14px;line-height:1.9;">
+          "취소 예측이 아니라<br>
+          <strong>호텔 운영 전반을 데이터로 다루는 시스템</strong>을<br>
+          이 프로젝트로 증명한다."
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button onclick="go(-1)">←</button>
+  <button onclick="go(1)">→</button>
+</div>
+<div id="progress"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const prog   = document.getElementById('progress');
+  let cur = 0;
+
+  function go(dir) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(slides.length - 1, cur + dir));
+    slides[cur].classList.add('active');
+    prog.style.width = ((cur + 1) / slides.length * 100) + '%';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') go(-1);
+  });
+
+  prog.style.width = (1 / slides.length * 100) + '%';
+</script>
+</body>
+</html>
