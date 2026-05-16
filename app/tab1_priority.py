@@ -144,7 +144,9 @@ def _build_display_df(df: pd.DataFrame, threshold: float, hotel_filter: str, sor
         "체류일 긴 순":       ("total_nights", False),
     }
     sort_col, asc = sort_map.get(sort_by, ("cancel_prob", False))
-    filtered = filtered.sort_values(sort_col, ascending=asc).reset_index(drop=True)
+    # reset_index 하면 원본 df 인덱스가 사라져 render_shap_panel의 df.iloc[selected_idx]가 엉뚱한 행을 잡음.
+    # 원본 인덱스 보존 — SHAP 패널 행 매핑이 정확히 맞도록.
+    filtered = filtered.sort_values(sort_col, ascending=asc)
 
     # 식사·예약 경로 코드 → 한국어 풀이 (영어 약어 그대로면 청중 헷갈림)
     filtered["meal"]           = filtered["meal"].map(MEAL_KR).fillna(filtered["meal"])
@@ -172,8 +174,9 @@ def _build_display_df(df: pd.DataFrame, threshold: float, hotel_filter: str, sor
     # 표시 행 제한 — Pandas Styler 한도(26만 셀) 회피 + 매니저는 상위 위험만 봄.
     # 전체 4만 건 × 8컬럼 = 32만 셀로 한도 초과 → 상위 500건으로 자름.
     DISPLAY_LIMIT = 500
-    display = display.head(DISPLAY_LIMIT).reset_index(drop=True)
+    # filtered의 원본 df 인덱스가 보존된 상태에서 head — display와 original_indices가 같은 행을 가리킴.
     original_indices = filtered.index.tolist()[:DISPLAY_LIMIT]
+    display = display.head(DISPLAY_LIMIT).reset_index(drop=True)
 
     return display, original_indices
 
@@ -198,6 +201,7 @@ def render_priority_table(
     ).format({
         "취소확률":      "{:.0%}",     # 0.812 → 81% (매니저 친화적, 소수점 빼기)
         "1박 요금(€)":   "€{:,}",      # 1500 → €1,500
+        "품질점수":      "{:.1f}",     # 26.900000 → 26.9 (소수점 한 자리)
     })
 
     st.caption(
