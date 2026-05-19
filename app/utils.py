@@ -19,6 +19,9 @@ ROOT    = Path(__file__).resolve().parent.parent
 DATA    = ROOT / "data"
 RESULTS = ROOT / "results"
 
+# 모델 교체 시 이 경로만 변경
+MODEL_PATH = RESULTS / "model_final.pkl"
+
 CAT_COLS = [
     "hotel", "meal", "market_segment", "distribution_channel",
     "reserved_room_type", "customer_type", "country_grouped",
