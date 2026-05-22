@@ -98,12 +98,13 @@ vLLM 사용 불가하거나 파일럿 실패 시 사용. `ANTHROPIC_API_KEY` 환
 echo $ANTHROPIC_API_KEY
 
 # 파일럿
-python src/sim_overbooking.py --pilot --model anthropic --workers 4
+python src/sim_overbooking.py --pilot --model anthropic --workers 2
+# workers=2 → ~26 RPM (Sonnet 4.6 제한 50 RPM 이하로 유지)
+# workers=4 이상은 rate limit 에러 발생 — 반드시 2로 실행
 # 기본값: claude-sonnet-4-6 (GPT-4급, Homo Silicus 논문 조건과 동급)
-# Haiku로 낮추려면: --model-name claude-haiku-4-5-20251001
 
 # 전체
-python src/sim_overbooking.py --model anthropic --workers 4
+python src/sim_overbooking.py --model anthropic --workers 2
 ```
 
 ---

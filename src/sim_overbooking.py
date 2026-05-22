@@ -274,14 +274,22 @@ def make_llm_client(model_type: str, base_url: str, model_name: str | None):
         _model  = model_name or "claude-sonnet-4-6"
 
         def _call(system: str, user: str) -> str:
-            msg = _client.messages.create(
-                model=_model,
-                max_tokens=150,
-                temperature=0.3,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-            )
-            return msg.content[0].text
+            # rate limit 발생 시 지수 백오프 재시도 (최대 3회)
+            for attempt in range(4):
+                try:
+                    msg = _client.messages.create(
+                        model=_model,
+                        max_tokens=150,
+                        temperature=0.3,
+                        system=system,
+                        messages=[{"role": "user", "content": user}],
+                    )
+                    return msg.content[0].text
+                except anthropic.RateLimitError:
+                    if attempt == 3:
+                        raise
+                    time.sleep(2 ** (attempt + 3))  # 8, 16, 32초
+            return ""
 
         return _call
 
@@ -422,10 +430,17 @@ def run_batch(
 
 def make_summary(records: list[dict]) -> pd.DataFrame:
     df = pd.DataFrame(records)
-    df["accepted"] = (df["final_decision"] == "ACCEPT").astype(int)
+
+    # ERROR 행 제외 — rate limit/네트워크 오류는 수락률 계산에서 배제
+    n_errors = (df["final_decision"] == "ERROR").sum()
+    if n_errors > 0:
+        print(f"\n[주의] ERROR {n_errors}건 제외 후 요약 계산 (유효 {len(df) - n_errors}건 기준)")
+    valid = df[df["final_decision"] != "ERROR"].copy()
+
+    valid["accepted"] = (valid["final_decision"] == "ACCEPT").astype(int)
 
     summary = (
-        df.groupby(["archetype", "archetype_label", "walk_difficulty", "initial_offer"])
+        valid.groupby(["archetype", "archetype_label", "walk_difficulty", "initial_offer"])
         .agg(
             n_runs        = ("accepted",    "count"),
             accept_rate   = ("accepted",    "mean"),
@@ -442,14 +457,18 @@ def make_summary(records: list[dict]) -> pd.DataFrame:
 
 def print_report(records: list[dict], summary: pd.DataFrame):
     df = pd.DataFrame(records)
-    total = len(df)
-    parse_ok = df.get("r1_parse_ok", pd.Series([True] * total)).mean()
+    total    = len(df)
+    n_errors = (df["final_decision"] == "ERROR").sum()
+    valid_df = df[df["final_decision"] != "ERROR"]
+    parse_ok = valid_df.get("r1_parse_ok", pd.Series([True] * len(valid_df))).mean()
 
     print("\n" + "=" * 72)
     print("Walk 보상 협상 시뮬레이션 - 결과 리포트")
     print("=" * 72)
     print(f"총 협상 횟수 : {total:,}회")
-    print(f"JSON 파싱 성공률 (R1) : {parse_ok:.1%}  (목표 95%+)")
+    print(f"  유효 건수 : {len(valid_df):,}회")
+    print(f"  ERROR     : {n_errors:,}건 ({n_errors/max(total,1):.1%})")
+    print(f"JSON 파싱 성공률 (R1, 유효 기준) : {parse_ok:.1%}  (목표 95%+)")
 
     print(f"\n{'아키타입':<6} {'이름':<22} {'오퍼(€)':<10} {'건수':>5} {'수락률':>8}")
     print("-" * 60)
@@ -465,18 +484,18 @@ def print_report(records: list[dict], summary: pd.DataFrame):
     for (key, label), rate in arch_avg.items():
         print(f"  {key}  {label:<22} : {rate:.1%}")
 
-    print("\n방향성 확인 (C > B > D 이면 Claim 2 방어 가능):")
+    # Claim 2: 가족(C)은 거부감이 높아 수락률이 낮고, Budget OTA(D)는 가격 민감 → 수락률 높아야 함
+    # C_rate < D_rate = Claim 2 방어 가능
+    print("\n방향성 확인 (Family < Budget OTA 이면 Claim 2 방어 가능):")
     rates = arch_avg.to_dict()
-    for pair, expected in [
+    for low_arch, high_arch in [
         (("C", "Family"), ("D", "Budget OTA")),
         (("C", "Family"), ("A", "Business Solo")),
     ]:
-        c_key = pair[0]
-        d_key = expected[0]
-        c_rate = rates.get((c_key, pair[1]), float("nan"))
-        d_rate = rates.get((d_key, expected[1]), float("nan"))
-        direction = "[OK]" if c_rate > d_rate else "[NG]"
-        print(f"  {direction}  {pair[1]} ({c_rate:.1%}) > {expected[1]} ({d_rate:.1%})")
+        low_rate  = rates.get(low_arch,  float("nan"))
+        high_rate = rates.get(high_arch, float("nan"))
+        direction = "[OK]" if low_rate < high_rate else "[NG]"
+        print(f"  {direction}  {low_arch[1]} ({low_rate:.1%}) < {high_arch[1]} ({high_rate:.1%})")
 
     print("=" * 72)
 
