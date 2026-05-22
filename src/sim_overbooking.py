@@ -91,8 +91,8 @@ ARCHETYPES: dict[str, dict] = {
         "label": "Budget OTA",
         "description": (
             "A price-conscious solo traveler who booked via an online travel agency "
-            "at a low nightly rate. No special requests. Primarily motivated by price — "
-            "a higher compensation offer is likely to be accepted."
+            "at a low nightly rate. No special requests. The main reason for choosing "
+            "this hotel was the price."
         ),
         "adr": 55.0,
         "nights": 2,
