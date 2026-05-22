@@ -20,6 +20,11 @@ __pycache__/
 # 시뮬레이션 대용량 응답 파일
 results/*.jsonl
 
+# 인증 / 비밀키 — 절대 커밋 금지
+credentials.json
+.env
+wandb/
+
 # 시스템
 .DS_Store
 Thumbs.db
