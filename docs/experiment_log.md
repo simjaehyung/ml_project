@@ -1,0 +1,385 @@
+# Hotel No-Show DSS — 실험 로그 (통합본)
+
+> 최종 갱신: 2026-05-22 (D nohint 재실험 결과 추가)  
+> 목적: 프로젝트 전 과정의 실험·결정 흔적을 단일 문서로 통합. 개별 `design_*.md` 및 `results/*.md` 파일에서 추출.
+
+---
+
+## 0. 데이터 전처리 파이프라인 요약
+
+```
+hotel_bookings.csv (Kaggle, 119,390 × 32)
+      + weather_data.csv (Open-Meteo API)
+      ↓ Left Join (hotel + arrival_date 기준, 매칭률 100%)
+bookings_weather.csv (119,390 × 43)
+      ↓ 6개 컬럼 DROP (누수 + 오염 의심)
+bookings_weather_pm.csv (119,390 × 38)   ← Week 2 EDA 시작점
+      ↓ preprocessing_pipeline.py
+      ↓ 날씨 3개 / deposit_type / country 그룹핑 / children NaN→0 / ...
+train_processed.csv  (78,703 × 33)
+test_processed.csv   (40,687 × 33)
+```
+
+---
+
+## 1. 시간 기반 Train/Test Split
+
+| 항목 | 내용 |
+|------|------|
+| 전체 기간 | 2015-07 ~ 2017-08 (26개월) |
+| Train | 2015-07 ~ 2017-02 → **78,703행** |
+| Test | 2017-03 ~ 2017-08 (마지막 6개월) → **40,687행** |
+| Train 취소율 | 36.6% |
+| Test 취소율 | 38.7% |
+
+**근거**: 운영 환경에서는 항상 과거로 학습해 미래를 예측 → 무작위 분할은 미래 정보 오염으로 성능 과대평가.
+
+**인정하는 한계**: 테스트셋이 여름 성수기(6~8월) 편중. Phase 2에서 월별 성능 분리 분석으로 보완 예정.
+
+---
+
+## 2. DROP 확정 컬럼 (총 9개)
+
+### 2-1. 누수 / 사후 오염 (6개)
+
+| 컬럼 | 이유 |
+|------|------|
+| `reservation_status` | 타깃과 100% 동치 — 확정 누수 |
+| `reservation_status_date` | 취소/체크아웃 시점 값 — 미래 정보 |
+| `assigned_room_type` | 체크인 시 배정값 — 미래 정보 |
+| `days_in_waiting_list` | 타인 취소 결과 간접 반영 |
+| `previous_bookings_not_canceled` | 재방문자 25.5%가 값 0 — 모순, 신호 없음 |
+| `deposit_type` | Non Refund 99.2% 취소율 — 사후 기록 오염 의심, A/B 구분 불가 |
+
+### 2-2. 날씨 다중공선성 제거 (3개)
+
+| 제거 변수 | 이유 |
+|---------|------|
+| `rain_sum` | `precipitation_sum`과 상관 1.000 |
+| `temperature_2m_mean` | max·min으로 충분히 표현 (상관 0.967/0.969) |
+| `wind_speed_10m_mean` | `wind_speed_10m_max`로 대체 (상관 0.913) |
+
+**유지 결정**: `precipitation_sum` vs `precipitation_hours` 상관 0.824 → 0.9 미만이므로 현 단계 유지. Phase 2에서 변수 중요도 확인 후 판단.
+
+---
+
+## 3. 모델 비교 실험
+
+**테스트셋**: 40,687행 | 취소율 38.7% | 평가 지표: PR-AUC (메인), F1@0.5 (보조)
+
+| # | 모델 | PR-AUC | F1@0.5 | 비고 |
+|---|------|--------|--------|------|
+| 0 | Dummy (most frequent) | 0.3870 | 0.0000 | 기준선 |
+| 1 | Logistic Regression | 0.7818 | 0.7073 | C=1, StandardScaler |
+| 2 | Random Forest | 0.7785 | 0.6482 | n_estimators=100 |
+| 3 | XGBoost | 0.8053 | 0.6863 | n_estimators=100 |
+| **4** | **LightGBM ★** | **0.8189** | **0.6872** | n_estimators=100, verbose=-1 |
+
+**선정 기준**: PR-AUC 차이 0.0136 ≥ 0.01 → 높은 쪽 선택. `results/model_final.pkl` 저장.
+
+**파이프라인 기준**: `src/preprocessing_pipeline.py` | deposit_type DROP + country Top10+Other OHE → 컬럼 수 70개.
+
+---
+
+## 4. LightGBM 하이퍼파라미터 튜닝
+
+실행일: 2026-05-19 | n_trials=50 | Optuna
+
+### 결과
+
+| 모델 | PR-AUC | F1@0.5 |
+|------|--------|--------|
+| LightGBM default | **0.8189** | 0.6872 |
+| LightGBM tuned (trial #49) | 0.8103 | 0.6851 |
+
+**결론**: Default가 오히려 우수 → default 유지.
+
+**원인 추정**: Val holdout (2016-11~12, 8,314행)에서 최적화한 파라미터가 test 분포에 과적합.
+
+<details>
+<summary>Best params (trial #49, val PR-AUC 0.8456)</summary>
+
+```python
+{
+  'n_estimators': 1488,
+  'learning_rate': 0.04441634180912145,
+  'num_leaves': 74,
+  'min_child_samples': 58,
+  'feature_fraction': 0.641147064894889,
+  'bagging_fraction': 0.8446721394755452,
+  'bagging_freq': 5,
+  'lambda_l1': 0.0009756741601451628,
+  'lambda_l2': 0.023371079727345936
+}
+```
+</details>
+
+---
+
+## 5. SHAP Top 7 피처 (LightGBM, 테스트셋)
+
+| 피처 | SHAP 평균 절댓값 |
+|------|---------------|
+| `country_PRT` | 1.064 |
+| `car_parking_spaces` | 0.680 |
+| `special_requests` | 0.644 |
+| `lead_time` | 0.531 |
+| `previous_cancellations` | 0.394 |
+| `market_segment_Online TA` | 0.371 |
+| `adr` | 0.253 |
+
+**해석**: 포르투갈 국적(PRT)이 압도적 1위. 주차 공간 요청(car_parking)과 특별 요청(special_requests)이 취소 행동을 설명하는 주요 피처.
+
+---
+
+## 6. 점유율 연동 임계값 설계
+
+**개념**: 단일 고정 임계값이 아닌, 호텔 현재 점유율에 따라 임계값을 동적 조정.
+
+| 점유율 | 임계값 | 전략 |
+|--------|--------|------|
+| < 60% | 0.55 | 적극 (빈방 많음 → Flexi 풀 크게) |
+| 60~80% | 0.60 ★ | 표준 |
+| > 80% | 0.65 | 신중 (거의 꽉 참 → 재배치 부담) |
+
+---
+
+## 7. Flexi Threshold Sweep 결과 (RevPAR Simulation)
+
+**조건**: 테스트셋 샘플 50건 | 1회 파일럿 run
+
+| 임계값 | 표준 배정 | Flexi 제안 | 수락 | 거절 | 취소 | 수락률 | Flexi 취소율 | RevPAR 개선 | Walk율 |
+|--------|----------|-----------|------|------|------|--------|------------|------------|--------|
+| 0.50 | 0 | 50 | 24 | 24 | 2 | 48.0% | 4.0% | **+88.8%** | 38.3% |
+| 0.55 | 1 | 49 | 23 | 24 | 2 | 46.9% | 4.1% | **+85.9%** | 38.7% |
+| **0.60** ★ | **5** | **45** | **21** | **22** | **2** | **46.7%** | **4.4%** | **+81.4%** | **39.5%** |
+| 0.65 | 9 | 41 | 20 | 19 | 2 | 48.8% | 4.9% | **+78.7%** | 39.8% |
+| 0.70 | 13 | 37 | 17 | 18 | 2 | 45.9% | 5.4% | **+70.6%** | 40.9% |
+
+> ⚠️ **주의**: Walk율이 전 구간에서 ~39%로 매우 높음. 이 파일럿은 1회 run이며 극단적 케이스 포함 가능성. Week 5 전체 시뮬레이션 결과로 재검토 필요.
+
+**표준 선택 임계값**: 0.60 (RevPAR vs walk율 균형점, 발표 기준값)
+
+---
+
+## 8. Walk 시뮬레이션 전체 결과 (5 유형 × 5 구간 × 40회)
+
+완료일: 2026-05-22 | 총 1,000 runs (실제 200, 아키타입 5 × 5구간 × 40회)
+
+### A · 비즈니스 솔로 (walk_difficulty: low)
+
+| Offer (€) | 수락률 | Counter 평균 (€) |
+|---------|--------|---------------|
+| 62 | **100%** | 120 |
+| 101 | **100%** | 150 |
+| 144 | **100%** | — |
+| 178 | **100%** | 240 |
+| 216 | **100%** | 240 |
+
+→ **전 구간 100% 수락. 어떤 금액이든 받음.** 비즈니스 솔로는 재배치 저항 없음.
+
+### B · 레저 커플 (walk_difficulty: medium)
+
+| Offer (€) | 수락률 | Counter 평균 (€) |
+|---------|--------|---------------|
+| 49 | 65% | 93 |
+| 80 | **100%** | 120 |
+| 114 | 0% | 187 |
+| 141 | 0% | 190 |
+| 171 | 0% | 190 |
+
+→ **비선형 패턴**: €80에서 최고 수락, €114부터 급락. 협상 가격대가 매우 좁음.  
+  해석: LLM이 €114 이상을 "원래 예약보다 과보상"으로 인식해 오히려 의심.
+
+### C · 가족 (walk_difficulty: high)
+
+| Offer (€) | 수락률 |
+|---------|--------|
+| 143 | 0% |
+| 231 | 0% |
+| 330 | 0% |
+| 407 | 0% |
+| 495 | 0% |
+
+→ **전 구간 0% 수락. 재배치 제외 결정 유효.**
+
+### D · 예산형 OTA (walk_difficulty: low)
+
+> ⚠️ **1차 결과 (normative hint 포함 — 방법론 오염)**: Section 9 참고.
+
+| Offer (€) | 수락률 | Counter 평균 (€) |
+|---------|--------|---------------|
+| 29 | 0% | 60 |
+| 46 | 0% | 80 |
+| 66 | 0% | 110 |
+| 81 | 0% | 110 |
+| 99 | **95%** | 150 |
+
+→ hint 포함 버전. **Section 9의 nohint 재실험 결과로 대체 권장.**
+
+### E · 단체 (walk_difficulty: very_high)
+
+| Offer (€) | 수락률 | Counter 평균 (€) |
+|---------|--------|---------------|
+| 66 | 0% | 300 |
+| 107 | 0% | 400 |
+| 153 | 0% | 600 |
+| 189 | 0% | 600 |
+| 230 | 0% | 600 |
+
+→ **전 구간 0% 수락. 별도 협상 경로 필요.** Counter 제안이 300~600으로 매우 높음.
+
+---
+
+## 9. D 아키타입 Normative Hint 제거 재실험
+
+**실행일**: 2026-05-22 | **모델**: Sonnet 4.6 | **n=40/구간** | 결과: `walk_sim_D_nohint.jsonl`
+
+**배경**: 1차 실험(Section 8) D 프롬프트에 `"a higher compensation offer is likely to be accepted"` 문구 포함.  
+Horton & Argyle(2023) 방법론 — normative hint가 LLM 판단을 유도하므로 제거 필요.  
+commit `260f252`: D 아키타입 description에서 해당 문구 삭제 후 200회 재실험.
+
+### 결과 비교
+
+| Offer (€) | 1차 수락률 (hint有) | 2차 수락률 (hint無) | diff |
+|---------|-------------------|-------------------|------|
+| 29 | 0% | **0%** | ±0%p |
+| 46 | 0% | **100%** | +100%p |
+| 66 | 0% | **97.5%** | +97.5%p |
+| 81 | 0% | **100%** | +100%p |
+| 99 | 95% | **100%** | +5%p |
+
+### 해석
+
+- **hint가 D의 거절 임계값을 인위적으로 €99로 끌어올렸음.**  
+  `"higher offer is likely to be accepted"` → LLM이 "더 높은 제안이 올 것"으로 기대하고 낮은 금액을 거절.
+- hint 제거 후 D는 **€46부터 ~100% 수락** → 실제로 walk_difficulty=low 특성과 일치.
+- **방법론적으로 올바른 결과는 2차(hint無)**.
+
+### Claim 2 수정
+
+| | 1차 (hint有, 방법론 오염) | 2차 (hint無, 수정본) |
+|---|---|---|
+| 서열 | Family(0%) < D(19%) < Business(100%) | Family(0%) < D(€29 기준 0%) ≈ Business(100%) |
+| 해석 | walk_difficulty 순 | **€29 최저가 외에는 D·A 모두 수락** |
+
+> walk_difficulty 낮을수록 수락률 높다는 방향성은 유지. 단, D와 A의 차이가 줄어 **C(Family) vs 나머지** 이분법이 더 강조됨.
+
+---
+
+## 10. Walk 시뮬레이션 파일럿 결과 (A·D, n=10)
+
+| 유형 | Offer (€) | 수락률 | Counter (€) |
+|------|---------|--------|------------|
+| A · 비즈니스 솔로 | 62 | 100% | 112 |
+| A · 비즈니스 솔로 | 101 | 90% | 135 |
+| A · 비즈니스 솔로 | 144 | 100% | — |
+| D · 예산형 OTA | 29 | 10% | 54 |
+| D · 예산형 OTA | 46 | 70% | 67 |
+| D · 예산형 OTA | 66 | 50% | 90 |
+
+> 파일럿(n=10)과 전체(n=40)에서 D 유형 결과가 상이함. 전체 결과가 더 신뢰성 높음.
+
+---
+
+---
+
+## 11. vLLM Qwen2.5-14B 파일럿 실패
+
+**실행일**: 2026-05-22 | 서버: GPU 서버 (A5000 24GB × 2 = 48GB) | 결과: `walk_sim_vllm_pilot.jsonl` (폐기)
+
+### 실패 내용
+
+60회 파일럿 (A·D, 3 구간, n=10): **전 아키타입·전 구간 100% ACCEPT**
+- JSON parse rate 100% → parsing fallback이 아닌 진짜 ACCEPT 판단
+- 0.12s/run → 모델 로딩 문제 아님
+
+### 원인
+
+Qwen2.5-14B가 adversarial role-playing에 과도하게 협조적.  
+호텔 손님으로서 불리한 제안을 거절해야 하는 상황에서도 무조건 수락.  
+14B 파라미터 규모에서 persona 유지 능력 부족으로 추정.
+
+### GPU 제약
+
+| 모델 | 크기 (FP16) | A5000×2 (48GB) |
+|------|------------|----------------|
+| 14B | ~28GB | ✅ 가능 (실패) |
+| 32B | ~65GB | ❌ 불가 |
+| 72B | ~145GB | ❌ 불가 |
+
+### 결정
+
+- **vLLM 비교 실험 폐기** — 유의미한 모델이 GPU 한계 초과
+- D nohint 재실험은 **Sonnet 4.6으로 진행** (1차와 모델 일치, 비교 타당성 유지)
+- `N4 "API vs vLLM 비교"` 항목 폐기
+
+---
+
+## 12. OFFER_MULTIPLIERS Ceiling Artifact
+
+**발견일**: 2026-05-22 | 관련 파일: `src/sim_overbooking.py`
+
+### 구조
+
+```python
+OFFER_MULTIPLIERS = [0.26, 0.42, 0.60, 0.74, 0.90]  # 5 구간
+BUDGET_CEILING_RATIO = 0.60                             # R2 상한
+```
+
+**OFFER_MULTIPLIERS[2] = 0.60 = BUDGET_CEILING_RATIO** → tier 3 Offer = 예산 상한과 동일.
+
+### 영향
+
+R2(Round 2) 호텔 조정 공식: `min(counter × 0.85, adr × nights × 0.60)`
+
+- tier 3(Offer = 상한 × 1.0): counter가 상한보다 높으면 R2 = 상한 = Offer → 추가 제안 불가
+- tier 4,5(Offer > 상한): 초과분 거절 시 R2 = 상한 < Offer → 협상 후퇴
+
+→ **B 아키타입 비선형 패턴(€114 이상 0%)의 구조적 원인** 가능성 높음.
+
+### 결정
+
+**Option A 채택**: 현재 multiplier 유지, 1차 결과와 직접 비교.  
+(Option B — 겹침 제거 후 재실험 — 는 Phase 2에서 필요 시 진행)
+
+---
+
+## 14. 주요 가정 (MVP 기준, Phase 2 검증 대상)
+
+| # | 가정 | 상태 | 근거 |
+|---|------|------|------|
+| G1 | 날씨 윈도우: 도착일 하루만 | MVP 고정 | 단순성 우선 |
+| G2 | `previous_cancellations` 포함 | MVP 고정 | SHAP에서 유의미 확인 |
+| G3 | country: Top 10 + Other OHE | 완료 | SHAP 결과 기반 |
+| G4 | LLM zero-shot → Claim 1 유효 | 검증 필요 | Phase 2 Week 5 |
+| G5 | 날씨 윈도우 확장 | Phase 2 대기 | SHAP 결과 보고 판단 |
+| G6 | LIME vs SHAP 비교 | Phase 2 대기 | Week 5 |
+| G7 | 날씨 ablation | Phase 2 대기 | Week 5 |
+
+---
+
+## 15. 미결 / 다음 실험 항목
+
+| # | 항목 | 상태 |
+|---|------|------|
+| N1 | Claim 1 검증: LLM zero-shot PR-AUC (테스트셋 40,687건) | ⏳ Week 5 |
+| N2 | B 유형 비선형 패턴 원인 분석 — Ceiling Artifact 가설 (Section 12) | ⏳ Week 5 |
+| N3 | D 유형 hint 유무 차이 원인 규명 | ✅ **완료** — normative hint가 LLM 거절 임계값 인위적 상승 (Section 9) |
+| N4 | API vs vLLM 비용·속도 비교 실험 | ❌ **폐기** — Qwen14B 100% ACCEPT, 32B/72B GPU 불가 (Section 11) |
+| N5 | Walk율 39% 높은 이유 분석 (임계값 구간 전체) | ⏳ Week 5 |
+| N6 | 날씨 변수 ablation (포함 vs 미포함 PR-AUC 비교) | ⏳ Phase 2 |
+| N7 | D archetype 오퍼 구간 세분화 — €29~€46 임계값 정밀 탐색 | ⏳ 선택적 (그래프 품질 향상용) |
+
+---
+
+## 16. 변경 이력
+
+| 날짜 | 변경 내용 |
+|------|---------|
+| 2026-05-22 | D nohint 재실험 완료 (Section 9). vLLM 실패 기록 (Section 11). Ceiling Artifact 문서화 (Section 12). N3 완료·N4 폐기. |
+| 2026-05-22 | 통합 실험 로그 초안 작성. baseline, tuning, sweep, walk sim 결과 통합. |
+| 2026-05-19 | LightGBM 튜닝 결과 추가 (default 우세 확정) |
+| 2026-05-08 | deposit_type DROP 확정 |
+| 2026-05-06 | Flexi 라우팅 탭 설계 확정 |
+| 2026-04-28 | 프로젝트 시작, 누수 컬럼 결정 |
