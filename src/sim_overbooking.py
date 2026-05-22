@@ -271,7 +271,7 @@ def make_llm_client(model_type: str, base_url: str, model_name: str | None):
     if model_type == "anthropic":
         import anthropic
         _client = anthropic.Anthropic()
-        _model  = model_name or "claude-haiku-4-5-20251001"
+        _model  = model_name or "claude-sonnet-4-6"
 
         def _call(system: str, user: str) -> str:
             msg = _client.messages.create(

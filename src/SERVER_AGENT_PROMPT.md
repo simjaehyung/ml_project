@@ -99,6 +99,8 @@ echo $ANTHROPIC_API_KEY
 
 # 파일럿
 python src/sim_overbooking.py --pilot --model anthropic --workers 4
+# 기본값: claude-sonnet-4-6 (GPT-4급, Homo Silicus 논문 조건과 동급)
+# Haiku로 낮추려면: --model-name claude-haiku-4-5-20251001
 
 # 전체
 python src/sim_overbooking.py --model anthropic --workers 4
