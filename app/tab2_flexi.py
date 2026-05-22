@@ -69,12 +69,12 @@ def render_input_form(threshold: float) -> dict | None:
         with col1:
             hotel = st.selectbox("호텔", ["City Hotel", "Resort Hotel"])
             country = st.selectbox(
-                "고객 국적",
+                "국적",   # tab1 메트릭 라벨과 통일 (기존 "고객 국적")
                 options=TOP10_COUNTRIES + ["Other"],
                 format_func=lambda x: COUNTRY_DISPLAY.get(x, x),
             )
             market_segment = st.selectbox(
-                "예약 채널",
+                "예약 경로",   # tab1 컬럼명과 통일 (기존 "예약 채널")
                 ["Online TA", "Offline TA/TO", "Direct", "Corporate", "Groups"],
             )
             # 체크인까지 일수 — 슬라이더로 큰 범위 보면서 숫자로 정밀 입력도 가능.
@@ -84,7 +84,7 @@ def render_input_form(threshold: float) -> dict | None:
                 min_value=0, max_value=365, value=90, step=1,
                 help="0~365일 사이. 직접 숫자 입력 또는 +/- 버튼 사용.",
             )
-            adr = st.number_input("객실 요금 (ADR, €/박)", min_value=0.0,
+            adr = st.number_input("1박 요금 (€/박)", min_value=0.0,
                                   max_value=999.0, value=95.0, step=5.0)
 
         with col2:
