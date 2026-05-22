@@ -77,7 +77,13 @@ def render_input_form(threshold: float) -> dict | None:
                 "예약 채널",
                 ["Online TA", "Offline TA/TO", "Direct", "Corporate", "Groups"],
             )
-            lead_time = st.slider("체크인까지 (일)", 0, 365, 90)
+            # 체크인까지 일수 — 슬라이더로 큰 범위 보면서 숫자로 정밀 입력도 가능.
+            # number_input의 +/- 버튼 + 직접 타이핑 둘 다 지원.
+            lead_time = st.number_input(
+                "체크인까지 (일)",
+                min_value=0, max_value=365, value=90, step=1,
+                help="0~365일 사이. 직접 숫자 입력 또는 +/- 버튼 사용.",
+            )
             adr = st.number_input("객실 요금 (ADR, €/박)", min_value=0.0,
                                   max_value=999.0, value=95.0, step=5.0)
 
@@ -219,11 +225,19 @@ def render_shap_top3(shap_top_df: pd.DataFrame):
         "lead_time":                        "선예약 기간",
         "required_car_parking_spaces":      "주차 필요 여부",
         "market_segment_Online TA":         "온라인 여행사 채널",
-        "adr":                              "객실 요금(ADR)",
+        "adr":                              "1박 요금",
         "previous_cancellations":           "과거 취소 이력",
         "customer_type_Transient":          "일반(Transient) 고객",
         "market_segment_Groups":            "그룹 예약",
         "booking_changes":                  "예약 변경 횟수",
+        # 날씨 피처 한국어 풀이 — 영문 그대로면 청중이 모름
+        "wind_speed_10m_max":               "최대 풍속",
+        "temperature_2m_max":               "최고 기온",
+        "temperature_2m_min":               "최저 기온",
+        "precipitation_sum":                "강수량",
+        "precipitation_hours":              "강수 시간",
+        "relative_humidity_2m_mean":        "평균 습도",
+        "cloud_cover_mean":                 "평균 구름량",
     }
 
     for _, row in shap_top_df.iterrows():
