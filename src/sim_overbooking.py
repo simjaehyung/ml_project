@@ -17,8 +17,12 @@ sim_overbooking.py
   # 전체 1,000회 — Qwen2.5-14B 로컬 (학교 서버)
   python src/sim_overbooking.py --model vllm --workers 8
 
-  # Claude Haiku API (Claim 2 방어용 강한 모델)
-  python src/sim_overbooking.py --model anthropic --workers 4
+  # Claude API (Sonnet 4.6)
+  python src/sim_overbooking.py --model anthropic --workers 2
+
+  # Claude Code CLI subprocess (Max 플랜, API 키 불필요)
+  python src/sim_overbooking.py --pilot --model claude-cli --workers 2
+  python src/sim_overbooking.py --model claude-cli --workers 4
 """
 
 import argparse
@@ -293,6 +297,32 @@ def make_llm_client(model_type: str, base_url: str, model_name: str | None):
 
         return _call
 
+    elif model_type == "claude-cli":
+        import subprocess
+
+        def _call(system: str, user: str) -> str:
+            combined = f"{system}\n\n{user}"
+            for attempt in range(4):
+                try:
+                    proc = subprocess.run(
+                        ["claude", "-p", combined],
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                        timeout=60,
+                    )
+                    if proc.returncode == 0 and proc.stdout.strip():
+                        return proc.stdout.strip()
+                    if attempt < 3:
+                        time.sleep(2 ** attempt)
+                except subprocess.TimeoutExpired:
+                    if attempt == 3:
+                        return ""
+                    time.sleep(5)
+            return ""
+
+        return _call
+
     else:  # vllm (default: Qwen2.5-14B)
         from openai import OpenAI
         _client = OpenAI(base_url=base_url, api_key="not-needed")
@@ -436,6 +466,12 @@ def make_summary(records: list[dict]) -> pd.DataFrame:
     if n_errors > 0:
         print(f"\n[주의] ERROR {n_errors}건 제외 후 요약 계산 (유효 {len(df) - n_errors}건 기준)")
     valid = df[df["final_decision"] != "ERROR"].copy()
+
+    if valid.empty:
+        return pd.DataFrame(columns=[
+            "archetype", "archetype_label", "walk_difficulty",
+            "initial_offer", "n_runs", "accept_rate", "counter_mean", "r1_parse_ok",
+        ])
 
     valid["accepted"] = (valid["final_decision"] == "ACCEPT").astype(int)
 
@@ -643,8 +679,8 @@ def main():
     )
     parser.add_argument(
         "--model", type=str, default="vllm",
-        choices=["vllm", "anthropic"],
-        help="vllm (Qwen2.5-14B 로컬, 기본값) 또는 anthropic (Claude Haiku API)",
+        choices=["vllm", "anthropic", "claude-cli"],
+        help="vllm (Qwen2.5-14B 로컬, 기본값) / anthropic (Claude API) / claude-cli (Max 플랜, workers 2-4 권장)",
     )
     parser.add_argument(
         "--base-url", type=str, default="http://localhost:8000/v1",
