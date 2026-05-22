@@ -1,7 +1,26 @@
 archetype,archetype_label,walk_difficulty,initial_offer,n_runs,accept_rate,counter_mean,r1_parse_ok
-A,Business Solo,low,62.0,10,0.6,120.0,1.0
-A,Business Solo,low,101.0,10,0.6,120.0,1.0
-A,Business Solo,low,144.0,10,0.4,,1.0
-D,Budget OTA,low,29.0,10,0.6,120.0,1.0
-D,Budget OTA,low,46.0,10,0.5,120.0,1.0
-D,Budget OTA,low,66.0,10,0.5,120.0,1.0
+A,Business Solo,low,62.0,40,1.0,120.0,1.0
+A,Business Solo,low,101.0,40,1.0,150.0,1.0
+A,Business Solo,low,144.0,40,1.0,,1.0
+A,Business Solo,low,178.0,40,1.0,240.0,1.0
+A,Business Solo,low,216.0,40,1.0,240.0,1.0
+B,Leisure Couple,medium,49.0,40,0.65,93.0,1.0
+B,Leisure Couple,medium,80.0,40,1.0,120.0,1.0
+B,Leisure Couple,medium,114.0,40,0.0,187.0,1.0
+B,Leisure Couple,medium,141.0,40,0.0,190.0,1.0
+B,Leisure Couple,medium,171.0,40,0.0,190.0,1.0
+C,Family,high,143.0,40,0.0,,1.0
+C,Family,high,231.0,40,0.0,,1.0
+C,Family,high,330.0,40,0.0,,1.0
+C,Family,high,407.0,40,0.0,,1.0
+C,Family,high,495.0,40,0.0,,1.0
+D,Budget OTA,low,29.0,40,0.0,60.0,1.0
+D,Budget OTA,low,46.0,40,0.0,80.0,1.0
+D,Budget OTA,low,66.0,40,0.0,110.0,1.0
+D,Budget OTA,low,81.0,40,0.0,110.0,1.0
+D,Budget OTA,low,99.0,40,0.95,150.0,1.0
+E,Group,very_high,66.0,40,0.0,300.0,1.0
+E,Group,very_high,107.0,40,0.0,400.0,1.0
+E,Group,very_high,153.0,40,0.0,600.0,1.0
+E,Group,very_high,189.0,40,0.0,600.0,1.0
+E,Group,very_high,230.0,40,0.0,600.0,1.0
