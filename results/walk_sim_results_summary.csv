@@ -1,0 +1,7 @@
+archetype,archetype_label,walk_difficulty,initial_offer,n_runs,accept_rate,counter_mean,r1_parse_ok
+A,Business Solo,low,62.0,10,0.6,120.0,1.0
+A,Business Solo,low,101.0,10,0.6,120.0,1.0
+A,Business Solo,low,144.0,10,0.4,,1.0
+D,Budget OTA,low,29.0,10,0.6,120.0,1.0
+D,Budget OTA,low,46.0,10,0.5,120.0,1.0
+D,Budget OTA,low,66.0,10,0.5,120.0,1.0
