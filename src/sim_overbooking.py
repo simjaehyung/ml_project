@@ -14,15 +14,11 @@ sim_overbooking.py
   python src/sim_overbooking.py --pilot --dry-run
   python src/sim_overbooking.py --pilot --model vllm
 
-  # 전체 1,000회 — Qwen2.5-14B 로컬 (학교 서버)
+  # 전체 1,000회 — Qwen2.5-14B 로컬 (학교 서버, 권장)
   python src/sim_overbooking.py --model vllm --workers 8
 
-  # Claude API (Sonnet 4.6)
+  # 전체 1,000회 — Claude Sonnet 4.6 API (폴백)
   python src/sim_overbooking.py --model anthropic --workers 2
-
-  # Claude Code CLI subprocess (Max 플랜, API 키 불필요)
-  python src/sim_overbooking.py --pilot --model claude-cli --workers 2
-  python src/sim_overbooking.py --model claude-cli --workers 4
 """
 
 import argparse
@@ -293,32 +289,6 @@ def make_llm_client(model_type: str, base_url: str, model_name: str | None):
                     if attempt == 3:
                         raise
                     time.sleep(2 ** (attempt + 3))  # 8, 16, 32초
-            return ""
-
-        return _call
-
-    elif model_type == "claude-cli":
-        import subprocess
-
-        def _call(system: str, user: str) -> str:
-            combined = f"{system}\n\n{user}"
-            for attempt in range(4):
-                try:
-                    proc = subprocess.run(
-                        ["claude", "-p", combined],
-                        capture_output=True,
-                        text=True,
-                        encoding="utf-8",
-                        timeout=60,
-                    )
-                    if proc.returncode == 0 and proc.stdout.strip():
-                        return proc.stdout.strip()
-                    if attempt < 3:
-                        time.sleep(2 ** attempt)
-                except subprocess.TimeoutExpired:
-                    if attempt == 3:
-                        return ""
-                    time.sleep(5)
             return ""
 
         return _call
@@ -679,8 +649,8 @@ def main():
     )
     parser.add_argument(
         "--model", type=str, default="vllm",
-        choices=["vllm", "anthropic", "claude-cli"],
-        help="vllm (Qwen2.5-14B 로컬, 기본값) / anthropic (Claude API) / claude-cli (Max 플랜, workers 2-4 권장)",
+        choices=["vllm", "anthropic"],
+        help="vllm (Qwen2.5-14B 로컬, 기본값 / 학교 서버 권장) 또는 anthropic (Claude Sonnet 4.6 API)",
     )
     parser.add_argument(
         "--base-url", type=str, default="http://localhost:8000/v1",
