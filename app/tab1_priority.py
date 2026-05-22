@@ -151,6 +151,8 @@ def _build_display_df(df: pd.DataFrame, threshold: float, hotel_filter: str, sor
     # 식사·예약 경로 코드 → 한국어 풀이 (영어 약어 그대로면 청중 헷갈림)
     filtered["meal"]           = filtered["meal"].map(MEAL_KR).fillna(filtered["meal"])
     filtered["market_segment"] = filtered["market_segment"].map(SEGMENT_KR).fillna(filtered["market_segment"])
+    # country NaN(83건, 0.20%) — 빈 셀로 보이면 어색해서 "정보 없음"으로 통일.
+    filtered["country"]        = filtered["country"].fillna("정보 없음")
 
     # 표시 컬럼 선택 — bqs (품질점수)는 운영 문제 #3 자리
     display = filtered[[
