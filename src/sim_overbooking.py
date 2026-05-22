@@ -481,6 +481,135 @@ def print_report(records: list[dict], summary: pd.DataFrame):
     print("=" * 72)
 
 
+# ── 서버 상태 점검 ───────────────────────────────────────────────────────────
+
+def check_server(base_url: str = "http://localhost:8000") -> dict:
+    """
+    GPU / vLLM / 디스크 상태를 점검하고 권장 실행 파라미터를 출력한다.
+    반환값을 main() 에서도 참조할 수 있도록 dict로 리턴.
+    """
+    import shutil
+    import subprocess
+    import urllib.request
+
+    sep = "=" * 64
+    print(sep)
+    print("서버 환경 점검 (sim_overbooking.py --check)")
+    print(sep)
+
+    result = {
+        "gpu_free_count":  0,
+        "gpu_recommended": None,   # "0,1" 형식 또는 None
+        "vllm_ready":      False,
+        "vllm_model":      None,
+        "disk_free_gb":    0,
+        "recommended_cmd": None,
+    }
+
+    # ── GPU ──────────────────────────────────────────────────────────────────
+    print("\n[GPU 상태]")
+    try:
+        out = subprocess.run(
+            ["nvidia-smi",
+             "--query-gpu=index,name,memory.used,memory.free,utilization.gpu",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+
+        free_indices = []
+        for line in out.splitlines():
+            idx, name, used, free, util = [x.strip() for x in line.split(",")]
+            status = "FREE" if int(util) < 15 else "BUSY"
+            tag    = " <-- 사용 가능" if status == "FREE" else ""
+            print(f"  GPU {idx}: {name}  {used}MB/{int(used)+int(free)}MB  util={util}%  [{status}]{tag}")
+            if status == "FREE":
+                free_indices.append(idx)
+
+        result["gpu_free_count"] = len(free_indices)
+        if len(free_indices) >= 2:
+            result["gpu_recommended"] = f"{free_indices[0]},{free_indices[1]}"
+            print(f"\n  -> 권장 GPU: {result['gpu_recommended']} (2장 확보됨)")
+        elif len(free_indices) == 1:
+            print(f"\n  -> 주의: 여유 GPU 1장 ({free_indices[0]}) — tensor-parallel=1 필요 또는 대기")
+        else:
+            print("\n  -> 경고: 여유 GPU 없음 — 다른 작업 종료 후 재시도")
+
+    except FileNotFoundError:
+        print("  nvidia-smi 없음 (CPU 환경 또는 드라이버 미설치)")
+    except Exception as e:
+        print(f"  GPU 점검 오류: {e}")
+
+    # ── vLLM 서버 ─────────────────────────────────────────────────────────────
+    print("\n[vLLM 서버]")
+    try:
+        with urllib.request.urlopen(f"{base_url}/health", timeout=3) as resp:
+            print(f"  /health -> HTTP {resp.status}  [정상]")
+            result["vllm_ready"] = True
+    except Exception:
+        print(f"  {base_url}/health -> 응답 없음  [미실행]")
+
+    if result["vllm_ready"]:
+        try:
+            with urllib.request.urlopen(f"{base_url}/v1/models", timeout=3) as resp:
+                data = json.loads(resp.read())
+                models = [m["id"] for m in data.get("data", [])]
+                result["vllm_model"] = models[0] if models else None
+                print(f"  로드된 모델: {models}")
+        except Exception:
+            pass
+
+    # ── 디스크 ────────────────────────────────────────────────────────────────
+    print("\n[디스크]")
+    total, _, free = shutil.disk_usage(ROOT)
+    result["disk_free_gb"] = free // (1024 ** 3)
+    print(f"  {ROOT}  여유 {result['disk_free_gb']}GB / 전체 {total // (1024**3)}GB")
+    if result["disk_free_gb"] < 2:
+        print("  -> 경고: 디스크 여유 2GB 미만 — 결과 저장 실패 위험")
+
+    # ── 패키지 ────────────────────────────────────────────────────────────────
+    print("\n[패키지]")
+    for pkg in ["vllm", "openai", "anthropic", "tqdm", "pandas"]:
+        try:
+            __import__(pkg)
+            print(f"  {pkg:<12} OK")
+        except ImportError:
+            print(f"  {pkg:<12} 없음 -- pip install {pkg}")
+
+    # ── 권장 명령 ──────────────────────────────────────────────────────────────
+    print("\n[권장 실행 순서]")
+    if not result["vllm_ready"]:
+        result["recommended_cmd"] = (
+            "nohup bash start_vllm.sh > logs/vllm.log 2>&1 &\n"
+            "sleep 90 && python src/sim_overbooking.py --check"
+        )
+        print("  1. vLLM 서버가 꺼져있습니다.")
+        print("     nohup bash start_vllm.sh > logs/vllm.log 2>&1 &")
+        print("  2. 90초 대기 후 다시 --check 실행해서 서버 확인")
+        print("     python src/sim_overbooking.py --check")
+    elif result["gpu_free_count"] < 2:
+        result["recommended_cmd"] = (
+            "# GPU 부족 — Anthropic API 폴백\n"
+            "python src/sim_overbooking.py --pilot --model anthropic"
+        )
+        print("  GPU 여유 부족 -> Anthropic API 폴백 권장:")
+        print("    python src/sim_overbooking.py --pilot --model anthropic")
+    else:
+        workers = min(8, result["gpu_free_count"] * 4)
+        result["recommended_cmd"] = (
+            f"python src/sim_overbooking.py --pilot --model vllm --workers {workers}\n"
+            f"# 파일럿 [OK] 확인 후:\n"
+            f"python src/sim_overbooking.py --model vllm --workers {workers}"
+        )
+        print(f"  vLLM 준비됨 + GPU {result['gpu_free_count']}장 여유")
+        print(f"  파일럿(60회):")
+        print(f"    python src/sim_overbooking.py --pilot --model vllm --workers {workers}")
+        print(f"  전체(1,000회):")
+        print(f"    python src/sim_overbooking.py --model vllm --workers {workers}")
+
+    print(sep)
+    return result
+
+
 # ── 메인 ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -518,7 +647,16 @@ def main():
         "--out", type=str, default="results/walk_sim_results.jsonl",
     )
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--check", action="store_true",
+        help="서버 환경 점검 후 종료 (GPU / vLLM / 디스크 / 권장 명령 출력)",
+    )
     args = parser.parse_args()
+
+    # 서버 상태 점검 모드
+    if args.check:
+        check_server(base_url=args.base_url.replace("/v1", ""))
+        return
 
     random.seed(args.seed)
 
@@ -553,6 +691,15 @@ def main():
         print("\n> [dry-run] LLM 호출 없이 더미 응답 사용")
     else:
         print(f"\n> LLM 초기화: {args.model}")
+        if args.model == "vllm":
+            import urllib.request as _ur
+            try:
+                _ur.urlopen(args.base_url.replace("/v1", "") + "/health", timeout=3)
+            except Exception:
+                print(f"  [오류] vLLM 서버 미응답 ({args.base_url})")
+                print("  먼저: nohup bash start_vllm.sh > logs/vllm.log 2>&1 &")
+                print("  확인: python src/sim_overbooking.py --check")
+                return
         llm_call = make_llm_client(args.model, args.base_url, args.model_name)
 
     # 실행
