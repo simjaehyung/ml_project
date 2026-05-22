@@ -21,6 +21,7 @@ import streamlit as st
 from utils import load_model_and_data, load_seasonal_weather
 from tab1_priority import render_tab1
 from tab2_flexi import render_tab2
+from tab3_today import render_tab3
 
 # ── 페이지 설정 ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -47,9 +48,10 @@ model, df, X_te, shap_values, X_shap, train_columns, explainer = load_model_and_
 sw_df = load_seasonal_weather()
 
 # ── 탭 ────────────────────────────────────────────────────────────────────────
-tab1, tab2 = st.tabs([
+tab1, tab2, tab3 = st.tabs([
     "📋 예약 위험 관리",
     "⚡ Flexi 라우팅 권장",
+    "📥 오늘 신규 예약",
 ])
 
 with tab1:
@@ -57,3 +59,7 @@ with tab1:
 
 with tab2:
     render_tab2(model, train_columns, explainer, sw_df)
+
+with tab3:
+    # 탭3 — 오늘 신규 예약 배치 위험 관리 (Phase 2 ingest_bookings 자리)
+    render_tab3(df)
