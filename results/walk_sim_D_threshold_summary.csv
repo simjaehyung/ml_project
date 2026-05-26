@@ -1,0 +1,4 @@
+archetype,archetype_label,walk_difficulty,initial_offer,n_runs,accept_rate,counter_mean,r1_parse_ok
+D,Budget OTA,low,33.0,40,0.0,55.0,1.0
+D,Budget OTA,low,37.0,40,0.0,55.0,1.0
+D,Budget OTA,low,42.0,40,0.125,61.0,1.0

@@ -1,0 +1,4 @@
+archetype,archetype_label,walk_difficulty,initial_offer,n_runs,accept_rate,counter_mean,r1_parse_ok
+B,Leisure Couple,medium,91.0,40,1.0,140.0,1.0
+B,Leisure Couple,medium,99.0,40,0.0,150.0,1.0
+B,Leisure Couple,medium,106.0,40,0.0,150.0,1.0

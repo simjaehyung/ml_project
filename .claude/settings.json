@@ -1,0 +1,11 @@
+﻿{
+  "allowedTools": [
+    "Bash",
+    "PowerShell",
+    "Edit",
+    "Write",
+    "Read",
+    "Glob",
+    "Grep"
+  ]
+}
