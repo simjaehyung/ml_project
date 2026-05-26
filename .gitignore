@@ -28,3 +28,6 @@ wandb/
 # 시스템
 .DS_Store
 Thumbs.db
+
+# 스크린샷 임시 디렉토리
+presentations/_slide_screenshots*/
