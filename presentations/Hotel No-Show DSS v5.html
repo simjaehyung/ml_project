@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel No-Show DSS · Pitch</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:     #FFFFFF;
+  --ink:    #0F172A;
+  --ink2:   #475569;
+  --gold:   #D97706;
+  --goldbg: #FFFBEB;
+  --blue:   #1D4ED8;
+  --bluebg: #EFF6FF;
+  --green:  #059669;
+  --red:    #DC2626;
+  --border: #E2E8F0;
+  --light:  #F8FAFC;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  overflow: hidden;
+  height: 100vh; width: 100vw;
+}
+
+#deck { width:100%; height:100%; position:relative; }
+
+.slide {
+  position: absolute;
+  width: 100%; height: 100%;
+  display: none;
+  flex-direction: column;
+  padding: 52px 80px 48px;
+  background: var(--bg);
+}
+.slide.active { display: flex; }
+
+/* ─── slide variants ─── */
+.slide.dark    { background: #0F172A; color: #F1F5F9; }
+.slide.amber   { background: #FFFBEB; }
+.slide.blue-bg { background: #EFF6FF; }
+.slide.mid     { background: #F8FAFC; }
+
+/* ─── header bar ─── */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+}
+.slide.dark .topbar { border-bottom-color: #1E293B; }
+
+.brand-tag {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.slide.dark .brand-tag { color: #64748B; }
+.brand-tag .accent { color: var(--gold); }
+
+.slide-indicator {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background .3s;
+}
+.dot.active { background: var(--gold); }
+.slide.dark .dot { background: #1E293B; }
+.slide.dark .dot.active { background: var(--gold); }
+
+/* ─── typography ─── */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.slide.dark .eyebrow { color: var(--gold); }
+
+h1.hero {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+.slide.dark h1.hero { color: #F1F5F9; }
+h1.hero .hl { color: var(--gold); }
+h1.hero .hl-blue { color: var(--blue); }
+
+h2.big {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -1px;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.slide.dark h2.big { color: #F1F5F9; }
+h2.big .hl  { color: var(--gold); }
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--ink2);
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+.slide.dark .subtitle { color: #94A3B8; }
+
+.body-text {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink2);
+  line-height: 1.8;
+}
+
+/* ─── content wrapper ─── */
+.content { flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+
+/* ─── stat blocks ─── */
+.stat-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.stat-block {
+  flex: 1;
+  min-width: 160px;
+  padding: 24px 28px;
+  border-radius: 12px;
+  background: var(--light);
+  border: 1px solid var(--border);
+}
+.stat-block .num {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-block .num.gold { color: var(--gold); }
+.stat-block .num.blue { color: var(--blue); }
+.stat-block .num.green { color: var(--green); }
+.stat-block .label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink2);
+  letter-spacing: .5px;
+}
+.stat-block .sublabel {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 4px;
+}
+
+/* ─── cards ─── */
+.card-grid { display: grid; gap: 16px; }
+.card-grid.two   { grid-template-columns: 1fr 1fr; }
+.card-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.card {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  background: #fff;
+}
+.card.amber { background: var(--goldbg); border-color: #FDE68A; }
+.card.blue  { background: var(--bluebg); border-color: #BFDBFE; }
+.card.dark-card { background: #1E293B; border-color: #334155; }
+.card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.card.amber h3 { color: #92400E; }
+.card.blue  h3 { color: #1E3A8A; }
+.card.dark-card h3 { color: #E2E8F0; }
+.card p {
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.7;
+}
+.card.amber p { color: #78350F; }
+.card.blue  p { color: #1E40AF; }
+.card.dark-card p { color: #94A3B8; }
+
+/* ─── pill / badge ─── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+.pill.green  { background: #DCFCE7; color: #166534; }
+.pill.amber  { background: #FEF3C7; color: #92400E; }
+.pill.blue   { background: #DBEAFE; color: #1E3A8A; }
+.pill.red    { background: #FEE2E2; color: #991B1B; }
+.pill.purple { background: #EDE9FE; color: #5B21B6; }
+
+/* ─── timeline / flow ─── */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+.flow-item {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 8px;
+  background: var(--light);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.flow-item .fi-label {
+  font-size: 10px;
+  font-weight: 400;
+  color: #94A3B8;
+  display: block;
+  margin-top: 2px;
+}
+.flow-item.hl { background: #FFFBEB; border-color: #FDE68A; color: var(--gold); font-weight: 700; }
+.flow-arrow {
+  color: #CBD5E1;
+  font-size: 18px;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
+.flow-arrow.active { color: var(--gold); }
+
+/* ─── quote / callout ─── */
+.callout {
+  border-left: 4px solid var(--gold);
+  padding: 16px 22px;
+  border-radius: 0 8px 8px 0;
+  background: var(--goldbg);
+  font-size: 15px;
+  font-weight: 500;
+  color: #92400E;
+  line-height: 1.7;
+}
+.callout.blue {
+  border-left-color: var(--blue);
+  background: var(--bluebg);
+  color: #1E3A8A;
+}
+.callout.red {
+  border-left-color: var(--red);
+  background: #FFF5F5;
+  color: #991B1B;
+}
+
+/* ─── big center statement ─── */
+.center-statement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  gap: 20px;
+}
+
+/* ─── table ─── */
+table { border-collapse: collapse; width: 100%; }
+th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #94A3B8;
+  padding: 8px 16px;
+  border-bottom: 2px solid var(--border);
+  text-align: left;
+}
+td {
+  font-size: 13px;
+  color: var(--ink2);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+td strong { color: var(--ink); font-weight: 600; }
+tr.best td { background: var(--goldbg); }
+tr.best td strong { color: #92400E; }
+
+/* ─── nav ─── */
+#nav {
+  position: fixed;
+  bottom: 22px;
+  right: 32px;
+  display: flex;
+  gap: 8px;
+  z-index: 200;
+}
+#nav button {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--ink2);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+#nav button:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 2px 8px rgba(217,119,6,.15);
+}
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--gold);
+  transition: width .3s;
+  z-index: 300;
+  border-radius: 0 2px 2px 0;
+}
+</style>
+</head>
+<body>
+<div id="deck">
+
+
+<!-- ═══════════════════════ 01 · TITLE ══════════════════════ -->
+<section class="slide active" id="s01">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · DSS</div>
+    <div class="slide-indicator" id="dots"></div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;">
+    <div>
+      <div class="eyebrow">2026 · 데이터과학 프로젝트</div>
+      <h1 class="hero" style="font-size:58px;margin-bottom:24px;">
+        취소를 예측하고,<br>
+        <span class="hl">결정을 지원합니다.</span>
+      </h1>
+      <div class="subtitle" style="max-width:580px;">
+        Kaggle 호텔 데이터로 ML 예측 가능성을 증명하고,<br>
+        Flexi Rate 시스템을 LLM 에이전트로 시뮬레이션합니다.
+      </div>
+      <div style="margin-top:40px;display:flex;gap:16px;flex-wrap:wrap;">
+        <span class="pill amber">ML · LightGBM</span>
+        <span class="pill blue">SHAP · 해석 가능</span>
+        <span class="pill purple">LLM 에이전트 시뮬레이션</span>
+        <span class="pill green">Streamlit DSS 앱</span>
+      </div>
+      <div style="margin-top:48px;font-size:12px;color:#CBD5E1;letter-spacing:1px;">
+        심재형 &nbsp;·&nbsp; 이고은 &nbsp;·&nbsp; 김나리 &nbsp;&nbsp;|&nbsp;&nbsp; 한양대학교 데이터사이언스
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 02 · THE PROBLEM ═══════════════════════ -->
+<section class="slide mid" id="s02">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · DSS</div>
+    <div class="slide-indicator" id="dots2"></div>
+  </div>
+  <div class="content">
+    <div class="eyebrow">The Problem</div>
+    <h2 class="big">예약 3건 중 1건이<br><span class="hl">체크인 전에 사라집니다.</span></h2>
+    <div class="subtitle" style="margin-bottom:36px;">매니저는 어느 예약이 취소될지 모른 채 운영합니다.</div>
+    <div class="stat-row">
+      <div class="stat-block">
+        <div class="num gold">41.7%</div>
+        <div class="label">City Hotel · 리스본</div>
+        <div class="sublabel">예약 10개 중 4개 이상 취소</div>
+      </div>
+      <div class="stat-block">
+        <div class="num gold">27.8%</div>
+        <div class="label">Resort Hotel · 알가르브</div>
+        <div class="sublabel">예약 3개 중 1개 취소</div>
+      </div>
+      <div class="stat-block">
+        <div class="num" style="font-size:32px;">119,390</div>
+        <div class="label">건 · 26개월</div>
+        <div class="sublabel">Kaggle Hotel Booking Demand</div>
+      </div>
+    </div>
+    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="callout red">
+        취소를 놓치면 &nbsp;→&nbsp; <strong>빈 방 = 매출 손실</strong><br>
+        잘못 개입하면 &nbsp;→&nbsp; <strong>오버부킹 = 보상 비용</strong>
+      </div>
+      <div class="callout">
+        어떤 예약이 취소될지 <strong>미리 안다면</strong>?<br>
+        그 예약자에게만 <strong>Flexi 할인 오퍼</strong>를 제시할 수 있습니다.
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 03 · ACT 1 — PROOF ══════════════════════ -->
+<section class="slide" id="s03">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · ACT 1</div>
+    <div class="slide-indicator" id="dots3"></div>
+  </div>
+  <div class="content" style="flex-direction:row;gap:52px;align-items:center;">
+    <div style="flex:1;min-width:0;">
+      <div class="eyebrow">Act 1 · ML 예측 가능성 증명</div>
+      <h2 class="big">
+        호텔 도메인에서<br>취소 예측은<br>
+        <span class="hl">가능합니다.</span>
+      </h2>
+      <div class="body-text" style="margin:20px 0 28px;">
+        Kaggle 포르투갈 호텔 2년치 119,390건으로<br>
+        LightGBM <strong style="color:var(--ink);">PR-AUC 0.8189</strong>를 달성했습니다.<br>
+        <span style="color:#94A3B8;font-size:13px;">전통적 ML로 충분히 가능함을 확인.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
+          <span class="pill green">✓</span>
+          <span style="color:var(--ink2);">시간 기반 split — 미래 예측 조건 그대로 재현</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
+          <span class="pill green">✓</span>
+          <span style="color:var(--ink2);">누수 컬럼 6개 제거 · 최종 피처 70개</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
+          <span class="pill green">✓</span>
+          <span style="color:var(--ink2);">Open-Meteo API 날씨 7개 변수 추가</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
+          <span class="pill amber">★</span>
+          <span style="color:var(--ink);">Dummy 대비 <strong>+0.432</strong> — 데이터에 패턴이 있습니다</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0;max-width:480px;">
+      <div style="height:300px;position:relative;">
+        <canvas id="chartPRAUC"></canvas>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:8px;letter-spacing:.5px;">
+        PR-AUC 비교 · 5개 모델 · 테스트셋 40,687건
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 04 · ACT 2 — DSS APP ═══════════════════════ -->
+<section class="slide mid" id="s04">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · ACT 2</div>
+    <div class="slide-indicator" id="dots4"></div>
+  </div>
+  <div class="content">
+    <div class="eyebrow">Act 2 · 예측을 행동으로</div>
+    <h2 class="big">확률 숫자만으론 부족합니다.<br><span class="hl">의사결정 지원 앱을 만들었습니다.</span></h2>
+    <div class="body-text" style="margin:12px 0 28px;">
+      예측 결과로 <strong style="color:var(--ink);">매니저가 무엇을 해야 하는지</strong>를 보여주는 것이 우리 앱의 목적입니다.
+    </div>
+    <div class="card-grid two">
+      <div class="card amber">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#D97706;margin-bottom:12px;">Tab 1 — 예약 우선순위 리스트</div>
+        <h3 style="font-size:18px;margin-bottom:10px;">기존 예약,<br>어디부터 봐야 할까?</h3>
+        <p>취소 확률 기준으로 정렬된 예약 목록.<br>행 클릭 → <strong>SHAP 위험 요인 자동 표시</strong>.<br>매니저의 조기 개입을 숫자로 지원합니다.</p>
+      </div>
+      <div class="card blue">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1D4ED8;margin-bottom:12px;">Tab 2 — Flexi 라우팅 권장</div>
+        <h3 style="font-size:18px;margin-bottom:10px;">신규 예약,<br>Flexi로 받을까?</h3>
+        <p>예약 정보 입력 → 취소 확률 실시간 계산.<br>임계값 초과 시: <strong>Flexi 할인율 자동 제안</strong>.<br>최종 결정은 매니저 승인. (GDPR Art.22)</p>
+      </div>
+    </div>
+    <div style="margin-top:20px;">
+      <div class="callout" style="font-size:14px;">
+        이 앱이 실제 호텔에서 운영되기 시작하면,<br>
+        지금까지 <strong>존재하지 않았던 데이터</strong>가 쌓입니다 —
+        어떤 고객에게, 어떤 조건으로 Flexi를 제시했고, 고객이 <strong>수락했는지.</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 05 · ACT 3 — THE GAP (DARK) ═══════════════════════ -->
+<section class="slide dark" id="s05">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · ACT 3</div>
+    <div class="slide-indicator" id="dots5"></div>
+  </div>
+  <div class="content" style="align-items:flex-start;gap:0;">
+    <div class="eyebrow">Act 3 · 구조적 데이터 부재</div>
+    <h2 class="big" style="color:#F1F5F9;font-size:44px;">
+      하지만, 그 데이터는<br>
+      <span style="color:#F87171;">지금 존재하지 않습니다.</span>
+    </h2>
+    <div style="font-size:18px;color:#94A3B8;margin:16px 0 36px;line-height:1.7;font-weight:400;">
+      Kaggle 데이터에는 <strong style="color:#E2E8F0;">Flexi 오퍼 수락 여부 label이 없습니다.</strong><br>
+      어떤 산업 데이터를 찾아봐도 없습니다.<br>
+      <span style="color:#64748B;">호텔들이 이 방식을 체계적으로 운영한 적이 없으니까요.</span>
+    </div>
+    <div style="background:#1E293B;border:1px solid #334155;border-radius:12px;padding:28px 32px;width:100%;max-width:700px;">
+      <div style="font-size:13px;color:#94A3B8;margin-bottom:20px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">우리가 답해야 하는 질문</div>
+      <div style="font-size:24px;font-weight:700;color:#F1F5F9;line-height:1.5;">
+        "얼마의 할인율에서,<br>
+        <span style="color:#FBBF24;">어떤 고객이 Flexi를 수락하는가?"</span>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="background:#0F172A;border:1px solid #1E293B;border-radius:8px;padding:12px 18px;font-size:13px;color:#64748B;line-height:1.6;">
+          <span style="color:#F87171;font-weight:600;">❌ 무작위 파라미터</span><br>
+          할인율·수락률을 임의로 가정<br>"왜 이 값인가" 방어 불가
+        </div>
+        <div style="background:#0F172A;border:1px solid #FBBF2444;border-radius:8px;padding:12px 18px;font-size:13px;color:#94A3B8;line-height:1.6;">
+          <span style="color:#FBBF24;font-weight:600;">✓ 실제 데이터 기반 시뮬레이션</span><br>
+          실제 예약 패턴이 에이전트의 뼈대<br>SHAP이 피처 선택을 정당화
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 06 · DATA FLYWHEEL ═══════════════════════ -->
+<section class="slide amber" id="s06">
+  <div class="topbar" style="border-bottom-color:#FDE68A;">
+    <div class="brand-tag" style="color:#92400E;"><span style="color:#D97706;">H</span>OTEL NO-SHOW · VISION</div>
+    <div class="slide-indicator" id="dots6"></div>
+  </div>
+  <div class="content" style="align-items:center;gap:28px;">
+    <div style="text-align:center;">
+      <div class="eyebrow">앱이 만들어내는 것</div>
+      <h2 class="big" style="text-align:center;">
+        앱을 쓰면,<br><span class="hl">데이터가 쌓입니다.</span>
+      </h2>
+      <div class="subtitle" style="text-align:center;margin-top:10px;color:#92400E;">
+        시뮬레이션은 그 데이터가 쌓이기 전까지의 출발점입니다.
+      </div>
+    </div>
+    <div style="width:100%;max-width:800px;">
+      <div class="flow">
+        <div class="flow-item hl" style="flex:1.2;">
+          <strong>DSS 앱 도입</strong>
+          <span class="fi-label" style="color:#D97706;">Flexi 오퍼 운영 시작</span>
+        </div>
+        <div class="flow-arrow active">→</div>
+        <div class="flow-item">
+          고객 반응 수집
+          <span class="fi-label">수락 / 거절 label</span>
+        </div>
+        <div class="flow-arrow active">→</div>
+        <div class="flow-item">
+          모델 재학습
+          <span class="fi-label">실측 데이터 반영</span>
+        </div>
+        <div class="flow-arrow active">→</div>
+        <div class="flow-item">
+          정밀도 향상
+          <span class="fi-label">세그먼트별 최적화</span>
+        </div>
+        <div class="flow-arrow active">→</div>
+        <div class="flow-item hl" style="background:#FFFBEB;">
+          수익 극대화
+          <span class="fi-label" style="color:#D97706;">RevPAR ↑</span>
+        </div>
+      </div>
+      <div style="margin-top:28px;text-align:center;font-size:14px;color:#92400E;">
+        지금은 이 루프의 <strong>첫 번째 칸</strong>에 있습니다.<br>
+        그래서 시뮬레이션으로 방향을 먼저 탐색합니다.
+      </div>
+    </div>
+    <div class="card-grid three" style="width:100%;max-width:800px;">
+      <div class="card" style="text-align:center;border-color:#FDE68A;">
+        <div style="font-size:28px;font-weight:800;color:#D97706;">지금</div>
+        <div style="font-size:13px;color:#78350F;margin-top:6px;">LLM 시뮬레이션<br>파라미터 초기 탐색</div>
+      </div>
+      <div class="card" style="text-align:center;border-color:#FDE68A;">
+        <div style="font-size:28px;font-weight:800;color:#D97706;">앱 도입 후</div>
+        <div style="font-size:13px;color:#78350F;margin-top:6px;">실측 수락률로<br>가이드라인 교체</div>
+      </div>
+      <div class="card" style="text-align:center;border-color:#FDE68A;">
+        <div style="font-size:28px;font-weight:800;color:#D97706;">장기</div>
+        <div style="font-size:13px;color:#78350F;margin-top:6px;">호텔 전용 아크타입<br>정밀도 지속 향상</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 07 · ACT 4 — SIMULATION ═══════════════════════ -->
+<section class="slide" id="s07">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · ACT 4</div>
+    <div class="slide-indicator" id="dots7"></div>
+  </div>
+  <div class="content" style="flex-direction:row;gap:48px;align-items:center;">
+    <div style="flex:1;min-width:0;">
+      <div class="eyebrow">Act 4 · LLM 에이전트 시뮬레이션</div>
+      <h2 class="big">
+        실제 데이터가 에이전트의<br>
+        <span class="hl">뼈대입니다.</span>
+      </h2>
+      <div class="body-text" style="margin:16px 0 24px;">
+        임의로 설정하는 게 아닙니다.<br>
+        <strong style="color:var(--ink);">SHAP Top 7 피처</strong>가 각 에이전트의 심리를 구성합니다.<br>
+        <span style="color:#94A3B8;font-size:13px;">포르투갈 국적 + Online TA + 리드타임 120일+ 고객은<br>실제 데이터에서 가장 많은 취소 집단입니다.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="padding:12px 16px;border-radius:8px;background:var(--light);border:1px solid var(--border);font-size:13px;color:var(--ink2);">
+          <strong style="color:var(--ink);">에이전트 심리 3층 모델</strong> (AgentSociety 2025 구조 차용)<br>
+          Emotions &nbsp;×&nbsp; Needs &nbsp;×&nbsp; Cognition → 4단계 추론 강제
+        </div>
+        <div style="padding:12px 16px;border-radius:8px;background:var(--light);border:1px solid var(--border);font-size:13px;color:var(--ink2);">
+          <strong style="color:var(--ink);">결정 출력:</strong> ACCEPT_FLEXI / DECLINE_FLEXI / CANCEL<br>
+          → 각 결정이 RevPAR · Walk Rate 계산으로 연결
+        </div>
+        <div style="padding:12px 16px;border-radius:8px;background:#FFFBEB;border:1px solid #FDE68A;font-size:13px;color:#92400E;">
+          <strong>파일럿 50샘플 → Phase 2에서 ~20,000건 전수 실행 예정</strong><br>
+          국적 × 채널 × lead_time 세그먼트별 수락률 분석 가능
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0;max-width:440px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#94A3B8;margin-bottom:12px;">SHAP Top 7 · 페르소나 설계 피처</div>
+      <div style="height:280px;position:relative;">
+        <canvas id="chartSHAP"></canvas>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:8px;letter-spacing:.5px;">
+        LightGBM · Mean |SHAP| · "왜 이 피처인가"를 데이터로 답합니다
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 08 · ACT 5 — RESULTS ═══════════════════════ -->
+<section class="slide mid" id="s08">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · ACT 5</div>
+    <div class="slide-indicator" id="dots8"></div>
+  </div>
+  <div class="content">
+    <div class="eyebrow">Act 5 · 초기 가이드라인</div>
+    <h2 class="big">
+      Threshold 0.60,<br>
+      <span class="hl">RevPAR +81.4%</span>
+    </h2>
+    <div class="body-text" style="margin:8px 0 24px;">
+      시뮬레이션 결과가 말하는 것: 할인율을 높이면 수락률이 올라갑니다.<br>
+      <span style="color:#94A3B8;font-size:13px;">방향성이 상식에 부합합니다. 실측 데이터 축적 시 이 수치는 교체됩니다.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:28px;flex:1;min-height:0;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Threshold</th>
+              <th>Accept</th>
+              <th>RevPAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>0.50</td><td>48.0%</td><td><strong>+88.8%</strong></td></tr>
+            <tr><td>0.55</td><td>46.9%</td><td><strong>+85.9%</strong></td></tr>
+            <tr class="best"><td><strong>0.60 ★</strong></td><td><strong>46.7%</strong></td><td><strong>+81.4%</strong></td></tr>
+            <tr><td>0.65</td><td>48.8%</td><td><strong>+78.7%</strong></td></tr>
+            <tr><td>0.70</td><td>46.0%</td><td><strong>+70.6%</strong></td></tr>
+          </tbody>
+        </table>
+        <div class="callout" style="font-size:13px;">
+          Threshold가 낮을수록 더 많은 예약에<br>Flexi 오퍼 → RevPAR 개선율 상승.<br>
+          <strong>Walk Rate 관리가 최종 제약 조건.</strong>
+        </div>
+      </div>
+      <div style="position:relative;min-height:0;">
+        <canvas id="chartThreshold"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 09 · CLOSING (DARK) ═══════════════════════ -->
+<section class="slide dark" id="s09">
+  <div class="topbar">
+    <div class="brand-tag"><span class="accent">H</span>OTEL NO-SHOW · DSS</div>
+    <div class="slide-indicator" id="dots9"></div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:0;">
+    <div class="eyebrow">5-Act Summary</div>
+    <h2 class="big" style="color:#F1F5F9;font-size:36px;margin-bottom:32px;">
+      우리가 만드는 것은<br><span style="color:#FBBF24;">두뇌</span>입니다.
+    </h2>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:36px;width:100%;">
+      <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;border-radius:8px;background:#1E293B;border:1px solid #334155;">
+        <div style="font-size:10px;letter-spacing:2px;font-weight:700;color:#FBBF24;text-transform:uppercase;min-width:48px;padding-top:2px;">Act 1</div>
+        <div style="font-size:14px;color:#94A3B8;line-height:1.6;flex:1;">LightGBM <strong style="color:#E2E8F0;">PR-AUC 0.8189</strong> — 호텔 도메인에서 ML 예측은 가능합니다.</div>
+        <span class="pill green" style="flex-shrink:0;">증명 완료</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;border-radius:8px;background:#1E293B;border:1px solid #334155;">
+        <div style="font-size:10px;letter-spacing:2px;font-weight:700;color:#FBBF24;text-transform:uppercase;min-width:48px;padding-top:2px;">Act 2</div>
+        <div style="font-size:14px;color:#94A3B8;line-height:1.6;flex:1;"><strong style="color:#E2E8F0;">DSS 앱 2탭</strong> — 예측을 행동으로 연결하는 의사결정 지원 인터페이스.</div>
+        <span class="pill green" style="flex-shrink:0;">구현 완료</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;border-radius:8px;background:#1E293B;border:1px solid #334155;">
+        <div style="font-size:10px;letter-spacing:2px;font-weight:700;color:#FBBF24;text-transform:uppercase;min-width:48px;padding-top:2px;">Act 3</div>
+        <div style="font-size:14px;color:#94A3B8;line-height:1.6;flex:1;">Flexi 수락 label 없음 — 구조적 데이터 부재. <strong style="color:#E2E8F0;">이게 시뮬레이션의 필연적 이유입니다.</strong></div>
+        <span class="pill amber" style="flex-shrink:0;">문제 정의</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;border-radius:8px;background:#1E293B;border:1px solid #334155;">
+        <div style="font-size:10px;letter-spacing:2px;font-weight:700;color:#FBBF24;text-transform:uppercase;min-width:48px;padding-top:2px;">Act 4</div>
+        <div style="font-size:14px;color:#94A3B8;line-height:1.6;flex:1;">실제 예약 기반 LLM 에이전트 — SHAP 7개 피처 × 3층 심리 모델. <strong style="color:#E2E8F0;">임의 설정 없음.</strong></div>
+        <span class="pill blue" style="flex-shrink:0;">Phase 2 확장</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;border-radius:8px;background:#1E293B;border:1px solid #FBBF2444;">
+        <div style="font-size:10px;letter-spacing:2px;font-weight:700;color:#FBBF24;text-transform:uppercase;min-width:48px;padding-top:2px;">Act 5</div>
+        <div style="font-size:14px;color:#94A3B8;line-height:1.6;flex:1;">Threshold 0.60 → <strong style="color:#E2E8F0;">Accept Rate 46.7%, RevPAR +81.4%</strong>. 실측 데이터 축적 시 교체됩니다.</div>
+        <span class="pill amber" style="flex-shrink:0;">초기 가이드라인</span>
+      </div>
+    </div>
+    <div style="font-size:18px;color:#64748B;border-top:1px solid #1E293B;padding-top:20px;width:100%;">
+      운영 시스템 통합은 호텔 인프라 영역입니다. &nbsp;
+      <span style="color:#FBBF24;">저희는 취소 예측 엔진을 만들었습니다.</span>
+    </div>
+  </div>
+</section>
+
+
+</div><!-- #deck -->
+<div id="nav">
+  <button onclick="go(-1)">←</button>
+  <button onclick="go(+1)">→</button>
+</div>
+<div id="progress"></div>
+
+<script>
+// ──────────────────────────────────────────────────
+const slides = document.querySelectorAll('.slide');
+const TOTAL  = slides.length;
+let cur = 0;
+
+function go(d) {
+  const next = cur + d;
+  if (next < 0 || next >= TOTAL) return;
+  slides[cur].classList.remove('active');
+  cur = next;
+  slides[cur].classList.add('active');
+  updateProgress();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+
+function updateProgress() {
+  document.getElementById('progress').style.width = ((cur + 1) / TOTAL * 100) + '%';
+  // update all dot groups
+  document.querySelectorAll('.slide-indicator').forEach(indicator => {
+    indicator.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === cur ? ' active' : '');
+      indicator.appendChild(d);
+    }
+  });
+}
+updateProgress();
+
+// ──────────────────────────────────────────────────
+// Chart.js setup
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+
+const GOLD    = '#D97706';
+const BLUE    = '#1D4ED8';
+const GRAY_L  = '#E2E8F0';
+const GRAY_BG = '#F8FAFC';
+
+// ── PR-AUC Chart (slide 03) ─────────────────────────
+new Chart(document.getElementById('chartPRAUC'), {
+  type: 'bar',
+  data: {
+    labels: ['Dummy', 'Logistic\nRegression', 'Random\nForest', 'XGBoost', 'LightGBM ★'],
+    datasets: [{
+      data: [0.387, 0.7818, 0.7785, 0.8053, 0.8189],
+      backgroundColor: [
+        '#F1F5F9',
+        '#E2E8F0',
+        '#E2E8F0',
+        '#BFDBFE',
+        GOLD + 'DD',
+      ],
+      borderColor: ['#CBD5E1','#CBD5E1','#CBD5E1', BLUE, GOLD],
+      borderWidth: [1,1,1,1,2],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0F172A',
+        titleColor: '#94A3B8',
+        bodyColor: '#F1F5F9',
+        borderColor: '#1E293B',
+        borderWidth: 1,
+        padding: 10,
+        callbacks: { label: ctx => '  PR-AUC: ' + ctx.raw.toFixed(4) }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 1,
+        grid: { color: '#F1F5F9' },
+        ticks: { color: '#94A3B8', stepSize: 0.2 },
+        border: { color: GRAY_L }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#475569', font: { weight: '500' } },
+        border: { color: GRAY_L }
+      }
+    },
+    animation: { duration: 700, easing: 'easeOutQuart' }
+  }
+});
+
+// ── SHAP Chart (slide 07) ───────────────────────────
+new Chart(document.getElementById('chartSHAP'), {
+  type: 'bar',
+  data: {
+    labels: [
+      'country_PRT',
+      'car_parking',
+      'special_requests',
+      'lead_time',
+      'prev_cancellations',
+      'Online TA',
+      'adr'
+    ],
+    datasets: [{
+      data: [1.0639, 0.6797, 0.6435, 0.5312, 0.3941, 0.3712, 0.2525],
+      backgroundColor: [
+        GOLD,
+        GOLD + 'CC',
+        GOLD + 'AA',
+        GOLD + '88',
+        GOLD + '77',
+        GOLD + '66',
+        GOLD + '55',
+      ],
+      borderColor: 'transparent',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0F172A',
+        titleColor: '#94A3B8',
+        bodyColor: '#F1F5F9',
+        borderColor: '#1E293B',
+        borderWidth: 1,
+        callbacks: { label: ctx => '  Mean |SHAP|: ' + ctx.raw.toFixed(4) }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 1.2,
+        grid: { color: '#F1F5F9' },
+        ticks: { color: '#94A3B8', stepSize: 0.3 },
+        border: { color: GRAY_L }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#475569' },
+        border: { color: GRAY_L }
+      }
+    },
+    animation: { duration: 700, easing: 'easeOutQuart' }
+  }
+});
+
+// ── Threshold Sweep Chart (slide 08) ────────────────
+new Chart(document.getElementById('chartThreshold'), {
+  type: 'line',
+  data: {
+    labels: ['0.50', '0.55', '0.60', '0.65', '0.70'],
+    datasets: [
+      {
+        label: 'RevPAR 개선율 (%)',
+        data: [88.775, 85.915, 81.376, 78.721, 70.576],
+        borderColor: GOLD,
+        backgroundColor: GOLD + '18',
+        fill: true,
+        tension: 0.35,
+        pointBackgroundColor: ['#fff','#fff', GOLD,'#fff','#fff'],
+        pointBorderColor:     [GOLD+'88', GOLD+'88', GOLD, GOLD+'88', GOLD+'88'],
+        pointRadius:          [5, 5, 9, 5, 5],
+        pointHoverRadius:     [7, 7, 11, 7, 7],
+        pointBorderWidth: 2,
+        borderWidth: 2.5,
+        yAxisID: 'y'
+      },
+      {
+        label: 'Accept Rate (%)',
+        data: [48.0, 46.94, 46.67, 48.78, 45.95],
+        borderColor: '#6366F1',
+        backgroundColor: 'transparent',
+        tension: 0.35,
+        pointRadius: 4,
+        pointBorderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#6366F1',
+        borderWidth: 2,
+        borderDash: [5, 4],
+        yAxisID: 'y2'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: { color: '#64748B', boxWidth: 12, font: { size: 11 }, usePointStyle: true }
+      },
+      tooltip: {
+        backgroundColor: '#0F172A',
+        titleColor: '#94A3B8',
+        bodyColor: '#F1F5F9',
+        borderColor: '#1E293B',
+        borderWidth: 1,
+        padding: 10,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#F1F5F9' },
+        ticks: { color: '#64748B' },
+        border: { color: GRAY_L },
+        title: { display: true, text: 'Threshold (취소 확률 임계값)', color: '#94A3B8', font: { size: 11 } }
+      },
+      y: {
+        grid: { color: '#F1F5F9' },
+        ticks: { color: '#94A3B8', callback: v => v + '%' },
+        border: { color: GRAY_L },
+        title: { display: true, text: 'RevPAR 개선율', color: '#D97706', font: { size: 11, weight: '600' } }
+      },
+      y2: {
+        position: 'right',
+        grid: { display: false },
+        ticks: { color: '#6366F1', callback: v => v + '%' },
+        border: { color: GRAY_L },
+        title: { display: true, text: 'Accept Rate', color: '#6366F1', font: { size: 11 } }
+      }
+    },
+    animation: { duration: 700, easing: 'easeOutQuart' }
+  }
+});
+</script>
+</body>
+</html>

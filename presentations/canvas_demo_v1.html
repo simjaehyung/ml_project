@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel Bookings — Canvas Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #06091A; overflow: hidden; font-family: 'Inter', 'Apple SD Gothic Neo', sans-serif; }
+  canvas { display: block; }
+  #stats {
+    position: fixed; top: 24px; left: 24px;
+    display: flex; gap: 12px;
+  }
+  .stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: #fff;
+  }
+  .stat .num { font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .stat .label { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+  .stat.risk .num { color: #F87171; }
+  .stat.ok   .num { color: #34D399; }
+  #hint {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="stats">
+  <div class="stat">
+    <div class="num" id="cnt-total">0</div>
+    <div class="label">Total Bookings</div>
+  </div>
+  <div class="stat ok">
+    <div class="num" id="cnt-low">0</div>
+    <div class="label">Low Risk</div>
+  </div>
+  <div class="stat risk">
+    <div class="num" id="cnt-high">0</div>
+    <div class="label">High Risk</div>
+  </div>
+</div>
+
+<div id="hint">HOTEL NO-SHOW DSS &nbsp;·&nbsp; Canvas Demo v1</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+canvas.width  = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+/* ── 데이터 ── */
+const COUNTRIES   = ['PRT','GBR','ESP','FRA','DEU','USA','ITA','NLD','BRA','CHN','JPN','AUS'];
+const ROOM_TYPES  = ['Standard','Deluxe','Suite','Jr. Suite'];
+const MEAL_PLANS  = ['BB','HB','FB','SC'];
+
+function fakeBooking() {
+  const risk = Math.random();
+  return {
+    id:       Math.floor(Math.random() * 90000) + 10000,
+    country:  COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)],
+    room:     ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)],
+    meal:     MEAL_PLANS[Math.floor(Math.random() * MEAL_PLANS.length)],
+    lead:     Math.floor(Math.random() * 365),
+    risk,
+    riskPct:  Math.round(risk * 100),
+  };
+}
+
+/* ── 색상 ── */
+function riskColor(r, alpha = 1) {
+  if (r > 0.65) return `rgba(239,68,68,${alpha})`;   // red
+  if (r > 0.40) return `rgba(234,179,8,${alpha})`;   // yellow
+  return             `rgba(52,211,153,${alpha})`;    // green
+}
+function riskLabel(r) {
+  if (r > 0.65) return '고위험';
+  if (r > 0.40) return '중위험';
+  return '저위험';
+}
+
+/* ── 파티클 (도착 효과) ── */
+const particles = [];
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 12; i++) {
+    const angle = (Math.PI * 2 / 12) * i + (Math.random() - 0.5) * 0.3;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * (2 + Math.random() * 3),
+      vy: Math.sin(angle) * (2 + Math.random() * 3),
+      life: 1,
+      decay: 0.04 + Math.random() * 0.03,
+      radius: 2 + Math.random() * 3,
+      color,
+    });
+  }
+}
+
+/* ── 카운터 ── */
+let cntTotal = 0, cntLow = 0, cntHigh = 0;
+function updateStats(risk) {
+  cntTotal++;
+  if (risk > 0.65) cntHigh++; else cntLow++;
+  document.getElementById('cnt-total').textContent = cntTotal;
+  document.getElementById('cnt-low').textContent   = cntLow;
+  document.getElementById('cnt-high').textContent  = cntHigh;
+}
+
+/* ── 예약 카드 클래스 ── */
+class BookingCard {
+  constructor() {
+    this.data = fakeBooking();
+    this.color = riskColor(this.data.risk);
+
+    const cx = canvas.width  / 2;
+    const cy = canvas.height / 2;
+
+    /* 화면 4개 변 중 하나에서 스폰 */
+    const edge = Math.floor(Math.random() * 4);
+    if (edge === 0) { this.x = Math.random() * canvas.width; this.y = -80; }
+    else if (edge === 1) { this.x = canvas.width + 80;  this.y = Math.random() * canvas.height; }
+    else if (edge === 2) { this.x = Math.random() * canvas.width; this.y = canvas.height + 80; }
+    else                 { this.x = -80; this.y = Math.random() * canvas.height; }
+
+    /* 목적지: 중심 ± 약간 랜덤 (겹침 방지) */
+    this.tx = cx + (Math.random() - 0.5) * 60;
+    this.ty = cy + (Math.random() - 0.5) * 60;
+
+    this.speed = 2.2 + Math.random() * 1.8;
+    this.alpha = 0;
+    this.done  = false;
+    this.arrived = false;
+    this.arrivalLife = 0; // 도착 후 페이드아웃 타이머
+  }
+
+  update() {
+    if (this.done) return;
+
+    if (this.arrived) {
+      this.arrivalLife += 0.06;
+      if (this.arrivalLife >= 1) this.done = true;
+      return;
+    }
+
+    /* 페이드인 */
+    this.alpha = Math.min(1, this.alpha + 0.06);
+
+    /* 중심으로 이동 */
+    const dx = this.tx - this.x;
+    const dy = this.ty - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 4) {
+      this.arrived = true;
+      spawnParticles(this.x, this.y, this.color);
+      updateStats(this.data.risk);
+      return;
+    }
+
+    /* 감속 효과 — 가까울수록 느려짐 */
+    const factor = Math.min(1, dist / 120);
+    this.x += (dx / dist) * this.speed * (0.3 + 0.7 * factor);
+    this.y += (dy / dist) * this.speed * (0.3 + 0.7 * factor);
+  }
+
+  draw() {
+    if (this.done) return;
+
+    const a = this.arrived
+      ? 1 - this.arrivalLife
+      : this.alpha;
+
+    if (a <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = a;
+
+    const W = 148, H = 72;
+    const x = this.x - W / 2;
+    const y = this.y - H / 2;
+
+    /* 카드 그림자 */
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur  = 14 * a;
+
+    /* 카드 배경 */
+    ctx.fillStyle = 'rgba(10,15,30,0.92)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, W, H, 9);
+    ctx.fill();
+
+    /* 왼쪽 컬러 바 */
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.roundRect(x, y, 3, H, [9, 0, 0, 9]);
+    ctx.fill();
+
+    /* 테두리 */
+    ctx.strokeStyle = `rgba(${hexToRgb(this.color)},0.35)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x, y, W, H, 9);
+    ctx.stroke();
+
+    /* 텍스트 */
+    const px = x + 14;
+
+    ctx.fillStyle = '#F1F5F9';
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.fillText(`#${this.data.id} · ${this.data.country}`, px, y + 18);
+
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.font = '400 10px Inter, sans-serif';
+    ctx.fillText(`${this.data.room} · ${this.data.meal} · lead ${this.data.lead}d`, px, y + 35);
+
+    /* 위험 배지 */
+    const badgeW = 72, badgeH = 18;
+    ctx.fillStyle = riskColor(this.data.risk, 0.18);
+    ctx.beginPath();
+    ctx.roundRect(px, y + 44, badgeW, badgeH, 4);
+    ctx.fill();
+    ctx.fillStyle = this.color;
+    ctx.font = '700 10px Inter, sans-serif';
+    ctx.fillText(`${riskLabel(this.data.risk)} ${this.data.riskPct}%`, px + 6, y + 56);
+
+    ctx.restore();
+  }
+}
+
+/* roundRect 폴리필 (구버전 Chrome) */
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    const [tl, tr, br, bl] = Array.isArray(r) ? r : [r,r,r,r];
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y);      this.arcTo(x+w,y,   x+w,y+tr,  tr);
+    this.lineTo(x + w, y + h - br);  this.arcTo(x+w,y+h, x+w-br,y+h,br);
+    this.lineTo(x + bl, y + h);      this.arcTo(x,y+h,   x,y+h-bl,  bl);
+    this.lineTo(x, y + tl);          this.arcTo(x,y,     x+tl,y,    tl);
+    this.closePath();
+    return this;
+  };
+}
+function hexToRgb(color) {
+  /* riskColor는 rgba(...) 문자열 반환 — 숫자만 뽑기 */
+  const m = color.match(/\d+/g);
+  return m ? `${m[0]},${m[1]},${m[2]}` : '255,255,255';
+}
+
+/* ── 중심 호텔 아이콘 ── */
+function drawHotelIcon(cx, cy) {
+  ctx.save();
+
+  /* 글로우 */
+  ctx.shadowColor = 'rgba(59,130,246,0.4)';
+  ctx.shadowBlur  = 40;
+
+  /* 건물 본체 */
+  ctx.fillStyle = 'rgba(30,58,138,0.6)';
+  ctx.strokeStyle = 'rgba(96,165,250,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.rect(cx - 36, cy - 40, 72, 56);
+  ctx.fill(); ctx.stroke();
+
+  /* 지붕 삼각형 */
+  ctx.beginPath();
+  ctx.moveTo(cx - 44, cy - 40);
+  ctx.lineTo(cx, cy - 62);
+  ctx.lineTo(cx + 44, cy - 40);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  /* 창문 격자 */
+  ctx.fillStyle = 'rgba(147,197,253,0.7)';
+  ctx.shadowBlur = 6;
+  const winW = 12, winH = 10;
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+      ctx.beginPath();
+      ctx.roundRect(cx - 28 + col * 18, cy - 30 + row * 16, winW, winH, 2);
+      ctx.fill();
+    }
+  }
+
+  /* 문 */
+  ctx.fillStyle = 'rgba(30,58,138,1)';
+  ctx.strokeStyle = 'rgba(96,165,250,0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(cx - 10, cy - 5, 20, 21);
+  ctx.fill(); ctx.stroke();
+
+  /* "H" 텍스트 */
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(147,197,253,0.5)';
+  ctx.font = '700 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('HOTEL', cx, cy + 28);
+  ctx.textAlign = 'left';
+
+  ctx.restore();
+}
+
+/* ── 배경 도트 패턴 ── */
+function drawBackground() {
+  ctx.fillStyle = '#06091A';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  /* 조용한 도트 그리드 */
+  ctx.fillStyle = 'rgba(255,255,255,0.025)';
+  const spacing = 36;
+  for (let x = spacing / 2; x < canvas.width; x += spacing) {
+    for (let y = spacing / 2; y < canvas.height; y += spacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+/* ── 메인 루프 ── */
+const bookings = [];
+let   lastSpawn = 0;
+
+function loop(now) {
+  requestAnimationFrame(loop);
+
+  drawBackground();
+
+  /* 중심 펄스 링 */
+  const pulse = (now % 2000) / 2000;
+  ctx.strokeStyle = `rgba(59,130,246,${0.12 * (1 - pulse)})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 60 + pulse * 80, 0, Math.PI * 2);
+  ctx.stroke();
+
+  /* 파티클 */
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.94; p.vy *= 0.94;
+    p.life -= p.decay;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  /* 카드 업데이트 & 그리기 */
+  for (let i = bookings.length - 1; i >= 0; i--) {
+    bookings[i].update();
+    bookings[i].draw();
+    if (bookings[i].done) bookings.splice(i, 1);
+  }
+
+  /* 호텔 아이콘 (카드 위에 그려서 항상 위에 있게) */
+  drawHotelIcon(canvas.width / 2, canvas.height / 2);
+
+  /* 스폰: 1.2초마다 새 예약 */
+  if (now - lastSpawn > 1200) {
+    bookings.push(new BookingCard());
+    lastSpawn = now;
+  }
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

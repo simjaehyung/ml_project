@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel DSS — Floor Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#060C1E;overflow:hidden;font-family:'Inter','Apple SD Gothic Neo',sans-serif;color:#fff;height:100vh;width:100vw;}
+
+/* ── 배경 캔버스 ── */
+#bg{position:fixed;inset:0;z-index:0;}
+
+/* ── 호텔 전체 뷰 ── */
+#hotel-view{
+  position:fixed;inset:0;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
+  transition:opacity 0.3s;
+}
+
+/* ── 헤더 ── */
+.hotel-header{text-align:center;margin-bottom:28px;}
+.hotel-name{font-size:11px;font-weight:600;letter-spacing:4px;color:rgba(255,255,255,.25);text-transform:uppercase;margin-bottom:6px;}
+.hotel-floor{font-size:28px;font-weight:800;letter-spacing:-1px;color:#F1F5F9;}
+.hotel-floor span{color:#F59E0B;}
+.hotel-sub{font-size:11px;color:rgba(255,255,255,.2);margin-top:4px;letter-spacing:.5px;}
+
+/* ── 평면도 레이아웃 ── */
+.floor-plan{
+  display:grid;
+  grid-template-columns:repeat(3,148px) 72px repeat(3,148px);
+  grid-template-rows:repeat(2,108px);
+  gap:10px;
+  align-items:center;
+}
+
+/* ── 복도 ── */
+.corridor{
+  grid-row:1/3;
+  height:100%;display:flex;align-items:center;justify-content:center;
+  border-left:1px solid rgba(255,255,255,.06);
+  border-right:1px solid rgba(255,255,255,.06);
+}
+.corridor-text{font-size:9px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,.1);text-transform:uppercase;writing-mode:vertical-rl;}
+
+/* ── 객실 카드 ── */
+.room{
+  width:148px;height:108px;
+  border-radius:13px;padding:13px 14px 11px;
+  border:1px solid;
+  cursor:pointer;
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden;
+  transition:transform .18s, box-shadow .18s;
+}
+.room::before{
+  content:'';position:absolute;inset:0;border-radius:13px;
+  opacity:0;transition:opacity .18s;
+}
+.room:hover{transform:translateY(-3px);}
+.room:hover::before{opacity:1;}
+
+.room.high { border-color:rgba(239,68,68,.35);  background:rgba(239,68,68,.06); }
+.room.high::before{background:rgba(239,68,68,.05);}
+.room.high:hover{box-shadow:0 8px 30px rgba(239,68,68,.25);}
+
+.room.mid  { border-color:rgba(234,179,8,.35);   background:rgba(234,179,8,.06); }
+.room.mid::before{background:rgba(234,179,8,.05);}
+.room.mid:hover{box-shadow:0 8px 30px rgba(234,179,8,.22);}
+
+.room.low  { border-color:rgba(52,211,153,.35);  background:rgba(52,211,153,.06); }
+.room.low::before{background:rgba(52,211,153,.05);}
+.room.low:hover{box-shadow:0 8px 30px rgba(52,211,153,.2);}
+
+.room.vacant{ border-color:rgba(255,255,255,.08); background:rgba(255,255,255,.02); }
+.room.vacant:hover{box-shadow:0 8px 20px rgba(255,255,255,.06);}
+
+.room-num{font-size:11px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.3);}
+.room-guest{font-size:13px;font-weight:600;color:#F1F5F9;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.room-detail{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;}
+
+.risk-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:5px;font-size:9.5px;font-weight:700;
+  letter-spacing:.3px;
+}
+.risk-pill.high{background:rgba(239,68,68,.18);color:#FCA5A5;}
+.risk-pill.mid {background:rgba(234,179,8,.18); color:#FDE68A;}
+.risk-pill.low {background:rgba(52,211,153,.18);color:#6EE7B7;}
+.risk-pill.vacant{background:rgba(255,255,255,.06);color:rgba(255,255,255,.3);}
+
+.pulse-dot{
+  width:6px;height:6px;border-radius:50%;flex-shrink:0;
+}
+.pulse-dot.high{background:#F87171;animation:pulse-r 1.4s infinite;}
+.pulse-dot.mid {background:#FCD34D;animation:pulse-y 1.8s infinite;}
+.pulse-dot.low {background:#34D399;animation:pulse-g 2.2s infinite;}
+@keyframes pulse-r{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.4);}}
+@keyframes pulse-y{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+@keyframes pulse-g{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(1.2);}}
+
+/* ── 방 진입 오버레이 ── */
+#room-overlay{
+  position:fixed;inset:0;z-index:20;
+  background:#07101F;
+  clip-path:inset(50% 50% 50% 50% round 13px);
+  transition:clip-path .52s cubic-bezier(.77,0,.18,1);
+  pointer-events:none;
+}
+#room-overlay.open{
+  clip-path:inset(0% 0% 0% 0% round 0px);
+  pointer-events:all;
+}
+
+/* ── 방 내부 UI ── */
+#room-interior{
+  position:fixed;inset:0;z-index:21;
+  display:flex;flex-direction:column;
+  opacity:0;transition:opacity .28s .28s;
+  pointer-events:none;
+  padding:32px 40px;
+  overflow:hidden;
+}
+#room-interior.visible{opacity:1;pointer-events:all;}
+
+/* 내부 헤더 */
+.int-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.07);
+  margin-bottom:24px;flex-shrink:0;
+}
+.int-room-label{font-size:11px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,.3);text-transform:uppercase;}
+.int-room-num{font-size:32px;font-weight:800;letter-spacing:-1.5px;line-height:1;}
+.back-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 18px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04);
+  cursor:pointer;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);
+  transition:all .15s;font-family:inherit;
+}
+.back-btn:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2);}
+
+/* 내부 콘텐츠 그리드 */
+.int-grid{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;min-height:0;}
+
+/* 카드 공통 */
+.int-card{
+  border-radius:14px;padding:20px 22px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.03);
+  display:flex;flex-direction:column;gap:12px;
+  overflow:hidden;
+}
+.int-card h4{font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);flex-shrink:0;}
+
+/* 게스트 카드 */
+.guest-name{font-size:22px;font-weight:700;letter-spacing:-.5px;color:#F1F5F9;line-height:1.2;}
+.guest-meta{font-size:12px;color:rgba(255,255,255,.4);line-height:2;}
+.flag{font-size:20px;}
+
+/* 위험 게이지 */
+.gauge-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+.gauge-svg{width:100%;max-width:180px;}
+.gauge-pct{font-size:38px;font-weight:800;letter-spacing:-2px;text-align:center;line-height:1;}
+.gauge-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-align:center;opacity:.5;}
+
+/* SHAP 바 */
+.shap-row{display:flex;flex-direction:column;gap:8px;}
+.shap-item{display:flex;flex-direction:column;gap:4px;}
+.shap-feat{font-size:11px;font-weight:600;color:#F1F5F9;}
+.shap-desc{font-size:10px;color:rgba(255,255,255,.35);}
+.shap-bar-wrap{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;}
+.shap-bar{height:100%;border-radius:3px;transition:width 1s .6s;}
+
+/* 플렉시 추천 */
+.flexi-rec{
+  border-radius:10px;padding:14px 16px;
+  border-left:3px solid;
+  flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;
+}
+.flexi-rec.action-flexi{border-left-color:#F59E0B;background:rgba(245,158,11,.07);}
+.flexi-rec.action-std  {border-left-color:#34D399;background:rgba(52,211,153,.07);}
+.flexi-rec.action-high {border-left-color:#F87171;background:rgba(248,113,113,.07);}
+.flexi-action{font-size:14px;font-weight:700;color:#F1F5F9;}
+.flexi-reason{font-size:11px;color:rgba(255,255,255,.4);line-height:1.7;}
+.discount-badge{
+  display:inline-block;padding:4px 10px;border-radius:6px;
+  font-size:12px;font-weight:700;
+  background:rgba(245,158,11,.15);color:#FCD34D;
+}
+
+/* 공실 화면 */
+.vacant-view{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.vacant-icon{font-size:48px;opacity:.2;}
+.vacant-text{font-size:16px;font-weight:500;color:rgba(255,255,255,.2);}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<!-- ── 호텔 평면도 뷰 ── -->
+<div id="hotel-view">
+  <div class="hotel-header">
+    <div class="hotel-name">Hotel No-Show DSS &nbsp;·&nbsp; Decision Support System</div>
+    <div class="hotel-floor"><span>3F</span> FLOOR PLAN</div>
+    <div class="hotel-sub">방을 클릭하면 예약 현황으로 진입합니다</div>
+  </div>
+
+  <div class="floor-plan">
+    <!-- Wing A -->
+    <div class="room high"  data-id="101" onclick="enterRoom(this)">
+      <div><div class="room-num">101</div><div class="room-guest">João Silva</div><div class="room-detail">PRT · Deluxe · BB</div></div>
+      <div class="risk-pill high"><div class="pulse-dot high"></div>고위험 87%</div>
+    </div>
+    <div class="room mid"   data-id="102" onclick="enterRoom(this)">
+      <div><div class="room-num">102</div><div class="room-guest">Emma Wilson</div><div class="room-detail">GBR · Standard · HB</div></div>
+      <div class="risk-pill mid"><div class="pulse-dot mid"></div>중위험 52%</div>
+    </div>
+    <div class="room low"   data-id="103" onclick="enterRoom(this)">
+      <div><div class="room-num">103</div><div class="room-guest">Marie Dupont</div><div class="room-detail">FRA · Suite · FB</div></div>
+      <div class="risk-pill low"><div class="pulse-dot low"></div>저위험 18%</div>
+    </div>
+
+    <!-- 복도 -->
+    <div class="corridor"><div class="corridor-text">CORRIDOR</div></div>
+
+    <!-- Wing B -->
+    <div class="room high"  data-id="201" onclick="enterRoom(this)">
+      <div><div class="room-num">201</div><div class="room-guest">Carlos Ruiz</div><div class="room-detail">ESP · Deluxe · BB</div></div>
+      <div class="risk-pill high"><div class="pulse-dot high"></div>고위험 78%</div>
+    </div>
+    <div class="room high"  data-id="202" onclick="enterRoom(this)">
+      <div><div class="room-num">202</div><div class="room-guest">Ana Ferreira</div><div class="room-detail">BRA · Suite · SC</div></div>
+      <div class="risk-pill high"><div class="pulse-dot high"></div>고위험 91%</div>
+    </div>
+    <div class="room mid"   data-id="203" onclick="enterRoom(this)">
+      <div><div class="room-num">203</div><div class="room-guest">Lena Schmidt</div><div class="room-detail">DEU · Standard · BB</div></div>
+      <div class="risk-pill mid"><div class="pulse-dot mid"></div>중위험 61%</div>
+    </div>
+
+    <!-- Row 2 Wing A -->
+    <div class="room high"  data-id="104" onclick="enterRoom(this)">
+      <div><div class="room-num">104</div><div class="room-guest">Li Wei</div><div class="room-detail">CHN · Jr. Suite · BB</div></div>
+      <div class="risk-pill high"><div class="pulse-dot high"></div>고위험 83%</div>
+    </div>
+    <div class="room vacant" data-id="105" onclick="enterRoom(this)">
+      <div><div class="room-num">105</div><div class="room-guest" style="color:rgba(255,255,255,.15);">— 공실 —</div><div class="room-detail"> </div></div>
+      <div class="risk-pill vacant">VACANT</div>
+    </div>
+    <div class="room low"   data-id="106" onclick="enterRoom(this)">
+      <div><div class="room-num">106</div><div class="room-guest">Klaus Weber</div><div class="room-detail">DEU · Standard · HB</div></div>
+      <div class="risk-pill low"><div class="pulse-dot low"></div>저위험 22%</div>
+    </div>
+
+    <!-- Row 2 Wing B -->
+    <div class="room low"   data-id="204" onclick="enterRoom(this)">
+      <div><div class="room-num">204</div><div class="room-guest">Sofia Ricci</div><div class="room-detail">ITA · Deluxe · FB</div></div>
+      <div class="risk-pill low"><div class="pulse-dot low"></div>저위험 15%</div>
+    </div>
+    <div class="room mid"   data-id="205" onclick="enterRoom(this)">
+      <div><div class="room-num">205</div><div class="room-guest">Jan de Vries</div><div class="room-detail">NLD · Standard · BB</div></div>
+      <div class="risk-pill mid"><div class="pulse-dot mid"></div>중위험 48%</div>
+    </div>
+    <div class="room vacant" data-id="206" onclick="enterRoom(this)">
+      <div><div class="room-num">206</div><div class="room-guest" style="color:rgba(255,255,255,.15);">— 공실 —</div><div class="room-detail"> </div></div>
+      <div class="risk-pill vacant">VACANT</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 방 진입 오버레이 ── -->
+<div id="room-overlay"></div>
+
+<!-- ── 방 내부 ── -->
+<div id="room-interior">
+  <div class="int-header">
+    <div>
+      <div class="int-room-label">객실</div>
+      <div class="int-room-num" id="int-room-num">101</div>
+    </div>
+    <button class="back-btn" onclick="exitRoom()">← 평면도로</button>
+  </div>
+  <div id="int-content"></div>
+</div>
+
+<script>
+/* ══════════════════ 객실 데이터 ══════════════════ */
+const FLAGS = {PRT:'🇵🇹',GBR:'🇬🇧',FRA:'🇫🇷',ESP:'🇪🇸',BRA:'🇧🇷',DEU:'🇩🇪',CHN:'🇨🇳',ITA:'🇮🇹',NLD:'🇳🇱',USA:'🇺🇸'};
+
+const ROOMS = {
+  '101':{guest:'João Silva',country:'PRT',room:'Deluxe',meal:'BB',lead:312,adults:2,children:0,risk:.87,
+    shap:[{f:'lead_time',v:'312일',d:'장기 예약 — 변심 가능성↑',r:.34},
+          {f:'country',  v:'PRT',  d:'포르투갈 국적 (취소율 높음)',r:.28},
+          {f:'deposit',  v:'없음', d:'무보증금 예약',r:.19}]},
+  '102':{guest:'Emma Wilson',country:'GBR',room:'Standard',meal:'HB',lead:87,adults:2,children:1,risk:.52,
+    shap:[{f:'prev_cancel',v:'1회',  d:'과거 취소 이력 있음',r:.22},
+          {f:'lead_time', v:'87일',  d:'중기 예약',r:.15},
+          {f:'special_req',v:'0건', d:'요청 없음 (애착 낮음)',r:.12}]},
+  '103':{guest:'Marie Dupont',country:'FRA',room:'Suite',meal:'FB',lead:14,adults:2,children:0,risk:.18,
+    shap:[{f:'lead_time',   v:'14일', d:'단기 예약 — 변심 가능성↓',r:.08},
+          {f:'special_req', v:'2건',  d:'특별 요청 다수 (애착↑)',r:.06},
+          {f:'repeat_guest',v:'Yes',  d:'재방문 고객',r:.05}]},
+  '104':{guest:'Li Wei',country:'CHN',room:'Jr. Suite',meal:'BB',lead:245,adults:1,children:0,risk:.83,
+    shap:[{f:'lead_time',v:'245일',d:'장기 예약',r:.31},
+          {f:'country',  v:'CHN',  d:'중국 국적 예약 패턴',r:.24},
+          {f:'adults',   v:'1명',  d:'1인 예약 (단독 결정)',r:.17}]},
+  '105':null,
+  '106':{guest:'Klaus Weber',country:'DEU',room:'Standard',meal:'HB',lead:22,adults:2,children:2,risk:.22,
+    shap:[{f:'children',   v:'2명', d:'자녀 동반 (취소율↓)',r:.10},
+          {f:'lead_time',  v:'22일',d:'단기 예약',r:.07},
+          {f:'repeat_guest',v:'Yes',d:'재방문 고객',r:.06}]},
+  '201':{guest:'Carlos Ruiz',country:'ESP',room:'Deluxe',meal:'BB',lead:198,adults:2,children:0,risk:.78,
+    shap:[{f:'lead_time',  v:'198일',d:'장기 예약',r:.29},
+          {f:'country',    v:'ESP',  d:'스페인 국적 예약 패턴',r:.21},
+          {f:'deposit',    v:'없음', d:'무보증금 예약',r:.18}]},
+  '202':{guest:'Ana Ferreira',country:'BRA',room:'Suite',meal:'SC',lead:421,adults:2,children:0,risk:.91,
+    shap:[{f:'lead_time',  v:'421일',d:'매우 장기 예약 (최고 위험)',r:.42},
+          {f:'country',    v:'BRA',  d:'브라질 국적 패턴',r:.26},
+          {f:'meal',       v:'SC',   d:'식사 미포함 — 외부 옵션 열려있음',r:.14}]},
+  '203':{guest:'Lena Schmidt',country:'DEU',room:'Standard',meal:'BB',lead:63,adults:1,children:0,risk:.61,
+    shap:[{f:'adults',    v:'1명', d:'1인 예약',r:.19},
+          {f:'lead_time', v:'63일',d:'중기 예약',r:.16},
+          {f:'country',   v:'DEU', d:'독일 국적 패턴',r:.12}]},
+  '204':{guest:'Sofia Ricci',country:'ITA',room:'Deluxe',meal:'FB',lead:9,adults:2,children:1,risk:.15,
+    shap:[{f:'meal',       v:'FB',  d:'풀보드 — 이탈 동기 낮음',r:.07},
+          {f:'lead_time',  v:'9일', d:'임박 예약 — 변심 거의 없음',r:.06},
+          {f:'children',   v:'1명', d:'자녀 동반',r:.05}]},
+  '205':{guest:'Jan de Vries',country:'NLD',room:'Standard',meal:'BB',lead:105,adults:2,children:0,risk:.48,
+    shap:[{f:'lead_time',  v:'105일',d:'중기 예약',r:.18},
+          {f:'country',    v:'NLD',  d:'네덜란드 국적 패턴',r:.13},
+          {f:'deposit',    v:'없음', d:'무보증금 예약',r:.11}]},
+  '206':null,
+};
+
+function riskClass(r){return r>.65?'high':r>.40?'mid':'low';}
+function riskLabel(r){return r>.65?'고위험':r>.40?'중위험':'저위험';}
+function riskColor(r){return r>.65?'#F87171':r>.40?'#FCD34D':'#34D399';}
+function discountRate(r){return Math.min(18,Math.max(5,Math.round(5+(r-.5)*26)));}
+
+/* ══════════════════ 방 내부 HTML 생성 ══════════════════ */
+function buildRoomContent(id){
+  const d = ROOMS[id];
+  if(!d){
+    return `<div class="vacant-view">
+      <div class="vacant-icon">🛏️</div>
+      <div class="vacant-text">현재 예약 없음 — 공실</div>
+    </div>`;
+  }
+  const rc  = riskClass(d.risk);
+  const col = riskColor(d.risk);
+  const pct = Math.round(d.risk*100);
+
+  // Gauge SVG (반원)
+  const R=70, cx=90, cy=82;
+  const arc = d.risk * Math.PI;
+  const ex  = cx + R*Math.cos(Math.PI-arc);
+  const ey  = cy - R*Math.sin(Math.PI-arc);
+  const lg  = arc > Math.PI/2 ? 1 : 0;
+
+  // Flexi 추천
+  let flexiHtml='';
+  if(d.risk>.65){
+    const disc=discountRate(d.risk);
+    flexiHtml=`<div class="flexi-rec action-flexi">
+      <div class="flexi-action">⚡ Flexi 풀 라우팅 권장</div>
+      <div class="flexi-reason">취소 위험 ${pct}% — 빈 방 손실 방지를 위해<br>Flexi 요금으로 전환을 권장합니다.</div>
+      <span class="discount-badge">할인율 ${disc}% 적용</span>
+    </div>`;
+  } else if(d.risk>.40){
+    flexiHtml=`<div class="flexi-rec action-flexi">
+      <div class="flexi-action">🔶 모니터링 — 중위험</div>
+      <div class="flexi-reason">임박 시점 재확인 필요.<br>점유율 60% 이상 시 Flexi 전환 검토.</div>
+    </div>`;
+  } else {
+    flexiHtml=`<div class="flexi-rec action-std">
+      <div class="flexi-action">✅ Standard 배정 유지</div>
+      <div class="flexi-reason">취소 위험 낮음 — 현재 배정 유지.</div>
+    </div>`;
+  }
+
+  const shapRows = d.shap.map(s=>`
+    <div class="shap-item">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div class="shap-feat">${s.f}</div>
+        <div style="font-size:11px;font-weight:700;color:${col};">+${(s.r).toFixed(2)}</div>
+      </div>
+      <div class="shap-desc">${s.d} &nbsp;(${s.v})</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar" style="width:${Math.round(s.r/0.45*100)}%;background:${col}33;border-right:2px solid ${col};"></div>
+      </div>
+    </div>`).join('');
+
+  return `<div class="int-grid">
+
+    <!-- 게스트 정보 -->
+    <div class="int-card">
+      <h4>게스트 정보</h4>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="flag">${FLAGS[d.country]||'🌍'}</span>
+        <div>
+          <div class="guest-name">${d.guest}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;">${d.country} · ${d.room}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;justify-content:flex-end;">
+        <div class="guest-meta">
+          <span style="color:rgba(255,255,255,.25);">meal plan&nbsp;&nbsp;</span>${d.meal}<br>
+          <span style="color:rgba(255,255,255,.25);">lead time&nbsp;&nbsp;</span>${d.lead}일 전 예약<br>
+          <span style="color:rgba(255,255,255,.25);">인원&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>성인 ${d.adults}명${d.children?` · 아동 ${d.children}명`:''}
+        </div>
+        ${flexiHtml}
+      </div>
+    </div>
+
+    <!-- 위험도 게이지 -->
+    <div class="int-card">
+      <h4>취소 위험도</h4>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 180 100">
+          <!-- 배경 트랙 -->
+          <path d="M 20 82 A 70 70 0 0 1 160 82"
+            fill="none" stroke="rgba(255,255,255,.07)" stroke-width="10" stroke-linecap="round"/>
+          <!-- 위험 아크 -->
+          <path d="M 20 82 A 70 70 0 ${lg} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}"
+            fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round"
+            style="filter:drop-shadow(0 0 6px ${col})"/>
+          <!-- 눈금 -->
+          ${[0,.25,.5,.75,1].map(v=>{
+            const a2=v*Math.PI;
+            const ix=cx+R*Math.cos(Math.PI-a2), iy=cy-R*Math.sin(Math.PI-a2);
+            const ox=cx+(R+14)*Math.cos(Math.PI-a2), oy=cy-(R+14)*Math.sin(Math.PI-a2);
+            return `<line x1="${ix.toFixed(1)}" y1="${iy.toFixed(1)}" x2="${ox.toFixed(1)}" y2="${oy.toFixed(1)}"
+              stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>
+              <text x="${(cx+(R+22)*Math.cos(Math.PI-a2)).toFixed(1)}" y="${(cy-(R+22)*Math.sin(Math.PI-a2)+3).toFixed(1)}"
+              text-anchor="middle" font-size="8" fill="rgba(255,255,255,.25)" font-family="Inter">${Math.round(v*100)}%</text>`;
+          }).join('')}
+          <!-- 포인터 점 -->
+          <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="5" fill="${col}"
+            style="filter:drop-shadow(0 0 5px ${col})"/>
+        </svg>
+        <div class="gauge-pct" style="color:${col};">${pct}%</div>
+        <div class="gauge-label">${riskLabel(d.risk)} · LightGBM</div>
+      </div>
+    </div>
+
+    <!-- SHAP 요인 -->
+    <div class="int-card">
+      <h4>SHAP 주요 위험 요인</h4>
+      <div class="shap-row" style="flex:1;justify-content:center;display:flex;flex-direction:column;gap:14px;">
+        ${shapRows}
+      </div>
+    </div>
+
+  </div>`;
+}
+
+/* ══════════════════ 진입 / 퇴장 ══════════════════ */
+let entering = false;
+
+function enterRoom(el){
+  if(entering) return;
+  entering = true;
+
+  const id  = el.dataset.id;
+  const rect = el.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  const t = (rect.top    / vh * 100).toFixed(2);
+  const r = ((vw - rect.right) / vw * 100).toFixed(2);
+  const b = ((vh - rect.bottom)/ vh * 100).toFixed(2);
+  const l = (rect.left   / vw * 100).toFixed(2);
+
+  const ov = document.getElementById('room-overlay');
+  ov.style.transition = 'none';
+  ov.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}% round 13px)`;
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      ov.style.transition = 'clip-path .52s cubic-bezier(.77,0,.18,1)';
+      ov.classList.add('open');
+
+      document.getElementById('int-room-num').textContent = id;
+      document.getElementById('int-content').innerHTML = buildRoomContent(id);
+
+      setTimeout(()=>{
+        document.getElementById('room-interior').classList.add('visible');
+        entering = false;
+      }, 300);
+    });
+  });
+}
+
+function exitRoom(){
+  const interior = document.getElementById('room-interior');
+  const ov = document.getElementById('room-overlay');
+  interior.classList.remove('visible');
+  setTimeout(()=>{
+    ov.classList.remove('open');
+    setTimeout(()=>{ document.getElementById('int-content').innerHTML=''; }, 600);
+  }, 200);
+}
+
+/* ══════════════════ 배경 캔버스 (분위기) ══════════════════ */
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+
+const DOTS=[];
+for(let i=0;i<80;i++){
+  DOTS.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+    r:Math.random()*1.8+.5,a:Math.random()*.3+.05});
+}
+
+function drawBg(){
+  ctx.fillStyle='#060C1E'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  // 격자
+  ctx.strokeStyle='rgba(255,255,255,.025)'; ctx.lineWidth=1;
+  const s=60;
+  for(let x=0;x<canvas.width;x+=s){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+  for(let y=0;y<canvas.height;y+=s){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+  // 떠다니는 점
+  DOTS.forEach(d=>{
+    d.x+=d.vx; d.y+=d.vy;
+    if(d.x<0||d.x>canvas.width) d.vx*=-1;
+    if(d.y<0||d.y>canvas.height) d.vy*=-1;
+    ctx.globalAlpha=d.a;
+    ctx.fillStyle='#3B82F6';
+    ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+(function loop(){ requestAnimationFrame(loop); drawBg(); })();
+</script>
+</body>
+</html>

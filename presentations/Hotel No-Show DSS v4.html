@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel No-Show DSS · v4 · 5-Act</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#0a0a0a; color:#f0f0f0;
+  font-family:'Helvetica Neue', Arial, 'Noto Sans KR', sans-serif;
+  overflow:hidden; height:100vh; width:100vw;
+}
+#deck { width:100%; height:100%; position:relative; }
+.slide {
+  position:absolute; width:100%; height:100%;
+  display:none; flex-direction:column;
+  padding:40px 80px 50px;
+}
+.slide.active { display:flex; }
+.slide-header {
+  display:flex; justify-content:space-between; align-items:flex-start;
+  margin-bottom:28px; flex-shrink:0;
+}
+.brand { font-size:11px; letter-spacing:3px; color:#444; text-transform:uppercase; }
+.brand span { color:#c9a84c; }
+.slide-num { font-size:11px; letter-spacing:2px; color:#2e2e2e; }
+.act-label {
+  display:inline-flex; align-items:center; gap:10px;
+  font-size:10px; letter-spacing:4px; color:#c9a84c; text-transform:uppercase; margin-bottom:10px;
+}
+.act-label .act-num {
+  background:#c9a84c; color:#0a0a0a; font-weight:700;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  font-size:10px; letter-spacing:0;
+}
+h1.main { font-size:36px; font-weight:300; line-height:1.25; color:#f0f0f0; margin-bottom:10px; }
+h1.main strong { font-weight:600; color:#fff; }
+h2.sub { font-size:15px; font-weight:300; color:#666; margin-bottom:20px; line-height:1.7; }
+.content { flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
+.divider { width:36px; height:1px; background:#c9a84c; margin:12px 0; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+th { text-align:left; padding:7px 14px; color:#c9a84c; font-weight:500; font-size:10px; letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid #1a1a1a; }
+td { padding:9px 14px; color:#aaa; border-bottom:1px solid #141414; line-height:1.5; }
+td strong { color:#ddd; }
+tr:last-child td { border-bottom:none; }
+tr.highlight-row td { background:#0e0d08; color:#c9a84c; }
+tr.highlight-row td strong { color:#e8c96a; }
+code { color:#c9a84c; font-family:'Courier New', monospace; font-size:12px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+.three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.card { background:#0f0f0f; border:1px solid #1c1c1c; padding:18px 20px; }
+.card .num { font-size:28px; font-weight:700; color:#c9a84c; margin-bottom:4px; }
+.card .label { font-size:10px; color:#555; letter-spacing:1px; text-transform:uppercase; }
+.card .desc { font-size:12px; color:#888; margin-top:8px; line-height:1.6; }
+.card.accent { border-color:#c9a84c44; background:#0d0c08; }
+.highlight-box {
+  background:#0f0f0f; border-left:3px solid #c9a84c;
+  padding:14px 18px; font-size:13px; color:#aaa; line-height:1.9;
+}
+.highlight-box strong { color:#eee; }
+.flow-block {
+  background:#080808; border:1px solid #1a1a1a;
+  padding:18px 22px; font-family:'Courier New', monospace;
+  font-size:12px; color:#777; line-height:2.0; white-space:pre;
+}
+.flow-block .acc { color:#c9a84c; }
+.flow-block .pos { color:#72b572; }
+.flow-block .neg { color:#c97070; }
+.flow-block .dim { color:#2a2a2a; }
+.num-list { list-style:none; }
+.num-list li { display:flex; gap:14px; margin-bottom:14px; align-items:flex-start; }
+.num-list .n {
+  min-width:24px; height:24px; border:1px solid #2a2a2a; color:#c9a84c;
+  display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;
+}
+.num-list .text { font-size:13px; color:#aaa; line-height:1.7; }
+.num-list .text strong { color:#ddd; display:block; margin-bottom:1px; }
+.tag { display:inline-block; padding:2px 8px; background:#0e0d08; border:1px solid #c9a84c33; color:#c9a84c; font-size:10px; letter-spacing:1px; }
+.gap-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:#1a0a0a; border:1px solid #c9705044; color:#c97050;
+  padding:8px 16px; font-size:12px; letter-spacing:1px;
+}
+.gap-badge .icon { font-size:16px; }
+.chart-wrap { position:relative; }
+#nav { position:fixed; bottom:22px; right:32px; display:flex; gap:10px; z-index:100; }
+#nav button {
+  background:#111; border:1px solid #222; color:#555;
+  width:34px; height:34px; cursor:pointer; font-size:13px; transition:all .15s;
+}
+#nav button:hover { background:#1c1c1c; color:#c9a84c; border-color:#c9a84c44; }
+#progress { position:fixed; bottom:0; left:0; height:2px; background:#c9a84c; transition:width .3s; z-index:200; }
+.step-row { display:flex; align-items:center; gap:0; margin-bottom:10px; }
+.step-box {
+  background:#0f0f0f; border:1px solid #1c1c1c;
+  padding:10px 16px; font-size:12px; color:#888; min-width:140px; text-align:center; line-height:1.5;
+}
+.step-box strong { display:block; color:#c9a84c; font-size:11px; letter-spacing:1px; margin-bottom:2px; }
+.step-box.active-step { border-color:#c9a84c55; background:#0d0c08; color:#ddd; }
+.step-arrow { color:#2a2a2a; padding:0 6px; font-size:14px; }
+.step-arrow.active-arrow { color:#c9a84c; }
+.grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+.threshold-card { background:#0f0f0f; border:1px solid #1c1c1c; padding:14px; text-align:center; }
+.threshold-card.best { border-color:#c9a84c55; background:#0d0c08; }
+.threshold-card .th-val { font-size:20px; font-weight:700; color:#c9a84c; margin-bottom:4px; }
+.threshold-card .th-label { font-size:9px; letter-spacing:2px; color:#444; text-transform:uppercase; }
+.threshold-card .th-data { font-size:11px; color:#888; margin-top:8px; line-height:1.7; }
+.threshold-card.best .th-data { color:#aaa; }
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 01 · TITLE
+════════════════════════════════════════════════════════ -->
+<section class="slide active" id="s01">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS</div>
+    <div class="slide-num">01 / 09</div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;">
+    <div>
+      <div style="font-size:10px;letter-spacing:5px;color:#333;text-transform:uppercase;margin-bottom:18px;">
+        2026 · 데이터과학 프로젝트 · 중간발표
+      </div>
+      <h1 style="font-size:52px;font-weight:200;letter-spacing:1px;line-height:1.15;margin-bottom:14px;">
+        HOTEL CANCELLATION<br>
+        <span style="color:#c9a84c;font-weight:500;">DECISION SUPPORT</span>
+      </h1>
+      <div class="divider"></div>
+      <div style="font-size:18px;color:#555;font-weight:300;margin-bottom:8px;margin-top:4px;">
+        취소 위험 우선순위화 &nbsp;·&nbsp; Flexi Rate 시스템 &nbsp;·&nbsp; LLM 에이전트 시뮬레이션
+      </div>
+      <div style="margin-top:36px;display:flex;gap:28px;align-items:center;">
+        <div style="font-size:11px;color:#333;letter-spacing:2px;">심재형 &nbsp;·&nbsp; 이고은 &nbsp;·&nbsp; 김나리</div>
+        <div style="width:1px;height:14px;background:#222;"></div>
+        <div style="font-size:11px;color:#333;letter-spacing:1px;">한양대학교 데이터사이언스</div>
+        <div style="width:1px;height:14px;background:#222;"></div>
+        <div style="font-size:11px;color:#333;letter-spacing:1px;">2026. 05. 27</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:auto;padding-top:20px;">
+    <div style="font-size:9px;letter-spacing:3px;color:#222;text-transform:uppercase;padding-top:2px;">Act</div>
+    <div style="font-size:9px;letter-spacing:2px;color:#333;">01 예측 가능</div>
+    <div style="color:#1a1a1a;padding:0 6px;">·</div>
+    <div style="font-size:9px;letter-spacing:2px;color:#333;">02 의사결정 지원</div>
+    <div style="color:#1a1a1a;padding:0 6px;">·</div>
+    <div style="font-size:9px;letter-spacing:2px;color:#333;">03 데이터 부재</div>
+    <div style="color:#1a1a1a;padding:0 6px;">·</div>
+    <div style="font-size:9px;letter-spacing:2px;color:#333;">04 LLM 시뮬레이션</div>
+    <div style="color:#1a1a1a;padding:0 6px;">·</div>
+    <div style="font-size:9px;letter-spacing:2px;color:#333;">05 초기 가이드라인</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 02 · ACT 1 — ML로 취소 예측은 가능하다 (데이터)
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s02">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 1</div>
+    <div class="slide-num">02 / 09</div>
+  </div>
+  <div class="content">
+    <div class="act-label"><div class="act-num">1</div>ML로 취소 예측은 가능하다</div>
+    <h1 class="main">포르투갈 호텔 2년치 데이터,<br><strong>119,390건을 분석했습니다.</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="margin-top:8px;">
+      <div>
+        <table>
+          <thead>
+            <tr><th>항목</th><th>내용</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>데이터셋</td><td><strong>Kaggle Hotel Booking Demand</strong></td></tr>
+            <tr><td>기간</td><td>2015.07 — 2017.08 · 26개월</td></tr>
+            <tr><td>규모</td><td><strong>119,390건 × 32컬럼</strong></td></tr>
+            <tr><td>City Hotel (리스본)</td><td><strong>취소율 41.7%</strong></td></tr>
+            <tr><td>Resort Hotel (알가르브)</td><td><strong>취소율 27.8%</strong></td></tr>
+            <tr><td>테스트셋 기준</td><td>시간 기반 split — 마지막 6개월 (40,687건)</td></tr>
+            <tr><td>외부 데이터</td><td>Open-Meteo API — 날씨 7개 변수 추가</td></tr>
+          </tbody>
+        </table>
+        <div class="highlight-box" style="margin-top:16px;">
+          <strong>시간 기반 split을 선택한 이유</strong><br>
+          운영 환경에서는 항상 과거로 학습해 미래를 예측합니다.<br>
+          무작위 분할은 미래 정보가 훈련에 새어 들어가 성능 과대평가가 발생합니다.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:14px;">평가 지표 선택 이유</div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="num">PR-AUC</div>
+          <div class="label">Primary Metric</div>
+          <div class="desc">취소율 37% — 비용 비대칭(빈 방 손실 ≠ 오버부킹 보상).<br>임계값 선택에 직접 활용 가능한 지표.</div>
+        </div>
+        <div class="card">
+          <div class="num" style="font-size:20px;">F1@0.5</div>
+          <div class="label">Secondary Metric</div>
+          <div class="desc">임계값 0.5 고정 기준 보조 지표. 팀 내 빠른 비교용.</div>
+        </div>
+        <div style="margin-top:14px;font-size:10px;color:#333;line-height:1.9;padding-left:2px;">
+          타깃 변수: <code>is_canceled</code> (0/1)<br>
+          누수 컬럼 6개 DROP 확정 — <code>reservation_status</code> 등<br>
+          날씨 다중공선성 3개 제거 · 최종 피처: <strong style="color:#555;">70개</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 03 · ACT 1 — 모델 성능 비교
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s03">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 1</div>
+    <div class="slide-num">03 / 09</div>
+  </div>
+  <div class="content" style="flex-direction:row;gap:40px;align-items:center;">
+    <div style="flex:1;min-width:0;">
+      <div class="act-label"><div class="act-num">1</div>ML로 취소 예측은 가능하다</div>
+      <h1 class="main" style="font-size:32px;">LightGBM<br><strong>PR-AUC 0.8189</strong></h1>
+      <div class="divider"></div>
+      <table style="margin-bottom:16px;">
+        <thead>
+          <tr><th>#</th><th>모델</th><th>PR-AUC</th><th>F1@0.5</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>Dummy (기준선)</td><td>0.3870</td><td>0.0000</td></tr>
+          <tr><td>1</td><td>Logistic Regression</td><td>0.7818</td><td>0.7073</td></tr>
+          <tr><td>2</td><td>Random Forest</td><td>0.7785</td><td>0.6482</td></tr>
+          <tr><td>3</td><td>XGBoost</td><td>0.8053</td><td>0.6863</td></tr>
+          <tr class="highlight-row"><td>4</td><td><strong>LightGBM ★</strong></td><td><strong>0.8189</strong></td><td>0.6872</td></tr>
+        </tbody>
+      </table>
+      <div class="highlight-box">
+        <strong>결론:</strong> 전통적 ML로 호텔 취소 예측은 충분히 가능합니다.<br>
+        Dummy 대비 <strong>+0.432</strong> — 데이터에 패턴이 존재함을 확인.
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:#333;line-height:1.8;">
+        LightGBM 선정 기준: XGBoost 대비 PR-AUC 차이 0.0136 ≥ 0.01 → 높은 쪽 선택<br>
+        테스트셋: 40,687행 (2017-01 ~ 2017-08) · 취소율 38.7%
+      </div>
+    </div>
+    <div style="flex:1;min-width:0;max-width:460px;">
+      <div class="chart-wrap" style="height:320px;">
+        <canvas id="chartPRAUC"></canvas>
+      </div>
+      <div style="font-size:10px;color:#333;text-align:center;margin-top:8px;letter-spacing:1px;">
+        PR-AUC 비교 (5개 모델 · 테스트셋 기준)
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 04 · ACT 2 — 예측만으로는 부족하다, DSS 앱
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s04">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 2</div>
+    <div class="slide-num">04 / 09</div>
+  </div>
+  <div class="content">
+    <div class="act-label"><div class="act-num">2</div>예측만으로는 부족하다 — DSS 앱</div>
+    <h1 class="main" style="font-size:32px;">확률 숫자만으로는<br><strong>"매니저가 무엇을 해야 하는가"가 빠져 있습니다.</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="margin-top:4px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:12px;">Tab 1 — 예약 우선순위 리스트</div>
+        <div class="card accent" style="margin-bottom:12px;">
+          <div style="font-size:12px;color:#888;line-height:1.8;">
+            <strong style="color:#c9a84c;display:block;margin-bottom:6px;">기존 예약 고위험 우선순위화</strong>
+            모델 예측 취소 확률 기준 정렬<br>
+            SHAP 위험 요인 자동 표시<br>
+            행 선택 → 개별 예약 SHAP 패널 연동<br>
+            매니저의 조기 개입 의사결정 지원
+          </div>
+        </div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:12px;">Tab 2 — Flexi 라우팅 권장</div>
+        <div class="card accent">
+          <div style="font-size:12px;color:#888;line-height:1.8;">
+            <strong style="color:#c9a84c;display:block;margin-bottom:6px;">신규 예약 Flexi 오퍼 권장</strong>
+            예약 정보 입력 → 취소 확률 실시간 출력<br>
+            임계값 초과 시: Flexi 풀 라우팅 권장<br>
+            할인율 자동 계산 + SHAP 위험 근거 제시<br>
+            최종 결정은 매니저 승인 (GDPR Art.22)
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:12px;">핵심 발견 — DSS가 만들어내는 것</div>
+        <div class="highlight-box" style="margin-bottom:14px;">
+          <strong>앱 도입 전:</strong> 취소 여부를 모르고 운영 → 사후 대응<br>
+          <strong>앱 도입 후:</strong> 취소 위험 예약에 Flexi 오퍼 → 사전 합의
+        </div>
+        <div style="font-size:13px;color:#888;line-height:1.9;margin-bottom:14px;">
+          그리고 이 앱이 실제 호텔에 도입되면<br>
+          지금까지 <strong style="color:#c9a84c;">존재하지 않았던 데이터</strong>가 쌓입니다.
+        </div>
+        <div class="flow-block">
+<span class="acc">어떤 고객</span>에게
+<span class="acc">어떤 조건</span>으로 Flexi를 제시했고
+고객이 <span class="pos">수락했는지</span> / <span class="neg">거절했는지</span>
+
+→ 이 label이 지금은 없습니다.</div>
+        <div style="margin-top:12px;">
+          <div class="gap-badge">
+            <div class="icon">→</div>
+            <div>그것이 다음 Act의 질문입니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 05 · ACT 3 — 구조적 데이터 부재
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s05">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 3</div>
+    <div class="slide-num">05 / 09</div>
+  </div>
+  <div class="content">
+    <div class="act-label"><div class="act-num">3</div>그 데이터가 지금 없다 — 구조적 부재</div>
+    <h1 class="main" style="font-size:34px;">Kaggle 데이터에는<br><strong>Flexi 오퍼 수락 여부 label이 없습니다.</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="margin-top:8px;">
+      <div>
+        <div style="font-size:13px;color:#777;line-height:2.0;margin-bottom:18px;">
+          어떤 산업 데이터를 찾아봐도 없습니다.<br>
+          호텔들이 이 방식을 <strong style="color:#bbb;">체계적으로 운영한 적이 없으니까요.</strong>
+        </div>
+        <div class="flow-block">
+<span class="dim">우리가 묻고 싶은 것:</span>
+
+<span class="acc">"얼마의 할인율에서,</span>
+<span class="acc"> 어떤 고객이 Flexi를 수락하는가?"</span>
+
+<span class="dim">데이터가 없다면?</span>
+<span class="pos">→ 만들어야 합니다.</span>
+        </div>
+        <div style="margin-top:18px;">
+          <ul class="num-list">
+            <li>
+              <div class="n">A</div>
+              <div class="text">
+                <strong>무작위 파라미터 설정</strong>
+                할인율과 수락률을 임의로 가정 — "왜 이 값인가"를 방어하기 어렵습니다.
+              </div>
+            </li>
+            <li>
+              <div class="n">B</div>
+              <div class="text">
+                <strong style="color:#c9a84c;">실제 데이터 기반 LLM 에이전트 시뮬레이션</strong>
+                실제 예약 패턴을 에이전트의 뼈대로 사용합니다.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:14px;">구조적 공백 — 기존 연구도 없음</div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="label" style="margin-bottom:8px;">전통 호텔 RM 시뮬레이션</div>
+          <div class="desc">몬테카를로 오버부킹 (IEEE 2015) — 모든 고객을 동일한 통계 분포로 모델링. <strong style="color:#c97050;">고객 이질성 무시, 할인 오퍼 반응 모델 없음.</strong></div>
+        </div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="label" style="margin-bottom:8px;">LLM 소비자 시뮬레이션 (2025~)</div>
+          <div class="desc">AgentSociety, MALLES, LLM-Consumer — LLM 에이전트로 이질적 소비자 행동 포착. <strong style="color:#c9a84c;">그러나 호텔 Flexi 파라미터 검증에 적용한 사례 없음.</strong></div>
+        </div>
+        <div style="background:#0a0a0a;border:1px solid #c9a84c22;padding:14px 16px;font-size:12px;color:#888;line-height:1.8;">
+          <strong style="color:#c9a84c;display:block;margin-bottom:6px;">우리의 공백 지점</strong>
+          실제 호텔 예약 데이터셋에서 LLM 제로샷 예측 성능을 측정하고,<br>
+          그 성능을 근거로 동일 데이터 기반 Flexi 시뮬레이션의<br>
+          타당성을 주장하는 <strong style="color:#ddd;">연결 구조</strong> — 선행 연구 없음.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 06 · ACT 4 — LLM 에이전트 시뮬레이션 설계
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s06">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 4</div>
+    <div class="slide-num">06 / 09</div>
+  </div>
+  <div class="content">
+    <div class="act-label"><div class="act-num">4</div>LLM 에이전트로 존재하지 않는 데이터를 시뮬레이션</div>
+    <h1 class="main" style="font-size:30px;">실제 예약 패턴이<br><strong>에이전트의 뼈대입니다.</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="margin-top:6px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:12px;">왜 임의 설정이 아닌가</div>
+        <div style="font-size:13px;color:#888;line-height:1.9;margin-bottom:14px;">
+          포르투갈 국적 + Online TA + 리드타임 120일+ 고객은<br>
+          실제로 우리 데이터에서 <strong style="color:#ddd;">가장 많은 취소 집단</strong>입니다.<br>
+          SHAP Top 피처 7개가 페르소나 설계의 근거입니다.
+        </div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px;">에이전트 추론 4단계 (강제)</div>
+        <div class="flow-block" style="font-size:11px;">
+<span class="dim">1.</span> 이 여행에 얼마나 확신하는가?
+   <span class="acc">→ Emotional State + Commitment</span>
+
+<span class="dim">2.</span> €X 할인이 나에게 의미 있는가?
+   <span class="acc">→ Price Sensitivity + 절대 금액</span>
+
+<span class="dim">3.</span> 방 배정 변경이 문제인가?
+   <span class="acc">→ Certainty Need + special_requests</span>
+
+<span class="dim">4.</span> Flexi 조건이 내 유연성과 맞는가?
+   <span class="acc">→ Flexibility Attitude</span>
+
+→ decision: <span class="pos">ACCEPT_FLEXI</span> / <span class="neg">DECLINE_FLEXI</span> / CANCEL
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px;">SHAP Top 7 — 페르소나 설계 피처</div>
+        <div class="chart-wrap" style="height:240px;margin-bottom:12px;">
+          <canvas id="chartSHAP"></canvas>
+        </div>
+        <div style="font-size:10px;color:#333;text-align:center;margin-bottom:12px;letter-spacing:1px;">
+          LightGBM · Mean |SHAP| · 피처 중요도 순
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="card" style="padding:10px 14px;">
+            <div class="num" style="font-size:16px;">~50건</div>
+            <div class="label">파일럿 샘플 (현재)</div>
+            <div class="desc" style="font-size:11px;">Phase 2에서 전수(~20,000건)로 확장 예정</div>
+          </div>
+          <div class="card" style="padding:10px 14px;">
+            <div class="num" style="font-size:16px;">Qwen 2.5</div>
+            <div class="label">LLM 모델</div>
+            <div class="desc" style="font-size:11px;">14B · 로컬 실행 · vLLM</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 07 · ACT 4 — 방어 논리 : Claim 1 + Claim 2
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s07">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 4</div>
+    <div class="slide-num">07 / 09</div>
+  </div>
+  <div class="content">
+    <div class="act-label"><div class="act-num">4</div>시뮬레이션 방어 논리 — 두 가지 주장</div>
+    <h1 class="main" style="font-size:30px;margin-bottom:8px;">"LLM은 이 도메인을 아는가"<br><strong>이론이 아닌 숫자로 답합니다.</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="margin-top:8px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:12px;">Claim 1 — LLM 제로샷 취소 예측</div>
+        <div class="card accent" style="margin-bottom:10px;">
+          <div class="desc" style="font-size:13px;line-height:1.9;">
+            <strong style="color:#ddd;">훈련 없이 테스트셋에서 성능이 나오는가?</strong><br>
+            예약 데이터 7개 피처를 자연어로 변환 → LLM에 직접 입력<br>
+            LLM이 Dummy를 유의미하게 넘으면:<br>
+            <span style="color:#c9a84c;">"LLM이 이 도메인을 이해한다"는 경험적 근거</span>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#333;line-height:1.8;padding-left:4px;">
+          참고 선행 연구: TabLLM (arXiv:2210.10723), ProtoLLM (2025),<br>
+          SHAP+LLM Faithfulness (arXiv:2512.00163)
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-bottom:12px;">Claim 2 — 게스트 아크타입의 효용</div>
+        <div class="card accent" style="margin-bottom:10px;">
+          <div class="desc" style="font-size:13px;line-height:1.9;">
+            <strong style="color:#ddd;">아크타입이 없을 때 vs 있을 때 비교</strong><br>
+            아크타입 없음 → 모든 세그먼트 비슷한 수락률<br>
+            아크타입 있음 → 세그먼트별 분산이 뚜렷해짐<br>
+            <span style="color:#c9a84c;">차이가 생기는 것 = 아크타입이 정보를 추가한다는 증거</span>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#333;line-height:1.8;padding-left:4px;">
+          참고 선행 연구: MALLES (arXiv:2603.17694),<br>
+          WTP Hotel (arXiv:2602.09802), "Let It Go" (System Dynamics Review 2025)
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;background:#0a0a0a;border:1px solid #1c1c1c;padding:14px 20px;font-size:13px;color:#888;line-height:1.9;">
+      <strong style="color:#ddd;">예상 Q:</strong> "LLM 반응 = 실제 고객 행동이라는 근거가 있나?"<br>
+      <strong style="color:#c9a84c;">A:</strong> 직접 검증이 아니라 시뮬레이션입니다. 할인율 파라미터의 <strong style="color:#ddd;">방향성</strong>(높은 할인 → 높은 수락률)이 도메인 상식에 부합하는지를 확인하는 것이 목적입니다. 정확한 수치 주장이 아닙니다.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 08 · ACT 5 — 초기 가이드라인 (시뮬레이션 결과)
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s08">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; ACT 5</div>
+    <div class="slide-num">08 / 09</div>
+  </div>
+  <div class="content">
+    <div class="act-label"><div class="act-num">5</div>지금 바로 쓸 수 있는 초기 가이드라인</div>
+    <h1 class="main" style="font-size:30px;">Threshold 0.60에서<br><strong>Accept Rate 46.7% · RevPAR +81.4%</strong></h1>
+    <div class="divider"></div>
+    <div class="two-col" style="margin-top:6px;">
+      <div>
+        <div class="chart-wrap" style="height:220px;margin-bottom:12px;">
+          <canvas id="chartThreshold"></canvas>
+        </div>
+        <div style="font-size:10px;color:#333;text-align:center;margin-bottom:12px;letter-spacing:1px;">
+          임계값별 RevPAR 개선율 (%) · 파일럿 50샘플 기준
+        </div>
+        <div class="grid-5">
+          <div class="threshold-card">
+            <div class="th-val">0.50</div>
+            <div class="th-label">Threshold</div>
+            <div class="th-data">Accept 48.0%<br>RevPAR +88.8%</div>
+          </div>
+          <div class="threshold-card">
+            <div class="th-val">0.55</div>
+            <div class="th-label">Threshold</div>
+            <div class="th-data">Accept 46.9%<br>RevPAR +85.9%</div>
+          </div>
+          <div class="threshold-card best">
+            <div class="th-val">0.60</div>
+            <div class="th-label">Threshold ★</div>
+            <div class="th-data">Accept 46.7%<br>RevPAR +81.4%</div>
+          </div>
+          <div class="threshold-card">
+            <div class="th-val">0.65</div>
+            <div class="th-label">Threshold</div>
+            <div class="th-data">Accept 48.8%<br>RevPAR +78.7%</div>
+          </div>
+          <div class="threshold-card">
+            <div class="th-val">0.70</div>
+            <div class="th-label">Threshold</div>
+            <div class="th-data">Accept 46.0%<br>RevPAR +70.6%</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="highlight-box" style="margin-bottom:16px;">
+          <strong>오늘의 시뮬레이션은 그 출발점입니다.</strong><br>
+          호텔이 앱을 도입하고 실제 데이터가 쌓이면<br>
+          이 가이드라인은 <strong>실측치로 교체</strong>됩니다.
+        </div>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px;">할인율 공식 (확정)</div>
+        <div class="flow-block" style="font-size:12px;">
+할인율 = 5% + (cancel_prob − 0.5) × 26%
+         단, 5% ≤ 할인율 ≤ 18%
+
+cancel_prob 0.60 → <span class="acc">7.6%</span>
+cancel_prob 0.75 → <span class="acc">11.5%</span>
+cancel_prob 0.90 → <span class="acc">15.4%</span>
+        </div>
+        <div style="margin-top:14px;font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:10px;">Phase 2 확장 계획</div>
+        <ul class="num-list" style="margin:0;">
+          <li><div class="n">→</div><div class="text">파일럿 50샘플 → 전수 ~20,000건 LLM 에이전트 실행</div></li>
+          <li><div class="n">→</div><div class="text">국적 × 채널 × lead_time 세그먼트별 수락률 분석</div></li>
+          <li><div class="n">→</div><div class="text">LLM 제로샷 취소 예측 PR-AUC 측정 (Claim 1 검증)</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 09 · CONCLUSION
+════════════════════════════════════════════════════════ -->
+<section class="slide" id="s09">
+  <div class="slide-header">
+    <div class="brand"><span>H</span>OTEL · NO-SHOW · DSS &nbsp;·&nbsp; CONCLUSION</div>
+    <div class="slide-num">09 / 09</div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;">
+    <div style="width:100%;">
+      <div style="font-size:10px;letter-spacing:4px;color:#444;text-transform:uppercase;margin-bottom:14px;">5-Act Summary</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="min-width:60px;padding:4px 0;font-size:9px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;">Act 1</div>
+          <div style="font-size:14px;color:#888;line-height:1.6;">LightGBM PR-AUC <strong style="color:#ddd;">0.8189</strong> — 전통적 ML로 취소 예측은 충분히 가능합니다.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="min-width:60px;padding:4px 0;font-size:9px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;">Act 2</div>
+          <div style="font-size:14px;color:#888;line-height:1.6;"><strong style="color:#ddd;">DSS 앱</strong> — 예측을 의사결정으로 연결하는 두 탭 (우선순위 리스트 + Flexi 라우팅).</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="min-width:60px;padding:4px 0;font-size:9px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;">Act 3</div>
+          <div style="font-size:14px;color:#888;line-height:1.6;"><strong style="color:#ddd;">데이터 부재</strong> — Flexi 수락 label이 존재하지 않습니다. 구조적 공백.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="min-width:60px;padding:4px 0;font-size:9px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;">Act 4</div>
+          <div style="font-size:14px;color:#888;line-height:1.6;"><strong style="color:#ddd;">LLM 시뮬레이션</strong> — 실제 예약 데이터 기반 페르소나 × SHAP 7개 피처 × 3층 심리 모델.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="min-width:60px;padding:4px 0;font-size:9px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;">Act 5</div>
+          <div style="font-size:14px;color:#888;line-height:1.6;">Threshold <strong style="color:#ddd;">0.60</strong> — Accept Rate 46.7%, RevPAR <strong style="color:#ddd;">+81.4%</strong>. 실측 데이터 축적 시 교체.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:stretch;">
+        <div class="card accent" style="flex:1;padding:16px 20px;">
+          <div class="num" style="font-size:15px;margin-bottom:6px;">우리가 만드는 것</div>
+          <div class="desc" style="font-size:13px;line-height:1.9;">
+            취소 예측 엔진 <span style="color:#c9a84c;">(LightGBM, PR-AUC 0.82)</span><br>
+            의사결정 지원 앱 <span style="color:#c9a84c;">(Streamlit 2-Tab)</span><br>
+            LLM 에이전트 시뮬레이션 <span style="color:#c9a84c;">(50→20,000건)</span>
+          </div>
+        </div>
+        <div class="card" style="flex:1;padding:16px 20px;">
+          <div class="num" style="font-size:15px;margin-bottom:6px;">우리가 만들지 않는 것</div>
+          <div class="desc" style="font-size:13px;line-height:1.9;color:#555;">
+            PMS 연동 / 실제 결제 처리<br>
+            협력 호텔 네트워크 / OTA 연동
+          </div>
+        </div>
+        <div class="card accent" style="flex:1;padding:16px 20px;">
+          <div class="num" style="font-size:15px;margin-bottom:6px;">발표 포지셔닝</div>
+          <div class="desc" style="font-size:13px;line-height:1.9;">
+            "저희는 <strong style="color:#c9a84c;">두뇌</strong>를 만듭니다.<br>
+            운영 시스템 통합은 호텔 인프라 영역."
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- #deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button onclick="go(-1)">←</button>
+  <button onclick="go(+1)">→</button>
+</div>
+<div id="progress"></div>
+
+<script>
+// ── Slide navigation ──────────────────────────────────
+const slides = document.querySelectorAll('.slide');
+let cur = 0;
+const total = slides.length;
+
+function go(d) {
+  const next = cur + d;
+  if (next < 0 || next >= total) return;
+  slides[cur].classList.remove('active');
+  cur = next;
+  slides[cur].classList.add('active');
+  document.getElementById('progress').style.width = ((cur + 1) / total * 100) + '%';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+
+// Update initial progress
+document.getElementById('progress').style.width = (1 / total * 100) + '%';
+
+// ── Chart.js Global Defaults ──────────────────────────
+Chart.defaults.color = '#555';
+Chart.defaults.font.family = "'Helvetica Neue', Arial, sans-serif";
+Chart.defaults.font.size = 11;
+
+const GOLD   = '#c9a84c';
+const GOLD_D = '#c9a84c88';
+const GRAY   = '#2a2a2a';
+const DIM    = '#1a1a1a';
+
+// ── Chart 1: PR-AUC Comparison (slide 03) ─────────────
+const ctxPR = document.getElementById('chartPRAUC').getContext('2d');
+new Chart(ctxPR, {
+  type: 'bar',
+  data: {
+    labels: ['Dummy', 'Logistic\nRegression', 'Random\nForest', 'XGBoost', 'LightGBM ★'],
+    datasets: [{
+      data: [0.387, 0.7818, 0.7785, 0.8053, 0.8189],
+      backgroundColor: ['#222', '#2a2a2a', '#2a2a2a', '#333', GOLD + 'cc'],
+      borderColor:     ['#333', '#333',    '#333',    '#444', GOLD],
+      borderWidth: 1,
+      borderRadius: 2,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        callbacks: {
+          label: ctx => '  PR-AUC: ' + ctx.raw.toFixed(4)
+        }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 1,
+        grid: { color: DIM },
+        ticks: { color: '#444', stepSize: 0.2 },
+        border: { color: '#222' }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#666' },
+        border: { color: '#222' }
+      }
+    },
+    animation: { duration: 600 }
+  }
+});
+
+// ── Chart 2: SHAP Feature Importance (slide 06) ───────
+const ctxSHAP = document.getElementById('chartSHAP').getContext('2d');
+new Chart(ctxSHAP, {
+  type: 'bar',
+  data: {
+    labels: [
+      'country_PRT',
+      'car_parking',
+      'special_requests',
+      'lead_time',
+      'prev_cancellations',
+      'Online TA',
+      'adr'
+    ],
+    datasets: [{
+      data: [1.0639, 0.6797, 0.6435, 0.5312, 0.3941, 0.3712, 0.2525],
+      backgroundColor: [
+        GOLD + 'cc',
+        GOLD + '99',
+        GOLD + '88',
+        GOLD + '77',
+        GOLD + '66',
+        GOLD + '55',
+        GOLD + '44',
+      ],
+      borderColor: [GOLD, GOLD_D, GOLD_D, GOLD_D, GOLD_D, GOLD_D, GOLD_D],
+      borderWidth: 1,
+      borderRadius: 2,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        callbacks: {
+          label: ctx => '  Mean |SHAP|: ' + ctx.raw.toFixed(4)
+        }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 1.2,
+        grid: { color: DIM },
+        ticks: { color: '#444', stepSize: 0.3 },
+        border: { color: '#222' }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#666' },
+        border: { color: '#222' }
+      }
+    },
+    animation: { duration: 600 }
+  }
+});
+
+// ── Chart 3: Threshold Sweep — RevPAR (slide 08) ──────
+const ctxTH = document.getElementById('chartThreshold').getContext('2d');
+new Chart(ctxTH, {
+  type: 'line',
+  data: {
+    labels: ['0.50', '0.55', '0.60', '0.65', '0.70'],
+    datasets: [
+      {
+        label: 'RevPAR 개선율 (%)',
+        data: [88.775, 85.915, 81.376, 78.721, 70.576],
+        borderColor: GOLD,
+        backgroundColor: GOLD + '22',
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: ['#1a1a1a','#1a1a1a', GOLD,'#1a1a1a','#1a1a1a'],
+        pointBorderColor:     [GOLD_D,   GOLD_D,   GOLD, GOLD_D,   GOLD_D],
+        pointRadius:          [4, 4, 7, 4, 4],
+        pointHoverRadius:     [6, 6, 9, 6, 6],
+        borderWidth: 2,
+        yAxisID: 'y'
+      },
+      {
+        label: 'Accept Rate (%)',
+        data: [48.0, 46.94, 46.67, 48.78, 45.95],
+        borderColor: '#5a8a7a',
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+        borderWidth: 1.5,
+        borderDash: [4, 3],
+        yAxisID: 'y2'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: { color: '#555', boxWidth: 12, font: { size: 10 } }
+      },
+      tooltip: {
+        backgroundColor: '#111',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: DIM },
+        ticks: { color: '#555' },
+        border: { color: '#222' },
+        title: { display: true, text: 'Threshold', color: '#444', font: { size: 10 } }
+      },
+      y: {
+        grid: { color: DIM },
+        ticks: { color: '#555', callback: v => v + '%' },
+        border: { color: '#222' },
+        title: { display: true, text: 'RevPAR 개선율', color: '#444', font: { size: 10 } }
+      },
+      y2: {
+        position: 'right',
+        grid: { display: false },
+        ticks: { color: '#3a5a50', callback: v => v + '%' },
+        border: { color: '#222' },
+        title: { display: true, text: 'Accept Rate', color: '#3a5a50', font: { size: 10 } }
+      }
+    },
+    animation: { duration: 600 }
+  }
+});
+</script>
+</body>
+</html>

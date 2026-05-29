@@ -9,13 +9,17 @@ import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from pptx import Presentation
-from pptx.util import Inches
+from pptx.util import Inches, Emu
 
 # ── 경로 ─────────────────────────────────────────────────────────────────────
 ROOT     = Path("c:/Users/jhsim/Erica261/M.L/projects/07_Hotel_DSS")
 HTML     = ROOT / "presentations" / "Hotel No-Show DSS v13.html"
 OUT_PPTX = ROOT / "presentations" / "Hotel_No-Show_DSS_v13.pptx"
 IMG_DIR  = ROOT / "presentations" / "_slide_screenshots_v13"
+VIDEO    = ROOT / "DSS_DEMO.mp4"
+
+# 영상이 들어갈 슬라이드 번호 (1-based)
+VIDEO_SLIDE = 6
 
 SLIDE_N  = 11
 W_PX, H_PX = 1280, 720      # Reveal.js 기본 해상도
@@ -65,11 +69,22 @@ def screenshot_slides():
         }""")
 
         for idx in range(SLIDE_N):
-            page.evaluate(f"() => {{ if (window.Reveal) Reveal.slide({idx}); }}")
+            # 슬라이드 이동 + 마지막 fragment 상태로 이동 (999 → Reveal이 실제 마지막으로 clamp)
+            page.evaluate(f"() => {{ if (window.Reveal) Reveal.slide({idx}, 0, 999); }}")
             time.sleep(0.9)
+
+            # fragment가 남아있으면 강제로 모두 visible 처리
+            page.evaluate("""() => {
+                var frags = document.querySelectorAll('.present .fragment:not(.visible)');
+                frags.forEach(function(f) {
+                    f.classList.add('visible', 'current-fragment');
+                });
+            }""")
+            time.sleep(0.3)
+
             # 비디오 일시정지
             page.evaluate("() => { document.querySelectorAll('video').forEach(v=>v.pause()); }")
-            time.sleep(0.2)
+            time.sleep(0.1)
 
             out = IMG_DIR / f"slide_{idx+1:02d}.png"
             page.screenshot(path=str(out), full_page=False)
@@ -95,6 +110,20 @@ def build_pptx():
         sl = prs.slides.add_slide(blank)
         sl.shapes.add_picture(str(img), left=0, top=0,
                               width=PPTX_W, height=PPTX_H)
+
+        # 슬라이드 6에 영상 삽입 — 화면 중앙 하단 영역
+        if i == VIDEO_SLIDE and VIDEO.exists():
+            vid_w = Inches(8)
+            vid_h = Inches(4.5)
+            vid_l = (PPTX_W - vid_w) // 2
+            vid_t = (PPTX_H - vid_h) // 2
+            sl.shapes.add_movie(
+                str(VIDEO),
+                left=vid_l, top=vid_t,
+                width=vid_w, height=vid_h,
+                mime_type="video/mp4",
+            )
+            print(f"  [VIDEO] DSS_DEMO.mp4 → slide {i}")
 
         note = NOTES.get(i, "")
         if note:

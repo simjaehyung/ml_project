@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Hotel DSS — 3D Corridor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;overflow:hidden;font-family:'Inter',sans-serif;}
+#c{display:block;}
+
+/* ── HUD ── */
+#hud{
+  position:fixed;top:24px;left:50%;transform:translateX(-50%);
+  font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.2);pointer-events:none;transition:opacity .3s;
+}
+#crosshair{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:16px;height:16px;pointer-events:none;opacity:.4;transition:all .2s;
+}
+#crosshair::before,#crosshair::after{
+  content:'';position:absolute;background:rgba(255,255,255,.6);border-radius:1px;
+}
+#crosshair::before{width:1px;height:100%;top:0;left:50%;transform:translateX(-50%);}
+#crosshair::after {width:100%;height:1px;left:0;top:50%;transform:translateY(-50%);}
+#crosshair.hover{opacity:.9;transform:translate(-50%,-50%) scale(1.4);}
+
+/* ── 플래그 경고 ── */
+#flag-warn{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);
+  border-radius:10px;padding:10px 18px;font-size:11px;color:#FCD34D;
+  letter-spacing:.3px;text-align:center;pointer-events:none;
+  transition:opacity .5s;
+}
+
+/* ── 방 진입 UI (HTML-in-Canvas 없을 때 오버레이) ── */
+#room-ui{
+  position:fixed;inset:0;pointer-events:none;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding:32px;opacity:0;transition:opacity .5s;
+}
+#room-ui.visible{opacity:1;pointer-events:all;}
+#room-panel{
+  width:380px;background:rgba(6,12,30,.95);
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;
+  padding:24px;backdrop-filter:blur(20px);
+}
+.rp-room{font-size:10px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,.25);text-transform:uppercase;margin-bottom:4px;}
+.rp-name{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:16px;}
+.rp-row{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.4);margin-bottom:6px;}
+.rp-row span{color:#F1F5F9;font-weight:500;}
+.rp-divider{height:1px;background:rgba(255,255,255,.06);margin:14px 0;}
+.rp-label{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px;}
+.rp-gauge{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-bottom:4px;}
+.rp-gauge-fill{height:100%;border-radius:3px;transition:width 1s .3s;}
+.rp-pct{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:2px;}
+.rp-risk-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;opacity:.5;}
+.shap-item{margin-bottom:9px;}
+.shap-feat{font-size:11px;font-weight:600;color:#F1F5F9;margin-bottom:2px;}
+.shap-desc{font-size:10px;color:rgba(255,255,255,.3);}
+.shap-bar{height:4px;background:rgba(255,255,255,.05);border-radius:2px;margin-top:4px;overflow:hidden;}
+.shap-bar-fill{height:100%;border-radius:2px;}
+.rp-flexi{margin-top:12px;border-left:2px solid;padding:10px 12px;border-radius:0 8px 8px 0;font-size:11.5px;font-weight:600;line-height:1.6;}
+.back-btn{
+  margin-top:16px;width:100%;padding:10px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+  cursor:pointer;font-size:12px;font-weight:600;color:rgba(255,255,255,.4);
+  font-family:inherit;transition:all .15s;
+}
+.back-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+
+/* ── 숨겨진 DOM 패널 (texElementImage2D 소스) ── */
+.dom-panel{
+  position:fixed;left:-2000px;top:0;
+  width:512px;height:384px;
+  background:#07101F;color:#F1F5F9;
+  font-family:'Inter',sans-serif;
+  padding:28px;overflow:hidden;
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="hud">HOTEL NO-SHOW DSS &nbsp;·&nbsp; 3F CORRIDOR</div>
+<div id="crosshair"></div>
+<div id="flag-warn" id="flag-warn">
+  ✦ HTML-in-Canvas API: <code>chrome://flags/#canvas-draw-element</code> 활성화 시 방 벽에 실제 DOM 렌더링
+</div>
+
+<!-- HUD 방 정보 패널 -->
+<div id="room-ui">
+  <div id="room-panel"></div>
+</div>
+
+<!-- Hidden DOM panels — texElementImage2D 소스 -->
+<script id="panel-template-script">
+  // JS에서 동적으로 생성
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ══════════════════════════════════════════
+   객실 데이터
+══════════════════════════════════════════ */
+const FLAGS = {PRT:'🇵🇹',GBR:'🇬🇧',FRA:'🇫🇷',ESP:'🇪🇸',BRA:'🇧🇷',DEU:'🇩🇪',CHN:'🇨🇳',ITA:'🇮🇹',NLD:'🇳🇱'};
+const ROOMS = [
+  {id:'101',z:2,  x:-1,guest:'João Silva',  country:'PRT',room:'Deluxe', lead:312,risk:.87,
+   shap:[{f:'lead_time',v:'312d',d:'장기예약',r:.34},{f:'country',v:'PRT',d:'포르투갈 국적',r:.28},{f:'deposit',v:'없음',d:'무보증금',r:.19}]},
+  {id:'201',z:2,  x:+1,guest:'Emma Wilson', country:'GBR',room:'Standard',lead:87,risk:.52,
+   shap:[{f:'prev_cancel',v:'1회',d:'취소이력',r:.22},{f:'lead_time',v:'87d',d:'중기예약',r:.15},{f:'special_req',v:'0건',d:'요청없음',r:.12}]},
+  {id:'102',z:-3, x:-1,guest:'Marie Dupont',country:'FRA',room:'Suite',  lead:14,risk:.18,
+   shap:[{f:'lead_time',v:'14d',d:'단기예약',r:.08},{f:'special_req',v:'2건',d:'요청다수',r:.06},{f:'repeat',v:'Yes',d:'재방문',r:.05}]},
+  {id:'202',z:-3, x:+1,guest:'Ana Ferreira',country:'BRA',room:'Suite',  lead:421,risk:.91,
+   shap:[{f:'lead_time',v:'421d',d:'초장기예약',r:.42},{f:'country',v:'BRA',d:'브라질 국적',r:.26},{f:'meal',v:'SC',d:'식사미포함',r:.14}]},
+  {id:'103',z:-8, x:-1,guest:'Li Wei',      country:'CHN',room:'Jr.Suite',lead:245,risk:.83,
+   shap:[{f:'lead_time',v:'245d',d:'장기예약',r:.31},{f:'country',v:'CHN',d:'중국 국적',r:.24},{f:'adults',v:'1명',d:'1인예약',r:.17}]},
+  {id:'203',z:-8, x:+1,guest:'Klaus Weber', country:'DEU',room:'Standard',lead:22,risk:.22,
+   shap:[{f:'children',v:'2명',d:'자녀동반',r:.10},{f:'lead_time',v:'22d',d:'단기예약',r:.07},{f:'repeat',v:'Yes',d:'재방문',r:.06}]},
+];
+
+function riskColor(r){return r>.65?'#F87171':r>.40?'#FCD34D':'#34D399';}
+function riskLabel(r){return r>.65?'고위험':r>.40?'중위험':'저위험';}
+function discRate(r){return Math.min(18,Math.max(5,Math.round(5+(r-.5)*26)));}
+function threeColor(r){return new THREE.Color(r>.65?0xF87171:r>.40?0xFCD34D:0x34D399);}
+
+/* ══════════════════════════════════════════
+   Three.js 초기화
+══════════════════════════════════════════ */
+const W=window.innerWidth, H=window.innerHeight;
+const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
+renderer.setSize(W,H);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+window.addEventListener('resize',()=>{
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x030811,0.065);
+scene.background = new THREE.Color(0x030811);
+
+const camera = new THREE.PerspectiveCamera(65, W/H, 0.05, 80);
+camera.position.set(0, 1.6, 9);
+camera.lookAt(0, 1.6, 0);
+
+/* ══════════════════════════════════════════
+   복도 기하
+══════════════════════════════════════════ */
+const corrL=28, corrW=8, corrH=3.2;
+const mat = {
+  floor:   new THREE.MeshStandardMaterial({color:0x080d1a,roughness:.9,metalness:.1}),
+  ceiling: new THREE.MeshStandardMaterial({color:0x060b17,roughness:.95}),
+  wall:    new THREE.MeshStandardMaterial({color:0x070c1c,roughness:.85}),
+  trim:    new THREE.MeshStandardMaterial({color:0x1a2540,roughness:.6,metalness:.3}),
+};
+
+// 바닥
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(corrW,corrL),mat.floor);
+floor.rotation.x=-Math.PI/2; floor.position.set(0,0,-4); floor.receiveShadow=true;
+scene.add(floor);
+
+// 천장
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(corrW,corrL),mat.ceiling);
+ceil.rotation.x=Math.PI/2; ceil.position.set(0,corrH,-4);
+scene.add(ceil);
+
+// 좌우 벽
+[-corrW/2, corrW/2].forEach((x,i)=>{
+  const w = new THREE.Mesh(new THREE.PlaneGeometry(corrL,corrH),mat.wall);
+  w.rotation.y = i===0 ? Math.PI/2 : -Math.PI/2;
+  w.position.set(x,corrH/2,-4); scene.add(w);
+});
+
+// 바닥 중앙 스트라이프 (복도 라인)
+const stripe = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.08,corrL),
+  new THREE.MeshStandardMaterial({color:0x1a2a50,emissive:0x0a1530,emissiveIntensity:.4})
+);
+stripe.rotation.x=-Math.PI/2; stripe.position.set(0,0.001,-4); scene.add(stripe);
+
+// 천장 조명 레일
+for(let z=8;z>-16;z-=6){
+  const rail = new THREE.Mesh(
+    new THREE.BoxGeometry(.06,0.04,1.2),
+    new THREE.MeshStandardMaterial({color:0x203060,emissive:0x1a2a50,emissiveIntensity:.5})
+  );
+  rail.position.set(0,corrH-.02,z); scene.add(rail);
+
+  // 포인트 라이트
+  const pl = new THREE.PointLight(0x4080ff,.6,10);
+  pl.position.set(0,corrH-.1,z); scene.add(pl);
+
+  // 라이트 글로우 (작은 구체)
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(.04,8,8),
+    new THREE.MeshBasicMaterial({color:0xaaccff})
+  );
+  glow.position.copy(pl.position); scene.add(glow);
+}
+
+// 앰비언트
+scene.add(new THREE.AmbientLight(0x0a1020,3));
+
+/* ══════════════════════════════════════════
+   문 + 위험 조명 생성
+══════════════════════════════════════════ */
+const doorMeshes = [];
+const doorLights = [];
+const DOOR_W=1.6, DOOR_H=2.4;
+
+// 문 상단 아치 라이트바 (위험도 색)
+function buildDoor(room){
+  const side  = room.x < 0 ? -1 : 1;
+  const wallX = side * (corrW/2 - 0.01);
+  const col   = threeColor(room.risk);
+
+  const group = new THREE.Group();
+  group.position.set(wallX, 0, room.z);
+  group.userData.room = room;
+
+  // 문틀
+  const frameMat = new THREE.MeshStandardMaterial({color:0x111c35,roughness:.6,metalness:.4});
+  [[-DOOR_W/2-.06,DOOR_H/2,0],[DOOR_W/2+.06,DOOR_H/2,0],[0,DOOR_H+.06,0]].forEach((pos,i)=>{
+    const fGeo = i<2
+      ? new THREE.BoxGeometry(.12,DOOR_H+.12,.08)
+      : new THREE.BoxGeometry(DOOR_W+.24,.12,.08);
+    const f = new THREE.Mesh(fGeo,frameMat);
+    f.position.set(...pos); group.add(f);
+  });
+
+  // 문 패널 (피벗: 경첩쪽 끝)
+  const pivot = new THREE.Group();
+  pivot.position.set(-side*DOOR_W/2, DOOR_H/2, 0);
+  const doorGeo = new THREE.BoxGeometry(DOOR_W,.02,DOOR_H);
+  const doorMat2 = new THREE.MeshStandardMaterial({
+    color:0x0d1830, roughness:.5, metalness:.5,
+    emissive:col, emissiveIntensity:.06
+  });
+  const doorMesh = new THREE.Mesh(doorGeo, doorMat2);
+  doorMesh.rotation.x = Math.PI/2;
+  doorMesh.position.set(side*DOOR_W/2, 0, 0);
+  pivot.add(doorMesh);
+  group.add(pivot);
+  group.userData.pivot = pivot;
+  group.userData.doorMesh = doorMesh;
+  group.userData.isOpen = false;
+
+  // 문 번호판
+  const numLight = new THREE.PointLight(col, .3, 2);
+  numLight.position.set(0, DOOR_H+.3, .3);
+  group.add(numLight);
+
+  // 위험도 글로우 스트립 (문 하단)
+  const stripGeo = new THREE.BoxGeometry(DOOR_W-.1,.03,.04);
+  const stripMat = new THREE.MeshBasicMaterial({color:col});
+  const strip = new THREE.Mesh(stripGeo,stripMat);
+  strip.position.set(0,.06,.04); group.add(strip);
+
+  // 위험도에 따른 포인트 라이트 (복도 분위기)
+  const rLight = new THREE.PointLight(col,.5,5);
+  rLight.position.set(side*.3, 1.2, .4);
+  group.add(rLight);
+
+  // 벽 면이 아닌 z 방향으로 회전
+  if(side < 0){
+    group.rotation.y = Math.PI/2;
+  } else {
+    group.rotation.y = -Math.PI/2;
+  }
+
+  // 클릭 감지용 히트박스
+  const hitGeo = new THREE.PlaneGeometry(DOOR_W, DOOR_H);
+  const hitMat = new THREE.MeshBasicMaterial({visible:false, side:THREE.DoubleSide});
+  const hit = new THREE.Mesh(hitGeo, hitMat);
+  hit.position.set(0, DOOR_H/2, .05);
+  hit.userData.isDoor = true;
+  hit.userData.room = room;
+  group.add(hit);
+
+  scene.add(group);
+  doorMeshes.push(hit);
+  doorLights.push(rLight);
+  return {group, pivot, doorMesh, hit, rLight};
+}
+
+const doorObjects = ROOMS.map(buildDoor);
+
+/* ══════════════════════════════════════════
+   texElementImage2D — HTML-in-Canvas
+══════════════════════════════════════════ */
+const gl = renderer.getContext();
+const hasHtmlInCanvas = typeof gl.texElementImage2D === 'function';
+document.getElementById('flag-warn').style.opacity = hasHtmlInCanvas ? '0' : '1';
+
+// 숨겨진 DOM 패널 생성 (texElementImage2D 소스)
+const domPanels = {};
+ROOMS.forEach(room=>{
+  const el = document.createElement('div');
+  el.className = 'dom-panel';
+  const col = room.risk>.65?'#F87171':room.risk>.40?'#FCD34D':'#34D399';
+  const disc = discRate(room.risk);
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <div style="font-size:9px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,.2);text-transform:uppercase;margin-bottom:4px;">ROOM ${room.id}</div>
+        <div style="font-size:20px;font-weight:800;">${FLAGS[room.country]||''} ${room.guest}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;">${room.country} · ${room.room} · lead ${room.lead}d</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:36px;font-weight:900;color:${col};letter-spacing:-2px;">${Math.round(room.risk*100)}%</div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${col};opacity:.7;">${riskLabel(room.risk)}</div>
+      </div>
+    </div>
+    <div style="height:1px;background:rgba(255,255,255,.06);margin-bottom:16px;"></div>
+    <div style="font-size:8px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:10px;">SHAP 위험 요인</div>
+    ${room.shap.map(s=>`
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:3px;">
+          <span>${s.f}</span><span style="color:${col};">+${s.r.toFixed(2)}</span>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:3px;">${s.d} (${s.v})</div>
+        <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;">
+          <div style="height:100%;width:${Math.round(s.r/0.45*100)}%;background:${col}44;border-right:2px solid ${col};border-radius:2px;"></div>
+        </div>
+      </div>`).join('')}
+    <div style="margin-top:14px;padding:10px 14px;border-left:2px solid ${col};background:${col}11;border-radius:0 8px 8px 0;font-size:11px;font-weight:600;color:${col};">
+      ${room.risk>.65
+        ? `⚡ Flexi 풀 라우팅 권장 — 할인율 ${disc}% 적용`
+        : room.risk>.40
+        ? `🔶 중위험 모니터링 — 임박 시 재검토`
+        : `✅ Standard 배정 유지`}
+    </div>`;
+  document.body.appendChild(el);
+  domPanels[room.id] = el;
+});
+
+// WebGL 텍스처 생성
+const roomTextures = {};
+const glTextures   = {};
+
+ROOMS.forEach(room=>{
+  if(hasHtmlInCanvas){
+    const glTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, glTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    glTextures[room.id] = glTex;
+
+    const tex = new THREE.Texture();
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    const props = renderer.properties.get(tex);
+    props.__webglTexture = glTex;
+    props.__webglInit = true;
+    roomTextures[room.id] = tex;
+  } else {
+    // 폴백: Canvas 2D로 수동 그리기
+    const offscreen = document.createElement('canvas');
+    offscreen.width=512; offscreen.height=384;
+    const ctx2 = offscreen.getContext('2d');
+    const col = room.risk>.65?'#F87171':room.risk>.40?'#FCD34D':'#34D399';
+    ctx2.fillStyle='#07101F'; ctx2.fillRect(0,0,512,384);
+    ctx2.fillStyle='rgba(255,255,255,.04)';
+    ctx2.fillRect(0,0,512,2);
+    ctx2.font='800 44px Inter,sans-serif';
+    ctx2.fillStyle=col;
+    ctx2.fillText(`${Math.round(room.risk*100)}%`,28,80);
+    ctx2.font='600 13px Inter,sans-serif';
+    ctx2.fillStyle='rgba(255,255,255,.6)';
+    ctx2.fillText(`ROOM ${room.id}  ·  ${room.guest}`,28,110);
+    ctx2.fillStyle='rgba(255,255,255,.25)';
+    ctx2.fillText(`${room.country} · ${room.room} · lead ${room.lead}d`,28,132);
+    ctx2.fillStyle='rgba(255,255,255,.06)';
+    ctx2.fillRect(28,148,456,1);
+    ctx2.font='700 10px Inter,sans-serif';
+    ctx2.fillStyle='rgba(255,255,255,.2)';
+    ctx2.fillText('SHAP 위험 요인',28,168);
+    room.shap.forEach((s,i)=>{
+      const y=190+i*52;
+      ctx2.font='600 12px Inter,sans-serif';
+      ctx2.fillStyle='rgba(255,255,255,.7)';
+      ctx2.fillText(s.f,28,y);
+      ctx2.fillStyle=col;
+      ctx2.fillText(`+${s.r.toFixed(2)}`,460,y);
+      ctx2.font='400 11px Inter,sans-serif';
+      ctx2.fillStyle='rgba(255,255,255,.3)';
+      ctx2.fillText(`${s.d} (${s.v})`,28,y+15);
+      ctx2.fillStyle='rgba(255,255,255,.06)';
+      ctx2.fillRect(28,y+24,456,4);
+      ctx2.fillStyle=col+'66';
+      ctx2.fillRect(28,y+24,Math.round(s.r/0.45*456),4);
+    });
+    const disc=discRate(room.risk);
+    ctx2.fillStyle=col+'22';
+    ctx2.beginPath();
+    if(ctx2.roundRect) ctx2.roundRect(28,350,456,26,6);
+    else ctx2.rect(28,350,456,26);
+    ctx2.fill();
+    ctx2.font='700 11px Inter,sans-serif';
+    ctx2.fillStyle=col;
+    ctx2.fillText(
+      room.risk>.65?`⚡ Flexi 풀 권장 — ${disc}% 할인`:
+      room.risk>.40?'🔶 모니터링 — 임박 시 재검토':
+      '✅ Standard 배정 유지', 40, 367);
+    roomTextures[room.id] = new THREE.CanvasTexture(offscreen);
+  }
+});
+
+/* ══════════════════════════════════════════
+   방 뒷벽 (텍스처 패널)
+══════════════════════════════════════════ */
+ROOMS.forEach(room=>{
+  const side = room.x < 0 ? -1 : 1;
+  const wallX = side * (corrW/2 + 2.8);
+
+  const panelGeo = new THREE.PlaneGeometry(3.6, 2.4);
+  const panelMat = new THREE.MeshBasicMaterial({
+    map: roomTextures[room.id],
+    side: THREE.DoubleSide
+  });
+  const panel = new THREE.Mesh(panelGeo, panelMat);
+  panel.position.set(wallX, 1.4, room.z);
+  panel.rotation.y = side > 0 ? -Math.PI/2 : Math.PI/2;
+  panel.userData.roomId = room.id;
+  scene.add(panel);
+});
+
+/* ══════════════════════════════════════════
+   카메라 애니메이션
+══════════════════════════════════════════ */
+let camState = 'corridor'; // 'corridor' | 'entering' | 'room'
+let currentRoom = null;
+const camPos    = camera.position.clone();
+const camTarget = new THREE.Vector3(0,1.6,0);
+
+function lerp(a,b,t){return a+(b-a)*t;}
+function easeInOut(t){return t<.5?2*t*t:-1+(4-2*t)*t;}
+
+let animating=false, animT=0, animDur=0;
+let animFrom={pos:new THREE.Vector3(),look:new THREE.Vector3()};
+let animTo  ={pos:new THREE.Vector3(),look:new THREE.Vector3()};
+let onAnimDone=null;
+
+function startAnim(toPos,toLook,dur,onDone){
+  animFrom.pos.copy(camera.position);
+  animFrom.look.copy(camTarget);
+  animTo.pos.copy(toPos);
+  animTo.look.copy(toLook);
+  animDur=dur; animT=0; animating=true; onAnimDone=onDone;
+}
+
+function enterRoom(room){
+  if(camState!=='corridor') return;
+  camState='entering';
+
+  const side = room.x<0 ? -1 : 1;
+  // 1단계: 문 앞으로
+  const doorFrontPos  = new THREE.Vector3(side*2.0, 1.6, room.z);
+  const doorFrontLook = new THREE.Vector3(side*4.5, 1.6, room.z);
+  // 2단계: 방 안으로
+  const roomInsidePos  = new THREE.Vector3(side*3.2, 1.6, room.z);
+  const roomInsideLook = new THREE.Vector3(side*(corrW/2+2.8), 1.6, room.z);
+
+  // 문 열기
+  const doorObj = doorObjects.find(d=>d.hit.userData.room.id===room.id);
+  if(doorObj) openDoor(doorObj);
+
+  startAnim(doorFrontPos, doorFrontLook, 1.0, ()=>{
+    startAnim(roomInsidePos, roomInsideLook, 0.8, ()=>{
+      camState='room';
+      currentRoom=room;
+      showRoomUI(room);
+    });
+  });
+}
+
+function exitRoom(){
+  if(camState!=='room') return;
+  hideRoomUI();
+
+  const doorObj = doorObjects.find(d=>d.hit.userData.room.id===currentRoom.id);
+  if(doorObj) closeDoor(doorObj);
+
+  startAnim(new THREE.Vector3(0,1.6,currentRoom.z), new THREE.Vector3(0,1.6,currentRoom.z-2), 1.2, ()=>{
+    camState='corridor'; currentRoom=null;
+  });
+}
+
+/* 문 열기/닫기 */
+const doorAnimations={};
+function openDoor(doorObj){
+  doorAnimations[doorObj.hit.userData.room.id]={pivot:doorObj.pivot,target:Math.PI*.72,dir:1};
+}
+function closeDoor(doorObj){
+  doorAnimations[doorObj.hit.userData.room.id]={pivot:doorObj.pivot,target:0,dir:-1};
+}
+
+/* ══════════════════════════════════════════
+   HUD 방 패널
+══════════════════════════════════════════ */
+function showRoomUI(room){
+  const col   = room.risk>.65?'#F87171':room.risk>.40?'#FCD34D':'#34D399';
+  const disc  = discRate(room.risk);
+  const pct   = Math.round(room.risk*100);
+  const label = riskLabel(room.risk);
+
+  document.getElementById('room-panel').innerHTML=`
+    <div class="rp-room">ROOM ${room.id}</div>
+    <div class="rp-name">${FLAGS[room.country]||''} ${room.guest}</div>
+    <div class="rp-row">국가 <span>${room.country}</span></div>
+    <div class="rp-row">객실 <span>${room.room}</span></div>
+    <div class="rp-row">예약 시점 <span>${room.lead}일 전</span></div>
+    <div class="rp-divider"></div>
+    <div class="rp-label">취소 위험도</div>
+    <div class="rp-pct" style="color:${col}">${pct}%</div>
+    <div class="rp-risk-label" style="color:${col}">${label} · LightGBM</div>
+    <div class="rp-gauge" style="margin-top:8px;">
+      <div class="rp-gauge-fill" style="width:${pct}%;background:${col};"></div>
+    </div>
+    <div class="rp-divider"></div>
+    <div class="rp-label">SHAP 주요 요인</div>
+    ${room.shap.map(s=>`
+      <div class="shap-item">
+        <div class="shap-feat">${s.f} <span style="color:${col};float:right;">+${s.r.toFixed(2)}</span></div>
+        <div class="shap-desc">${s.d} (${s.v})</div>
+        <div class="shap-bar"><div class="shap-bar-fill" style="width:${Math.round(s.r/0.45*100)}%;background:${col}55;border-right:2px solid ${col};"></div></div>
+      </div>`).join('')}
+    <div class="rp-flexi" style="border-left-color:${col};background:${col}11;color:${col};">
+      ${room.risk>.65?`⚡ Flexi 풀 권장 — ${disc}% 할인`:
+        room.risk>.40?'🔶 모니터링 — 임박 시 재검토':
+        '✅ Standard 배정 유지'}
+    </div>
+    <button class="back-btn" onclick="window._exitRoom()">← 복도로 돌아가기</button>`;
+
+  document.getElementById('room-ui').classList.add('visible');
+}
+function hideRoomUI(){
+  document.getElementById('room-ui').classList.remove('visible');
+}
+window._exitRoom = exitRoom;
+
+/* ══════════════════════════════════════════
+   클릭 감지 (Raycaster)
+══════════════════════════════════════════ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+document.getElementById('c').addEventListener('click',e=>{
+  if(camState!=='corridor') return;
+  mouse.x=(e.clientX/window.innerWidth)*2-1;
+  mouse.y=-(e.clientY/window.innerHeight)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits = raycaster.intersectObjects(doorMeshes,false);
+  if(hits.length>0){
+    enterRoom(hits[0].object.userData.room);
+  }
+});
+
+// 마우스 호버
+document.getElementById('c').addEventListener('mousemove',e=>{
+  if(camState!=='corridor') return;
+  mouse.x=(e.clientX/window.innerWidth)*2-1;
+  mouse.y=-(e.clientY/window.innerHeight)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(doorMeshes,false);
+  document.getElementById('crosshair').classList.toggle('hover', hits.length>0);
+  document.getElementById('c').style.cursor = hits.length>0?'pointer':'default';
+});
+
+/* ══════════════════════════════════════════
+   렌더 루프
+══════════════════════════════════════════ */
+const clock = new THREE.Clock();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  // 카메라 애니메이션
+  if(animating){
+    animT = Math.min(animT+dt/animDur,1);
+    const e = easeInOut(animT);
+    camera.position.lerpVectors(animFrom.pos,animTo.pos,e);
+    camTarget.lerpVectors(animFrom.look,animTo.look,e);
+    camera.lookAt(camTarget);
+    if(animT>=1){ animating=false; if(onAnimDone){const cb=onAnimDone;onAnimDone=null;cb();} }
+  }
+
+  // 문 애니메이션
+  Object.entries(doorAnimations).forEach(([id,da])=>{
+    const cur = da.pivot.rotation.y;
+    const diff = da.target - cur;
+    if(Math.abs(diff)<.005){
+      da.pivot.rotation.y = da.target;
+      delete doorAnimations[id];
+    } else {
+      da.pivot.rotation.y += diff*0.08;
+    }
+  });
+
+  // HTML-in-Canvas: DOM → WebGL 텍스처 업로드
+  if(hasHtmlInCanvas && currentRoom){
+    const el  = domPanels[currentRoom.id];
+    const glT = glTextures[currentRoom.id];
+    gl.bindTexture(gl.TEXTURE_2D, glT);
+    try{
+      gl.texElementImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el);
+      renderer.state.reset();
+      roomTextures[currentRoom.id].needsUpdate=true;
+    }catch(err){}
+  }
+
+  // 라이트 펄스 (위험도 고위험은 깜빡임)
+  const t = clock.getElapsedTime();
+  doorObjects.forEach(({rLight,hit})=>{
+    const r = hit.userData.room.risk;
+    if(r>.65) rLight.intensity = .4+Math.sin(t*3+hit.userData.room.z)*.2;
+  });
+
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>

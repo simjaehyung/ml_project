@@ -1,0 +1,248 @@
+"""
+api/main.py — 실제 LightGBM 모델 연결 FastAPI 서버
+
+main_mock.py의 목업 risk 계산을 실제 LightGBM 모델 추론으로 교체.
+URL, 스키마, CORS 설정은 main_mock.py와 완전히 동일 — 이고은의 프론트엔드 코드 변경 없음.
+
+실행:
+    uvicorn api.main:app --port 8000 --reload
+
+변경 내용:
+    - create_booking(): mock risk 계산 → api.predictor.predict() 호출
+    - _seed_bookings(): 유지 (초기 더미 데이터 20건)
+    - 나머지 엔드포인트: main_mock.py와 동일
+"""
+
+import random
+import uuid
+from datetime import date, datetime, timedelta
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+from api.predictor import predict
+from api.schemas import (
+    BookingListItem,
+    BookingListResponse,
+    BookingRequest,
+    BookingResponse,
+    BookingStatus,
+    ConfidenceLevel,
+    DashboardSummary,
+    ErrorResponse,
+    FlexiPreview,
+    RiskFactor,
+)
+
+app = FastAPI(
+    title="Hotel DSS API",
+    description="Hotel No-Show DSS — 실제 LightGBM 모델 연결 서버",
+    version="1.0.0",
+)
+
+# CORS: Next.js 개발 서버(3000, 3001)에서 FastAPI(8000)로 요청 허용
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ──────────────────────────────────────────
+# 인메모리 예약 저장소
+# ──────────────────────────────────────────
+_bookings: list[BookingListItem] = []
+
+
+def _seed_bookings() -> None:
+    """앱 시작 시 더미 예약 20건 주입."""
+    countries = ["PRT", "GBR", "FRA", "ESP", "DEU", "IRL", "BEL", "BRA", "NLD", "ITA"]
+    hotels = ["City Hotel", "Resort Hotel"]
+    statuses: list[BookingStatus] = ["confirmed", "high-risk", "flexi-routed"]
+
+    for i in range(20):
+        risk = round(random.uniform(0.1, 0.95), 4)
+        flexi = risk >= CURRENT_THRESHOLD
+        disc = round(0.05 + (risk - 0.5) * 0.26, 4) if flexi else None
+        disc = max(0.05, min(0.18, disc)) if disc is not None else None
+
+        if risk >= 0.7:
+            status: BookingStatus = "high-risk"
+        elif flexi:
+            status = "flexi-routed"
+        else:
+            status = "confirmed"
+
+        _bookings.append(BookingListItem(
+            booking_id=f"BK-{uuid.uuid4().hex[:6].upper()}",
+            hotel=random.choice(hotels),
+            country=random.choice(countries),
+            arrival_date=date.today() + timedelta(days=random.randint(7, 180)),
+            nights=random.randint(1, 7),
+            adults=random.randint(1, 4),
+            risk_score=risk,
+            flexi_recommended=flexi,
+            discount_rate=disc,
+            status=status,
+            created_at=datetime.now() - timedelta(hours=random.randint(0, 72)),
+        ))
+
+
+CURRENT_THRESHOLD: float = 0.65
+
+_seed_bookings()
+
+
+# ──────────────────────────────────────────
+# 헬퍼
+# ──────────────────────────────────────────
+
+def _confidence(score: float) -> ConfidenceLevel:
+    if score < 0.35 or score > 0.75:
+        return "HIGH"
+    return "MEDIUM"
+
+
+# ──────────────────────────────────────────
+# 엔드포인트
+# ──────────────────────────────────────────
+
+@app.post(
+    "/api/v1/bookings",
+    response_model=BookingResponse,
+    summary="신규 예약 제출 및 위험도 예측",
+)
+def create_booking(booking: BookingRequest) -> BookingResponse:
+    """
+    App 1 폼 제출 → 실제 LightGBM 모델로 위험도 예측.
+    SHAP TreeExplainer를 사용해 top 3 위험 요인도 함께 반환.
+    """
+    risk_score, top_risk_factors = predict(booking)
+
+    flexi = risk_score >= CURRENT_THRESHOLD
+    raw_disc = 0.05 + (risk_score - 0.5) * 0.26
+    disc = round(max(0.05, min(0.18, raw_disc)), 4) if flexi else None
+
+    if risk_score >= 0.7:
+        status: BookingStatus = "high-risk"
+    elif flexi:
+        status = "flexi-routed"
+    else:
+        status = "confirmed"
+
+    response = BookingResponse(
+        booking_id=f"BK-{uuid.uuid4().hex[:6].upper()}",
+        risk_score=round(risk_score, 4),
+        flexi_recommended=flexi,
+        discount_rate=disc,
+        top_risk_factors=top_risk_factors,
+        confidence=_confidence(risk_score),
+        status=status,
+        created_at=datetime.now(),
+    )
+
+    # 저장소에 추가 (App 2 대시보드에서 바로 보이도록)
+    _bookings.append(BookingListItem(
+        booking_id=response.booking_id,
+        hotel=booking.hotel,
+        country=booking.country,
+        arrival_date=booking.arrival_date,
+        nights=(booking.departure_date - booking.arrival_date).days,
+        adults=booking.adults,
+        risk_score=round(risk_score, 4),
+        flexi_recommended=flexi,
+        discount_rate=disc,
+        status=status,
+        created_at=response.created_at,
+    ))
+
+    return response
+
+
+@app.get(
+    "/api/v1/bookings",
+    response_model=BookingListResponse,
+    summary="예약 목록 조회",
+)
+def list_bookings(
+    status: Optional[BookingStatus] = Query(None),
+    min_risk: Optional[float] = Query(None, ge=0, le=1),
+) -> BookingListResponse:
+    result = list(_bookings)
+    if status:
+        result = [b for b in result if b.status == status]
+    if min_risk is not None:
+        result = [b for b in result if b.risk_score >= min_risk]
+    result.sort(key=lambda b: b.risk_score, reverse=True)
+    return BookingListResponse(bookings=result, total=len(result))
+
+
+@app.get(
+    "/api/v1/bookings/{booking_id}",
+    response_model=BookingListItem,
+    summary="예약 단건 조회",
+)
+def get_booking(booking_id: str) -> BookingListItem:
+    for b in _bookings:
+        if b.booking_id == booking_id:
+            return b
+    raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
+
+
+@app.get(
+    "/api/v1/dashboard/summary",
+    response_model=DashboardSummary,
+    summary="대시보드 KPI 요약",
+)
+def dashboard_summary() -> DashboardSummary:
+    high_risk = [b for b in _bookings if b.risk_score >= CURRENT_THRESHOLD]
+    flexi_routed = [b for b in _bookings if b.status == "flexi-routed"]
+    avg = round(sum(b.risk_score for b in _bookings) / len(_bookings), 4) if _bookings else 0.0
+    return DashboardSummary(
+        total_bookings=len(_bookings),
+        high_risk_count=len(high_risk),
+        flexi_routed_count=len(flexi_routed),
+        avg_risk_score=avg,
+        current_threshold=CURRENT_THRESHOLD,
+        last_updated=datetime.now(),
+    )
+
+
+@app.get(
+    "/api/v1/flexi/preview",
+    response_model=FlexiPreview,
+    summary="임계값 변경 시 Flexi 풀 예측 미리보기",
+)
+def flexi_preview(
+    threshold: float = Query(0.65, ge=0.50, le=0.85),
+) -> FlexiPreview:
+    pool = [b for b in _bookings if b.risk_score >= threshold]
+    # walk rate: 임계값 높을수록 walk rate 증가 (더 공격적 오버부킹)
+    est_walk = round(max(0.005, 0.12 - threshold * 0.15 + random.uniform(-0.01, 0.01)), 4)
+    baseline = 0.035  # 블라인드 오버부킹 기준선
+    return FlexiPreview(
+        threshold=threshold,
+        estimated_pool_size=len(pool),
+        estimated_walk_rate=est_walk,
+        baseline_walk_rate=baseline,
+        walk_rate_improvement=round(baseline - est_walk, 4),
+    )
+
+
+# ──────────────────────────────────────────
+# Option B: LLM은 FastAPI를 직접 호출하지 않는다
+# LLM → App 1 PMS → FastAPI
+#
+# App 1 PMS가 내부적으로 이 엔드포인트를 proxy 호출한다.
+# LLM 에이전트용 API는 app_pms/pms_mock.py 참고.
+# ──────────────────────────────────────────
+
+@app.get(
+    "/api/v1/internal/state",
+    response_model=DashboardSummary,
+    summary="[내부] App 1 PMS가 DSS 상태 확인용 (외부 미노출)",
+)
+def internal_state() -> DashboardSummary:
+    """App 1이 예약 후 DSS 상태를 확인하는 내부 엔드포인트."""
+    return dashboard_summary()

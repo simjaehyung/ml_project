@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Hotel No-Show DSS v13</title>
+<title>Hotel No-Show DSS v12</title>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
 :root{
   --brand:#1E3A8A;--brand-l:#3B82F6;--accent:#D97706;--accent-l:#F59E0B;
@@ -28,6 +30,7 @@
 .reveal h1,.reveal h2,.reveal h3,.reveal h4{margin:0;text-transform:none;word-wrap:normal;}
 .reveal p{margin:0;}
 .reveal ul,.reveal ol{padding:0;margin:0;list-style:none;}
+
 .tb{display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--bd);margin-bottom:22px;flex-shrink:0;}
 .dk .tb{border-bottom-color:rgba(255,255,255,.07);}
 .bl .tb{border-bottom-color:#BFDBFE;}
@@ -36,6 +39,7 @@
 .brand b{color:var(--accent);}
 .sn{font-size:9.5px;font-weight:500;color:var(--ink3);letter-spacing:.5px;}
 .dk .sn{color:rgba(255,255,255,.18);}
+
 .lbl{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
 .hero{font-size:56px;font-weight:800;line-height:1.1;letter-spacing:-2px;color:var(--ink);}
 .ttl{font-size:40px;font-weight:800;line-height:1.2;letter-spacing:-1.2px;color:var(--ink);}
@@ -45,11 +49,13 @@
 .hl-b{color:var(--brand);}
 .lead{font-size:18px;font-weight:400;color:var(--ink2);line-height:1.75;}
 .dk .lead{color:var(--ink3);}
+
 .content{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;}
 .cx{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
 .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;}
+
 .card{border-radius:12px;padding:18px 20px;background:#fff;border:1px solid var(--bd);box-shadow:var(--sh);}
 .card.acc{background:var(--gold-s);border-color:#FDE68A;}
 .card.blu{background:var(--blue-s);border-color:#BFDBFE;}
@@ -60,16 +66,19 @@
 .card.blu h3{color:var(--brand);}
 .card p{font-size:15px;color:var(--ink2);line-height:1.7;margin:0;}
 .card.blu p{color:#1D4ED8;}
+
 .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
 .pill.gr{background:#DCFCE7;color:#166534;}
 .pill.am{background:#FEF3C7;color:#92400E;}
 .pill.bl{background:#DBEAFE;color:#1E3A8A;}
 .pill.rd{background:#FEE2E2;color:#991B1B;}
 .pill.pu{background:#EDE9FE;color:#6D28D9;}
+
 .co{border-left:3px solid var(--accent);padding:13px 18px;border-radius:0 10px 10px 0;background:var(--gold-s);font-size:15px;font-weight:500;color:#78350F;line-height:1.7;}
 .co.bl{border-left-color:var(--brand);background:var(--blue-s);color:#1E3A8A;}
 .co.gn{border-left-color:var(--green);background:#F0FDF4;color:#166534;}
 .co.re{border-left-color:var(--red);background:#FFF5F5;color:#991B1B;}
+
 .tw{border-radius:10px;overflow:hidden;border:1px solid var(--bd);box-shadow:var(--sh-sm);}
 table{border-collapse:collapse;width:100%;}
 thead{background:var(--surface);}
@@ -83,20 +92,27 @@ tr.wa td{background:#FFF5F5;}
 tr.wa td strong{color:#991B1B;}
 tr.gn td{background:#F0FDF4;}
 tr.gn td strong{color:#059669;}
+
 .sr{display:flex;align-items:flex-start;gap:9px;}
 .sn2{width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:10px;font-weight:700;}
 .sn2.b{background:var(--blue-s);border:1px solid #BFDBFE;color:var(--brand);}
 .sn2.a{background:var(--gold-s);border:1px solid #FDE68A;color:#92400E;}
+
 .dbox{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:9px;border-left:3px solid var(--accent);background:rgba(217,119,6,.08);}
 .dbox.dim{border-left-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04);}
 .dbox.done{border-left-color:var(--green);background:rgba(5,150,105,.07);}
+
 .gap-box{padding:15px 20px;border-radius:10px;text-align:center;}
 .mw{background:rgba(255,255,255,.97);border-radius:10px;padding:10px 14px;border:1px solid var(--bd);overflow:hidden;}
+.mw .mermaid svg{max-width:100%;height:auto;}
 .ec{width:100%;min-height:170px;}
+
 .dk-bg-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
 .dk-bg-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.038) 1.5px,transparent 1.5px);background-size:36px 36px;}
+
 .badge-done{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:#DCFCE7;color:#166534;border:1px solid #BBF7D0;}
 .badge-pend{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;}
+
 .tag-new{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:#EDE9FE;color:#6D28D9;border:1px solid #DDD6FE;margin-left:5px;}
 </style>
 </head>
@@ -107,23 +123,22 @@ tr.gn td strong{color:#059669;}
 
 <!-- ══ 01 TITLE ══ -->
 <section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">01 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">01 / 15</div></div>
 <div style="flex:1;display:flex;align-items:center;">
   <div style="max-width:720px;">
     <div class="lbl">2026 · 데이터사이언스 프로젝트</div>
     <h1 class="hero" style="margin-bottom:18px;">
       <span style="display:block;">취소를 예측하고,</span>
-      <span style="display:block;"><span class="hl">협상을 설계합니다.</span></span>
+      <span style="display:block;"><span class="hl">결정을 지원합니다.</span></span>
     </h1>
     <p style="font-size:16px;color:var(--ink2);line-height:1.85;max-width:560px;margin-bottom:28px;">
-      호텔과 손님 사이의 마찰을 최소화하는 오버부킹 의사결정 지원 시스템<br>
-      Q1. 얼마나 오버부킹? — ML 취소 예측 + Flexi 시스템<br>
-      Q2. 재배치 시 얼마? — LLM 에이전트 협상 시뮬레이션
+      Q1. 몇 개 오버부킹할까? — ML 예측 + 수학적 최적화<br>
+      Q2. 재배치 시 얼마 보상? — LLM 에이전트 시뮬레이션
     </p>
     <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:38px;">
       <span class="pill am">LightGBM · PR-AUC 0.82</span>
-      <span class="pill bl">점유율 연동 Flexi 시스템</span>
-      <span class="pill pu">LLM 협상 시뮬레이션 · 1,240 runs</span>
+      <span class="pill bl">점유율 연동 임계값</span>
+      <span class="pill pu">LLM 보상 협상 시뮬레이션 · 1,240 runs</span>
       <span class="pill gr">Streamlit DSS 앱</span>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
@@ -132,54 +147,55 @@ tr.gn td strong{color:#059669;}
     </div>
   </div>
 </div>
+<aside class="notes">Q1(수학)과 Q2(시뮬레이션) 두 가지 질문으로 오버부킹 문제를 분리. 총 시뮬레이션 1,240회 (1,000 기본 + 240 보완).</aside>
 </section>
 
 
 <!-- ══ 02 PROBLEM ══ -->
 <section data-background-color="#F8FAFC">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">02 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">02 / 15</div></div>
 <div class="content">
   <div class="lbl">The Problem</div>
-  <h2 class="ttl" style="margin-bottom:5px;">호텔과 손님 사이 — <span class="hl">매일 반복되는 마찰</span></h2>
-  <p class="lead" style="margin-bottom:16px;">오버부킹은 수익 최적화 수단이지만, 잘못되면 신뢰를 잃습니다. 지금 호텔은 경험과 직관에 의존합니다.</p>
+  <h2 class="ttl" style="margin-bottom:5px;">오버부킹 딜레마 —<br><span class="hl">두 방향 모두 비용이 있습니다.</span></h2>
+  <p class="lead" style="margin-bottom:16px;">아무것도 하지 않으면 빈방을 잃고, 과도하게 오버부킹하면 손님 불만을 삽니다.</p>
   <div class="g2" style="margin-bottom:13px;">
     <div class="card red" style="padding:20px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#DC2626;margin-bottom:7px;">오버부킹 안 하면</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#DC2626;margin-bottom:7px;">빈방 손실</div>
       <div style="font-size:36px;font-weight:800;letter-spacing:-2px;line-height:1;color:#DC2626;margin-bottom:3px;">37%</div>
       <div style="font-size:11px;font-weight:500;color:#991B1B;margin-bottom:2px;">평균 취소율</div>
       <div style="font-size:10.5px;color:#B91C1C;margin-bottom:9px;">City Hotel 41.7% · Resort Hotel 27.8%</div>
-      <p style="font-size:12px;color:#991B1B;">예약 10개 중 3~4개가 빈 방으로 남습니다. 팔지 못한 시간은 영원히 손실입니다.</p>
+      <p style="font-size:12px;color:#991B1B;">예약 10개 중 3~4개가 체크인 전 사라집니다. 빈방은 팔 수 없는 시간입니다.</p>
     </div>
     <div class="card acc" style="padding:20px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D97706;margin-bottom:7px;">오버부킹 잘못되면</div>
-      <div style="font-size:36px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--accent);margin-bottom:3px;">마찰</div>
-      <div style="font-size:11px;font-weight:500;color:#92400E;margin-bottom:2px;">체크인 거부 = 최악의 고객 경험</div>
-      <div style="font-size:10.5px;color:#B45309;margin-bottom:9px;">€300+ 보상 + 대안 호텔 비용 + 평판 손상</div>
-      <p style="font-size:12px;color:#78350F;">지금 협상 방식: 매니저 경험 의존 → 일관성 없는 결정 → 어떤 손님엔 과잉보상, 어떤 손님은 불만.</p>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D97706;margin-bottom:7px;">손님 재배치 보상</div>
+      <div style="font-size:36px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--accent);margin-bottom:3px;">€300+</div>
+      <div style="font-size:11px;font-weight:500;color:#92400E;margin-bottom:2px;">오버부킹 발생 시 보상 비용</div>
+      <div style="font-size:10.5px;color:#B45309;margin-bottom:9px;">예약한 방이 없을 때 다른 호텔로 모심</div>
+      <p style="font-size:12px;color:#78350F;">보상금 + 대안 호텔 비용 + 평판 손상. 가족 손님은 특히 영향이 큽니다.</p>
     </div>
   </div>
-  <div class="co"><strong>두 방향 모두 나쁩니다.</strong> 오버부킹을 너무 안 하면 수익을 잃고, 잘못 실행하면 손님과 마찰이 생깁니다. 지금 필요한 것은 <strong>정확한 예측 + 올바른 협상 가이드</strong>입니다.</div>
+  <div class="co"><strong>정밀한 예측 없이는 정밀한 대응이 없습니다.</strong> 어느 예약이 취소될지 알아야, 얼마나 오버부킹할지 결정하고 재배치 손님을 최소화할 수 있습니다.</div>
 </div>
 </section>
 
 
 <!-- ══ 03 TWO QUESTIONS ══ -->
 <section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">03 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">03 / 15</div></div>
 <div class="content">
   <div class="lbl">우리의 접근</div>
-  <h2 class="ttl" style="margin-bottom:5px;">마찰을 줄이려면 <span class="hl">두 가지 질문</span>에 답해야 합니다.</h2>
+  <h2 class="ttl" style="margin-bottom:5px;">오버부킹은 <span class="hl">두 가지 질문</span>입니다.</h2>
   <p class="lead" style="margin-bottom:16px;">각 질문이 다른 도구를 요구합니다 — 수학과 시뮬레이션을 분리해서 씁니다.</p>
   <div class="g2" style="margin-bottom:13px;">
     <div class="card" style="padding:20px;border-top:3px solid var(--brand);">
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
         <span class="pill bl">Q1 · 수학</span>
-        <span style="font-size:13.5px;font-weight:700;color:var(--brand);">얼마나 오버부킹?</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--brand);">몇 개 오버부킹?</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:7px;">
         <div class="sr"><div class="sn2 b">1</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">LightGBM으로 각 예약의 취소 확률 계산</p></div>
         <div class="sr"><div class="sn2 b">2</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">점유율 연동 임계값으로 Flexi 풀 크기 결정</p></div>
-        <div class="sr"><div class="sn2 b">3</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">임계값 기반 Flexi 풀 최적화로 RevPAR 최대화</p></div>
+        <div class="sr"><div class="sn2 b">3</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">재배치율 &lt; 2% 제약 하에 RevPAR 최대화</p></div>
       </div>
     </div>
     <div class="card" style="padding:20px;border-top:3px solid var(--accent);">
@@ -189,24 +205,25 @@ tr.gn td strong{color:#059669;}
       </div>
       <div style="display:flex;flex-direction:column;gap:7px;">
         <div class="sr"><div class="sn2 a">1</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">취소가 예상보다 적으면 일부 손님 재배치 발생</p></div>
-        <div class="sr"><div class="sn2 a">2</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">재배치 협상 이력이 실제로 존재하지 않음</p></div>
+        <div class="sr"><div class="sn2 a">2</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">보상 협상 이력이 실제로 존재하지 않음</p></div>
         <div class="sr"><div class="sn2 a">3</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">LLM 에이전트로 손님 반응 시뮬레이션 생성</p></div>
       </div>
     </div>
   </div>
-  <div class="co bl"><strong>Q1을 잘 풀수록 Q2가 드물게 발생합니다.</strong> Q1은 마찰 예방, Q2는 마찰 발생 시 최적 대응 — 두 레이어가 순서대로 작동합니다.</div>
+  <div class="co bl"><strong>Q1을 잘 풀수록 Q2가 드물게 발생합니다.</strong> Q1은 예방, Q2는 사후 처리 — 두 레이어가 순서대로 작동합니다.</div>
 </div>
 </section>
 
 
 <!-- ══ 04 SCENARIO ══ -->
 <section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">04 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">04 / 15</div></div>
 <div class="content">
   <div class="lbl">실제 시나리오 · 호텔 매니저의 하루</div>
   <h2 class="ttl" style="margin-bottom:16px;">이 시스템이 <span class="hl">실제로 어떻게 작동하는가</span></h2>
 
   <div style="display:flex;flex-direction:column;gap:9px;flex:1;justify-content:center;">
+
     <div class="fragment fade-in-then-semi-out" data-fragment-index="1"
       style="display:flex;align-items:flex-start;gap:13px;padding:11px 15px;border-radius:10px;background:var(--surface);border:1px solid var(--bd);">
       <div style="width:28px;height:28px;border-radius:50%;background:var(--blue-s);border:2px solid #BFDBFE;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--brand);flex-shrink:0;margin-top:1px;">1</div>
@@ -275,55 +292,120 @@ tr.gn td strong{color:#059669;}
 </section>
 
 
-<!-- ══ 05 Q1 증거: ML + FLEXI ══ -->
+<!-- ══ 05 Q1 ML ══ -->
 <section data-background-color="#EFF6FF" class="bl">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">05 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">05 / 15</div></div>
 <div class="content">
-  <div class="lbl" style="color:var(--brand);">Q1 증거 · 취소 예측 + Flexi 시스템</div>
-  <h2 class="ttl bl-ttl" style="margin-bottom:8px;">예측이 <span class="hl-b">오버부킹 결정을 수학으로</span> 바꿉니다.</h2>
-  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start;flex:1;">
+  <div class="lbl" style="color:var(--brand);">Q1 · 몇 개 오버부킹?</div>
+  <h2 class="ttl bl-ttl" style="margin-bottom:4px;">취소 예측 기반으로<br><span class="hl-b">수학적으로 결정합니다.</span></h2>
+  <p class="lead" style="margin-bottom:12px;color:#3730A3;">119,390건 예약 학습 → LightGBM 취소 확률 → 점유율 임계값 → RevPAR 최적화</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start;">
     <div class="card" style="padding:16px 18px;">
-      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:11px;">임계값별 Precision · Recall · F1 · LightGBM · 테스트셋 40,687행</div>
-      <div id="prauc" class="ec" style="height:185px;"></div>
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:11px;">PR-AUC 모델 비교 · 테스트셋 취소율 38.7%</div>
+      <div id="prauc" class="ec" style="height:190px;"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:9px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;">
-        <div class="card" style="padding:10px;text-align:center;">
-          <div style="font-size:26px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--brand);margin-bottom:2px;">0.82</div>
-          <div style="font-size:9px;font-weight:500;color:var(--ink3);">LightGBM PR-AUC</div>
+      <div class="card" style="padding:12px 16px;">
+        <div style="font-size:34px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--brand);margin-bottom:2px;">0.8189</div>
+        <div style="font-size:11px;font-weight:500;color:var(--ink2);">LightGBM · 최종 선택</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:1px;">Dummy 대비 +0.43 향상</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;border:1px solid #BFDBFE;overflow:hidden;">
+        <div style="background:var(--brand);padding:5px 12px;">
+          <span style="font-size:8.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);">점유율 연동 임계값</span>
         </div>
+        <div style="padding:4px 9px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:4px 0;border-bottom:1px solid #EFF6FF;">
+            <span style="font-size:9px;color:var(--ink3);">점유율</span><span style="font-size:9px;color:var(--ink3);">임계값</span><span style="font-size:9px;color:var(--ink3);">전략</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:6px 0;border-bottom:1px solid #EFF6FF;">
+            <span style="font-size:11px;color:var(--ink2);">&lt; 60%</span><span style="font-size:12px;font-weight:700;color:var(--brand);">0.55</span><span style="font-size:10px;color:#166534;font-weight:600;">적극</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:6px 0;background:var(--blue-s);border-bottom:1px solid #BFDBFE;">
+            <span style="font-size:11px;color:var(--ink2);">60~80%</span><span style="font-size:12px;font-weight:700;color:var(--brand);">0.60</span><span style="font-size:10px;color:var(--brand);font-weight:600;">표준 ★</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:6px 0;">
+            <span style="font-size:11px;color:var(--ink2);">&gt; 80%</span><span style="font-size:12px;font-weight:700;color:var(--brand);">0.65</span><span style="font-size:10px;color:#92400E;font-weight:600;">신중</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
         <div style="background:var(--gold-s);border:1px solid #FDE68A;border-radius:9px;padding:10px;text-align:center;">
-          <div style="font-size:26px;font-weight:800;color:var(--accent);letter-spacing:-1px;">+81%</div>
-          <div style="font-size:9px;color:#92400E;margin-top:1px;">RevPAR 개선</div>
+          <div style="font-size:21px;font-weight:800;color:var(--accent);letter-spacing:-1px;">+81%</div>
+          <div style="font-size:9px;color:#92400E;margin-top:1px;">RevPAR 개선<br>(임계값 0.60 파일럿)</div>
         </div>
         <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:9px;padding:10px;text-align:center;">
-          <div style="font-size:26px;font-weight:800;color:var(--green);letter-spacing:-1px;">0.60★</div>
-          <div style="font-size:9px;color:#166534;margin-top:1px;">최적 임계값 (점유율 60~80%)</div>
+          <div style="font-size:21px;font-weight:800;color:var(--green);letter-spacing:-1px;">&lt;2%</div>
+          <div style="font-size:9px;color:#166534;margin-top:1px;">재배치율<br>목표 제약</div>
         </div>
       </div>
-      <div class="card" style="padding:14px 16px;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand);margin-bottom:9px;">Flexi 시스템 — 취소 위험 예약을 수익 버퍼로</div>
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div style="flex:1;text-align:center;background:var(--blue-s);border-radius:7px;padding:7px 5px;font-size:10px;color:var(--brand);font-weight:600;line-height:1.4;">취소확률<br>계산</div>
-          <span style="color:var(--ink3);font-size:13px;">→</span>
-          <div style="flex:1;text-align:center;background:var(--gold-s);border-radius:7px;padding:7px 5px;font-size:10px;color:#92400E;font-weight:600;line-height:1.4;">임계값<br>판별</div>
-          <span style="color:var(--ink3);font-size:13px;">→</span>
-          <div style="flex:1.2;text-align:center;background:#F0FDF4;border-radius:7px;padding:7px 5px;font-size:10px;color:#059669;font-weight:600;line-height:1.4;">Flexi 풀<br>5~18% 할인</div>
-          <span style="color:var(--ink3);font-size:13px;">→</span>
-          <div style="flex:1;text-align:center;background:var(--surface);border-radius:7px;padding:7px 5px;font-size:10px;color:var(--ink2);font-weight:600;line-height:1.4;">RevPAR<br>최적화</div>
-        </div>
-        <div style="margin-top:8px;font-size:9.5px;color:var(--ink3);">임계값: 점유율 &lt;60% → 0.55 / 60~80% → <strong style="color:var(--brand);">0.60 ★</strong> / &gt;80% → 0.65</div>
-      </div>
-      <div class="co bl" style="font-size:12px;"><strong>취소되어도 수익, 안 해도 매출.</strong> Flexi 풀은 취소 위험 예약을 버퍼로 전환해 빈 방과 마찰을 동시에 줄입니다.</div>
     </div>
   </div>
 </div>
 </section>
 
 
-<!-- ══ 06 Q2-A: WHY LLM ══ -->
+<!-- ══ 05 FLEXI ══ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">06 / 15</div></div>
+<div class="content">
+  <div class="lbl">핵심 개념 · Flexi 시스템</div>
+  <h2 class="ttl" style="margin-bottom:4px;">오버부킹을 <span class="hl">수익으로 바꾸는</span> 메커니즘</h2>
+  <p class="lead" style="margin-bottom:14px;">취소 위험 예약을 별도 풀에 모아 할인으로 유도 — 빈방을 줄이면서도 손님을 잃지 않습니다.</p>
+  <div style="display:flex;align-items:stretch;gap:0;margin-bottom:13px;">
+    <div class="card" style="flex:1;text-align:center;padding:14px 10px;border-top:3px solid var(--brand);">
+      <div class="sn2 b" style="margin:0 auto 7px;">1</div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:4px;">취소 확률 계산</div>
+      <div style="font-size:10.5px;color:var(--ink2);line-height:1.55;">LightGBM →<br>예약마다 0~1 점수</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 7px;color:var(--ink3);font-size:17px;flex-shrink:0;">→</div>
+    <div class="card acc" style="flex:1;text-align:center;padding:14px 10px;border-top:3px solid var(--accent);">
+      <div class="sn2 a" style="margin:0 auto 7px;">2</div>
+      <div style="font-size:11.5px;font-weight:700;color:#92400E;margin-bottom:4px;">임계값 판별</div>
+      <div style="font-size:10.5px;color:#78350F;line-height:1.55;">점유율 따라<br>0.55 / 0.60 / 0.65</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 7px;color:var(--ink3);font-size:17px;flex-shrink:0;">→</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+      <div class="card grn" style="flex:1;text-align:center;padding:10px 8px;">
+        <div style="font-size:9.5px;font-weight:700;color:#059669;margin-bottom:2px;">확률 &gt; 임계값</div>
+        <div style="font-size:13px;font-weight:800;color:#065F46;">Flexi 풀 배정</div>
+        <div style="font-size:10px;color:#166534;margin-top:2px;">할인 5~18% 제공</div>
+      </div>
+      <div class="card gst" style="flex:1;text-align:center;padding:10px 8px;">
+        <div style="font-size:9.5px;font-weight:700;color:var(--ink3);margin-bottom:2px;">확률 ≤ 임계값</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);">일반 배정</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px;">Standard 처리</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 7px;color:var(--ink3);font-size:17px;flex-shrink:0;">→</div>
+    <div class="card blu" style="flex:1;text-align:center;padding:14px 10px;border-top:3px solid var(--brand);">
+      <div style="width:19px;height:19px;border-radius:50%;background:var(--blue-s);border:1px solid #BFDBFE;margin:0 auto 7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--brand);">↑</div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:4px;">RevPAR 상승</div>
+      <div style="font-size:10.5px;color:#1D4ED8;line-height:1.55;">빈방 최소화<br>= 수익 최대화</div>
+    </div>
+  </div>
+  <div class="g3" style="gap:9px;">
+    <div style="background:var(--blue-s);border:1px solid #BFDBFE;border-radius:9px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand);margin-bottom:5px;">Flexi 풀</div>
+      <div style="font-size:11px;color:#1D4ED8;line-height:1.6;">취소 위험 높은 예약을 모아 할인 혜택으로 묶는 가상 버킷. 취소되어도 빈방, 안 해도 매출.</div>
+    </div>
+    <div style="background:var(--gold-s);border:1px solid #FDE68A;border-radius:9px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#92400E;margin-bottom:5px;">RevPAR</div>
+      <div style="font-size:11px;color:#78350F;line-height:1.6;">Revenue Per Available Room — 판매 가능 객실 하나당 얼마를 벌었는가. 빈방이 줄면 올라갑니다.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;">할인율 공식 (이론적 출발점)</div>
+      <div style="font-family:'Courier New',monospace;font-size:11.5px;color:#7C3AED;font-weight:600;line-height:1.8;">5% + (취소확률 - 0.5) x 26%</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px;">위험 높을수록 더 큰 할인 · 5%~18% 상한 · Phase 2에서 실데이터로 교정</div>
+    </div>
+  </div>
+</div>
+</section>
+
+
+<!-- ══ 06 APP DEMO ══ -->
 <section data-background-color="#F8FAFC">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">06 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">07 / 15</div></div>
 <div class="content">
   <div class="lbl">앱 데모</div>
   <h2 class="ttl" style="margin-bottom:5px;">예측이 <span class="hl">결정으로 이어지는</span> 두 화면</h2>
@@ -369,149 +451,48 @@ tr.gn td strong{color:#059669;}
 </section>
 
 
-<!-- ══ 09 데이터 수집 인프라 ══ -->
-<section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">07 / 11</div></div>
-<div class="content">
-  <div class="lbl">Q2 · 데이터 공백과 해법</div>
-  <h2 class="ttl" style="margin-bottom:10px;">협상 이력이 없습니다 — <span class="hl">그래서 LLM입니다.</span></h2>
-  <div style="display:flex;gap:9px;margin-bottom:12px;">
-    <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--bd);border-radius:9px;">
-      <span style="font-size:18px;color:#059669;">✓</span>
-      <div><div style="font-size:12px;font-weight:600;color:var(--ink);">취소 예측</div><div style="font-size:10px;color:var(--ink3);">119K 예약 데이터</div></div>
+<!-- ══ 07 Q2 GAP ══ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">08 / 15</div></div>
+<div class="cx">
+  <div class="lbl">Q2 · 데이터 공백</div>
+  <h1 class="hero" style="font-size:44px;text-align:center;line-height:1.22;max-width:760px;">
+    취소가 예상보다 적게 발생하면 —<br><span class="hl">누구를 재배치하고, 얼마면 수락할까요?</span>
+  </h1>
+  <p style="font-size:16px;color:var(--ink2);max-width:580px;line-height:1.8;text-align:center;">
+    이 협상 이력은 <strong style="color:var(--ink);">데이터에 존재하지 않습니다.</strong><br>실제 호텔이 재배치 협상을 기록해야만 쌓이는 데이터입니다.
+  </p>
+  <div style="display:flex;gap:11px;">
+    <div class="gap-box" style="background:var(--surface);border:1px solid var(--bd);">
+      <div style="font-size:19px;margin-bottom:5px;color:#059669;">✓</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">취소 예측</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:1px;">데이터 있음</div>
     </div>
-    <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--bd);border-radius:9px;">
-      <span style="font-size:18px;color:#059669;">✓</span>
-      <div><div style="font-size:12px;font-weight:600;color:var(--ink);">Flexi 라우팅</div><div style="font-size:10px;color:var(--ink3);">설계 + 시뮬레이션 완료</div></div>
+    <div class="gap-box" style="background:var(--surface);border:1px solid var(--bd);">
+      <div style="font-size:19px;margin-bottom:5px;color:#059669;">✓</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">Flexi 라우팅</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:1px;">설계 완료</div>
     </div>
-    <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FFF5F5;border:1px solid #FECACA;border-radius:9px;">
-      <span style="font-size:18px;color:#DC2626;">✗</span>
-      <div><div style="font-size:12px;font-weight:600;color:#DC2626;">재배치 협상 이력</div><div style="font-size:10px;color:#EF4444;">실제 기록 없음</div></div>
-    </div>
-  </div>
-  <div class="card gst" style="padding:12px 15px;margin-bottom:11px;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;">
-      <span class="pill pu">왜 LLM인가</span>
-      <span style="font-size:13px;font-weight:700;color:#6D28D9;">다른 방법이 안 되는 이유</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1.1fr;gap:7px;">
-      <div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:7px;padding:8px 10px;">
-        <div style="font-size:9.5px;font-weight:700;color:#DC2626;margin-bottom:2px;">규칙 기반 시뮬레이션 ✗</div>
-        <div style="font-size:11px;color:#991B1B;line-height:1.5;">손님 반응 규칙을 사람이 일일이 짜야 함</div>
-      </div>
-      <div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:7px;padding:8px 10px;">
-        <div style="font-size:9.5px;font-weight:700;color:#DC2626;margin-bottom:2px;">설문 / 실제 실험 ✗</div>
-        <div style="font-size:11px;color:#991B1B;line-height:1.5;">아직 없는 상품에 대한 반응을 물어볼 수 없음</div>
-      </div>
-      <div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:7px;padding:8px 10px;">
-        <div style="font-size:9.5px;font-weight:700;color:#DC2626;margin-bottom:2px;">기존 ML 모델 ✗</div>
-        <div style="font-size:11px;color:#991B1B;line-height:1.5;">학습할 협상 데이터가 없는 것이 지금 문제</div>
-      </div>
-      <div style="background:#EDE9FE;border:1px solid #C4B5FD;border-radius:7px;padding:8px 10px;">
-        <div style="font-size:9.5px;font-weight:700;color:#6D28D9;margin-bottom:2px;">LLM ✓</div>
-        <div style="font-size:11px;color:#5B21B6;line-height:1.5;">이미 호텔·협상 상황을 알고 있음 — 데이터 없이 즉시 시작</div>
-        <div style="font-size:9px;color:#7C3AED;margin-top:3px;">Horton 2023 · Homo Silicus</div>
-      </div>
-    </div>
-  </div>
-  <div class="g3">
-    <div style="background:var(--surface);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span class="pill pu" style="font-size:8px;">시뮬레이션</span><strong style="font-size:12px;">Park et al., UIST 2023</strong></div>
-      <div style="font-size:11px;color:var(--ink2);line-height:1.5;">LLM 에이전트가 인간 사회 행동을 현실적으로 시뮬레이션함을 실증</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span class="pill pu" style="font-size:8px;">재현성</span><strong style="font-size:12px;">Aher et al., ICML 2023</strong></div>
-      <div style="font-size:11px;color:var(--ink2);line-height:1.5;">LLM이 인간 피험자 연구 결과를 통계적으로 재현 — 합성 레이블 근거</div>
-    </div>
-    <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:9px;padding:11px 13px;">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span class="pill gr" style="font-size:8px;">방법론</span><strong style="font-size:12px;">Horton &amp; Argyle, 2023</strong></div>
-      <div style="font-size:11px;color:#166534;line-height:1.5;">normative hint 제거 필요 — 우리 실험에서 직접 적용하여 효과 실증</div>
+    <div class="gap-box" style="background:#FFF5F5;border:1px solid #FECACA;">
+      <div style="font-size:19px;margin-bottom:5px;color:#DC2626;">✗</div>
+      <div style="font-size:13px;font-weight:600;color:#DC2626;">재배치 협상 이력</div>
+      <div style="font-size:11px;color:#EF4444;margin-top:1px;">존재하지 않음</div>
     </div>
   </div>
 </div>
 </section>
 
 
-<!-- ══ 07 Q2-B: 시뮬레이션 결과 ══ -->
+<!-- ══ 08 ULTIMATE MODEL ══ -->
 <section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">08 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">09 / 15</div></div>
 <div class="content">
-  <div class="lbl">Claim 2 · 1,240 runs · hint 제거 최종본</div>
-  <h2 class="ttl" style="margin-bottom:8px;">유형마다 <span class="hl">다른 수락 패턴</span>이 나타났습니다.</h2>
-  <div style="display:flex;gap:7px;flex-wrap:nowrap;margin-bottom:10px;">
-    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--blue-s);border:1px solid #BFDBFE;flex-shrink:0;">
-      <span>💼</span><div><div style="font-size:10px;font-weight:700;color:var(--brand);">A · 비즈니스 솔로</div><span class="pill gr" style="font-size:8px;">재배치 용이</span></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--gold-s);border:1px solid #FDE68A;flex-shrink:0;">
-      <span>💑</span><div><div style="font-size:10px;font-weight:700;color:#92400E;">B · 레저 커플</div><span class="pill am" style="font-size:8px;">앵커링 민감</span></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:#FFF5F5;border:1px solid #FECACA;flex-shrink:0;">
-      <span>👨‍👩‍👧</span><div><div style="font-size:10px;font-weight:700;color:#991B1B;">C · 가족</div><span class="pill rd" style="font-size:8px;">재배치 제외</span></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:#F0FDF4;border:1px solid #BBF7D0;flex-shrink:0;">
-      <span>🎒</span><div><div style="font-size:10px;font-weight:700;color:#059669;">D · 가격민감형 고객</div><span class="pill gr" style="font-size:8px;">임계값 반응형</span></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--bd);flex-shrink:0;">
-      <span>👥</span><div><div style="font-size:10px;font-weight:700;color:var(--ink2);">E · 단체</div><span class="pill pu" style="font-size:8px;">별도 협상</span></div>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:11px;flex:1;min-height:0;">
-    <div style="display:flex;flex-direction:column;gap:6px;min-height:0;">
-      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">수락률 곡선 — A·B·D 전 실험 포인트</div>
-      <div class="card" style="padding:10px 12px;">
-        <div id="walkSimChart" style="height:180px;width:100%;"></div>
-      </div>
-      <div class="co" style="font-size:11px;">
-        <strong>A:</strong> 전 구간 100% · <strong>D:</strong> <span style="color:#059669;font-weight:700;">€46 계단 임계</span> · <strong>B:</strong> €91까지 100% → 이후 앵커링으로 급락
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:7px;">
-      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">D · Normative Hint 제거 효과</div>
-      <div class="tw">
-        <table>
-          <thead><tr><th>오퍼</th><th>hint 有</th><th>hint 無</th><th>변화</th></tr></thead>
-          <tbody>
-            <tr><td style="font-size:13px;">€29</td><td style="font-size:13px;">0%</td><td style="font-size:13px;">0%</td><td style="color:var(--ink3);font-size:13px;">±0</td></tr>
-            <tr class="hi"><td style="font-size:13px;"><strong>€46</strong></td><td style="font-size:13px;">0%</td><td style="font-size:13px;"><strong>100%</strong></td><td style="color:#059669;font-weight:700;font-size:13px;">+100%p</td></tr>
-            <tr class="hi"><td style="font-size:13px;"><strong>€66</strong></td><td style="font-size:13px;">0%</td><td style="font-size:13px;"><strong>97.5%</strong></td><td style="color:#059669;font-weight:700;font-size:13px;">+97.5%p</td></tr>
-            <tr class="hi"><td style="font-size:13px;"><strong>€81</strong></td><td style="font-size:13px;">0%</td><td style="font-size:13px;"><strong>100%</strong></td><td style="color:#059669;font-weight:700;font-size:13px;">+100%p</td></tr>
-            <tr><td style="font-size:13px;">€99</td><td style="font-size:13px;">95%</td><td style="font-size:13px;">100%</td><td style="color:#059669;font-size:13px;">+5%p</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="co gn" style="font-size:11px;"><strong>Step function 확인:</strong> €42(12.5%) → €46(100%). 이론적 디폴트: <strong>ADR×42% = €46</strong></div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:7px;">
-      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">B · Ceiling 검증 → 앵커링 역설</div>
-      <div class="tw">
-        <table>
-          <thead><tr><th>오퍼</th><th>수락률</th><th>R2 제시</th></tr></thead>
-          <tbody>
-            <tr><td style="font-size:13px;">€49</td><td style="font-size:13px;">65%</td><td style="font-size:13px;">—</td></tr>
-            <tr class="gn"><td style="font-size:13px;">€80</td><td style="font-size:13px;">100%</td><td style="font-size:13px;">—</td></tr>
-            <tr class="gn"><td style="font-size:13px;"><strong>€91</strong></td><td style="font-size:13px;"><strong>100%</strong></td><td style="font-size:13px;"><strong>€114</strong></td></tr>
-            <tr class="wa"><td style="font-size:13px;"><strong>€99</strong></td><td style="font-size:13px;"><strong>0%</strong></td><td style="font-size:13px;"><strong>€114</strong></td></tr>
-            <tr class="wa"><td style="font-size:13px;">€106</td><td style="font-size:13px;">0%</td><td style="font-size:13px;">€114</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="co" style="font-size:11px;"><strong>앵커링 역설:</strong> €91·€99 모두 R2=€114 동일, 결과는 반대. 이론적 상한: <strong>ADR×48% = €91</strong></div>
-    </div>
-  </div>
-  <div class="co bl" style="font-size:12px;margin-top:9px;flex-shrink:0;">
-    <strong>Flexi 설계 함의:</strong> 단일 공식은 B에게 역효과 — 아키타입별 차별 오퍼 필요. 지금은 이론적 디폴트이며, 앱이 수집한 실 협상 데이터로 보정 예정.
-  </div>
-</div>
-</section>
+  <div class="lbl">궁극의 비전 · 데이터가 쌓이면</div>
+  <h2 class="ttl" style="margin-bottom:16px;">우리 앱은 <span class="hl">스스로 학습하는 시스템</span>의 씨앗입니다.</h2>
 
-
-<!-- ══ 08 APP DEMO ══ -->
-<section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">09 / 11</div></div>
-<div class="content">
-  <div class="lbl">시스템의 본질 · 데이터 수집 인프라</div>
-  <h2 class="ttl" style="margin-bottom:16px;">실데이터가 쌓일수록 — <span class="hl">이 호텔에 맞춰지는</span> 시스템입니다.</h2>
   <div style="display:grid;grid-template-columns:1fr 1.05fr;gap:14px;margin-bottom:13px;">
+
+    <!-- LEFT: two ML models -->
     <div style="display:flex;flex-direction:column;gap:9px;">
       <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink3);">데이터가 쌓이면 가능한 두 가지 ML</div>
       <div class="card" style="padding:15px 17px;border-left:3px solid var(--brand);">
@@ -534,17 +515,16 @@ tr.gn td strong{color:#059669;}
           P(수락 | 예약 피처, 오퍼 금액) → LightGBM
         </div>
         <div style="margin-top:7px;font-size:11px;color:var(--ink3);">
-          학습 데이터: {lead_time, country, room, offer → 수락 T/F}
-        <div style="margin-top:5px;font-size:11px;color:#7C3AED;">↳ 범용 LLM이 아닌, 이 호텔 실제 협상 패턴으로 보정</div>
-        <div style="margin-top:6px;font-size:11px;background:#F5F3FF;border-radius:6px;padding:6px 9px;color:#5B21B6;border:1px solid #DDD6FE;">
-          <strong>Cold Start:</strong> 이력 0건이어도 LLM 시뮬 결과(D: €46 · B: ≤€91)가 초기 디폴트 → 첫날부터 마찰 최소화
-        </div>
+          학습 데이터: {lead_time, country, room, meal, … + 오퍼 금액 → 수락 T/F}
         </div>
       </div>
     </div>
+
+    <!-- RIGHT: flywheel -->
     <div>
       <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:9px;">앱이 데이터를 모읍니다 — 선순환</div>
       <div style="border:1.5px solid var(--bd);border-radius:13px;padding:16px;background:#fff;display:flex;flex-direction:column;gap:0;">
+        <!-- Flywheel steps -->
         <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--bd);">
           <div style="width:26px;height:26px;border-radius:50%;background:var(--blue-s);border:1.5px solid #BFDBFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--brand);flex-shrink:0;">1</div>
           <span style="font-size:13px;color:var(--ink2);">매니저가 앱으로 <strong style="color:var(--ink);">협상 결과 기록</strong></span>
@@ -564,91 +544,324 @@ tr.gn td strong{color:#059669;}
       </div>
     </div>
   </div>
+
+  <!-- Bottom callout -->
   <div class="co bl" style="font-size:14px;">
-    <strong>지금 이 앱은 두 가지 역할을 동시에 합니다:</strong> 매니저의 의사결정을 돕는 DSS <em>이면서</em>, ML ②를 학습시킬 데이터를 수집하는 인프라입니다. LLM 시뮬은 이력이 없는 <strong>첫날의 디폴트값</strong>을 제공합니다. 데이터가 쌓일수록 ML ②가 그 자리를 대체 — <strong>이 호텔 실제 패턴 기반의 실시간 추천</strong>으로 진화합니다.
+    <strong>지금 이 앱은 두 가지 역할을 동시에 합니다:</strong> 매니저의 의사결정을 돕는 DSS <em>이면서</em>, ML ②를 학습시킬 데이터를 수집하는 인프라입니다. LLM은 그 시작점을 만드는 브릿지.
   </div>
 </div>
 </section>
 
 
-<!-- ══ 10 비전: 마스터 시스템의 파츠 ══ -->
-<section data-background-color="#F8FAFC">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">10 / 11</div></div>
-<div class="content">
-  <div class="lbl">궁극의 비전 · 마스터 시스템</div>
-  <h2 class="ttl" style="margin-bottom:5px;">오버부킹에서 시작해 — <span class="hl">호텔 경영 AI의 파츠가 됩니다.</span></h2>
-  <p class="lead" style="margin-bottom:14px;">데이터 수집 인프라를 공통 기반으로, 각 의사결정 영역에 하나씩 파츠를 쌓아갑니다.</p>
-
-  <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:11px;margin-bottom:12px;">
-    <div style="background:var(--blue-s);border:2px solid var(--brand);border-radius:12px;padding:16px 18px;position:relative;">
-      <div style="position:absolute;top:-10px;left:14px;background:var(--brand);color:#fff;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 9px;border-radius:4px;">지금 · 1단계</div>
-      <div style="font-size:13.5px;font-weight:800;color:var(--brand);margin-bottom:8px;margin-top:4px;">오버부킹 관리</div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1D4ED8;">
-          <span class="pill bl" style="font-size:8px;">ML ①</span> 취소 확률 예측
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1D4ED8;">
-          <span class="pill bl" style="font-size:8px;">LLM</span> 협상 보상 가이드
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#1D4ED8;">
-          <span class="pill bl" style="font-size:8px;">앱</span> 데이터 수집 인프라
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:9px;">
-      <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:13px 15px;flex:1;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;">2단계 · 데이터 누적 후</div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;">가격 전략</div>
-        <div style="font-size:11px;color:var(--ink2);line-height:1.5;">협상 수락 데이터 → 가격 민감도 학습 → 아키타입별 최적 요금 책정</div>
-      </div>
-      <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:13px 15px;flex:1;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;">2단계 · 데이터 누적 후</div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;">고객 세분화</div>
-        <div style="font-size:11px;color:var(--ink2);line-height:1.5;">행동 패턴 누적 → 아키타입 자동 분류 → 개인화된 오퍼 설계</div>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:9px;">
-      <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:13px 15px;flex:1;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;">3단계 · 장기 운영 후</div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;">수요 예측</div>
-        <div style="font-size:11px;color:var(--ink2);line-height:1.5;">계절·이벤트 패턴 + 취소 이력 → 날짜별 최적 재고 배분</div>
-      </div>
-      <div style="background:#fff;border:1px solid var(--bd);border-radius:10px;padding:13px 15px;flex:1;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;">3단계 · 장기 운영 후</div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;">채널 최적화</div>
-        <div style="font-size:11px;color:var(--ink2);line-height:1.5;">OTA·직접 예약별 취소율 차이 → 채널 믹스 조정 → RevPAR 극대화</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="co gn" style="font-size:13px;">
-    <strong>공통 기반:</strong> 각 파츠는 앱이 쌓는 데이터 수집 인프라 위에서 작동합니다. 오버부킹 관리에서 시작한 데이터가 호텔 경영 전반을 지원하는 마스터 시스템의 기반이 됩니다.
-  </div>
-</div>
-</section>
-
-
-<!-- ══ 11 CLOSING ══ -->
+<!-- ══ 09 LLM CLAIMS ══ -->
 <section data-background-color="#FFFFFF">
-<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">11 / 11</div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">10 / 15</div></div>
+<div class="content">
+  <div class="lbl">LLM 정당성 · Claim 0 → 1 → 2</div>
+  <h2 class="ttl" style="margin-bottom:10px;">데이터 공백을 <span class="hl">논리로 메웁니다.</span></h2>
+
+  <!-- Claim 0 -->
+  <div class="card gst" style="padding:13px 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;">
+      <span class="pill pu">Claim 0</span>
+      <span style="font-size:15px;font-weight:700;color:#6D28D9;">왜 LLM인가 — 다른 방법이 안 되는 이유</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1.1fr;gap:8px;align-items:stretch;">
+      <div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:8px;padding:8px 11px;">
+        <div style="font-size:10px;font-weight:700;color:#DC2626;margin-bottom:3px;">규칙 기반 시뮬레이션 ✗</div>
+        <div style="font-size:12px;color:#991B1B;line-height:1.55;">"손님이 이러면 이렇게 반응한다"는 규칙을 사람이 하나하나 짜야 함</div>
+      </div>
+      <div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:8px;padding:8px 11px;">
+        <div style="font-size:10px;font-weight:700;color:#DC2626;margin-bottom:3px;">설문 / 실제 실험 ✗</div>
+        <div style="font-size:12px;color:#991B1B;line-height:1.55;">아직 없는 상품에 대한 반응을 사람에게 물어볼 수 없음</div>
+      </div>
+      <div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:8px;padding:8px 11px;">
+        <div style="font-size:10px;font-weight:700;color:#DC2626;margin-bottom:3px;">기존 ML 모델 ✗</div>
+        <div style="font-size:12px;color:#991B1B;line-height:1.55;">학습할 협상 데이터가 있어야 하는데, 그게 없는 게 바로 지금 문제</div>
+      </div>
+      <div style="background:#EDE9FE;border:1px solid #C4B5FD;border-radius:8px;padding:8px 11px;">
+        <div style="font-size:10px;font-weight:700;color:#6D28D9;margin-bottom:3px;">LLM ✓</div>
+        <div style="font-size:12px;color:#5B21B6;line-height:1.55;">이미 수많은 글을 읽어 호텔·협상 상황을 알고 있음 — 데이터 없이 바로 시작 가능</div>
+        <div style="font-size:9.5px;color:#7C3AED;margin-top:4px;opacity:.8;">Horton 2023 · Homo Silicus</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:22px 26px;border-left:4px solid var(--brand);margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+      <span class="pill bl">Claim 1</span>
+      <span style="font-size:17px;font-weight:700;color:var(--brand);">LLM은 호텔 도메인을 이해한다</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div class="sr"><div class="sn2 b">①</div><p style="font-size:15px;color:var(--ink2);line-height:1.6;margin:0;">선행 연구(Park 2023, Aher 2023, Kojima 2022)로 지지 — LLM의 도메인 추론·사회 행동 시뮬레이션 능력 실증</p></div>
+      <div class="sr"><div class="sn2 b">②</div><p style="font-size:15px;color:var(--ink2);line-height:1.6;margin:0;"><strong style="color:#92400E;">직접 검증 미실시</strong> — 테스트셋 40,687건 × $0.004/건 ≈ $163 · 예산 초과로 미실시</p></div>
+      <div class="sr"><div class="sn2 b">③</div><p style="font-size:15px;color:var(--ink2);line-height:1.6;margin:0;">Phase 2 계획: 1,000건 층화 샘플링으로 비용 절감 후 재검토</p></div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;padding-left:18px;margin-bottom:10px;">
+    <div style="width:2px;height:24px;background:var(--bd);"></div>
+    <span style="font-size:13px;color:var(--ink3);font-style:italic;">취소 행동 이해 → 보상 반응도 이해 &nbsp;(논문근거: 슬라이드 09)</span>
+  </div>
+  <div class="card" style="padding:22px 26px;border-left:4px solid var(--accent);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+      <span class="pill am">Claim 2</span>
+      <span style="font-size:17px;font-weight:700;color:#92400E;">보상 협상 반응을 시뮬레이션할 수 있다</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div class="sr"><div class="sn2 a">①</div><p style="font-size:15px;color:var(--ink2);line-height:1.6;margin:0;">5 아키타입 × 보상 구간 × 40회 = 총 1,240 runs 직접 실험</p></div>
+      <div class="sr"><div class="sn2 a">②</div><p style="font-size:15px;color:var(--ink2);line-height:1.6;margin:0;"><strong style="color:#92400E;">한계 인정:</strong> 시뮬레이션 ≠ 실제 협상 이력 · 방향성 탐색 목적</p></div>
+      <div class="sr"><div class="sn2 a">③</div><p style="font-size:15px;color:var(--ink2);line-height:1.6;margin:0;">Horton &amp; Argyle 2023 방법론 준수 — normative hint 제거 후 결과</p></div>
+    </div>
+  </div>
+</div>
+</section>
+
+
+<!-- ══ 09 LLM PAPERS + DEFAULT ══ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">11 / 15</div></div>
+<div class="content">
+  <div class="lbl">선행 연구 근거 · 3 논문</div>
+  <h2 class="ttl" style="margin-bottom:12px;">세 논문이 <span class="hl">시뮬레이션을 지지</span>합니다.</h2>
+  <div class="g3" style="margin-bottom:18px;">
+    <div class="card" style="padding:22px 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="pill pu">시뮬레이션</span>
+        <strong style="font-size:15px;">Park et al., UIST 2023</strong>
+      </div>
+      <p>LLM 에이전트가 인간의 사회적 행동·의사결정을 현실적으로 시뮬레이션함을 실증</p>
+      <div style="font-size:12px;color:#92400E;background:var(--gold-s);border-radius:6px;padding:6px 11px;display:inline-block;margin-top:11px;">한계: 실험실 환경 — 실제 배포 검증 미비</div>
+    </div>
+    <div class="card" style="padding:22px 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="pill pu">재현성</span>
+        <strong style="font-size:15px;">Aher et al., ICML 2023</strong>
+      </div>
+      <p>LLM이 인간 피험자 연구 결과를 통계적으로 재현. 합성 레이블 신뢰성 근거</p>
+      <div style="font-size:12px;color:#92400E;background:var(--gold-s);border-radius:6px;padding:6px 11px;display:inline-block;margin-top:11px;">한계: 호텔 협상 특화 실험 아님</div>
+    </div>
+    <div class="card" style="padding:22px 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="pill gr">방법론</span>
+        <strong style="font-size:15px;">Horton &amp; Argyle, 2023</strong>
+      </div>
+      <p>LLM 시뮬레이션 시 normative hint 제거 필요 — 판단 유도 편향 제거 방법론</p>
+      <div style="font-size:12px;color:#166534;background:#F0FDF4;border-radius:6px;padding:6px 11px;display:inline-block;margin-top:11px;">우리 실험에서 직접 적용 · 효과 실증 (슬라이드 10)</div>
+    </div>
+  </div>
+  <div class="co gn">
+    <strong>시뮬레이션 출력의 위치:</strong> 이 결과(보상 임계값·할인율)는 실 협상 이력 부재 시 운영 시작점을 제시하는 <strong>이론적 디폴트</strong>입니다 — Phase 2에서 앱이 수집한 실 협상 데이터로 per-archetype 보정 예정.
+  </div>
+</div>
+</section>
+
+
+<!-- ══ 09 ARCHETYPES + RESULTS ══ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">12 / 15</div></div>
+<div class="content">
+  <div class="lbl">Claim 2 · 1,240 runs · hint 제거 최종본</div>
+  <h2 class="ttl" style="margin-bottom:8px;">유형마다 <span class="hl">다른 수락 패턴</span>이 나타났습니다.</h2>
+
+  <!-- 5 archetype compact strip -->
+  <div style="display:flex;gap:7px;flex-wrap:nowrap;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--blue-s);border:1px solid #BFDBFE;flex-shrink:0;">
+      <span>💼</span><div><div style="font-size:10px;font-weight:700;color:var(--brand);">A · 비즈니스 솔로</div><span class="pill gr" style="font-size:8px;">재배치 용이</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--gold-s);border:1px solid #FDE68A;flex-shrink:0;">
+      <span>💑</span><div><div style="font-size:10px;font-weight:700;color:#92400E;">B · 레저 커플</div><span class="pill am" style="font-size:8px;">앵커링 민감</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:#FFF5F5;border:1px solid #FECACA;flex-shrink:0;">
+      <span>👨‍👩‍👧</span><div><div style="font-size:10px;font-weight:700;color:#991B1B;">C · 가족</div><span class="pill rd" style="font-size:8px;">재배치 제외</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:#F0FDF4;border:1px solid #BBF7D0;flex-shrink:0;">
+      <span>🎒</span><div><div style="font-size:10px;font-weight:700;color:#059669;">D · 가격민감형 고객</div><span class="pill gr" style="font-size:8px;">임계값 반응형</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--bd);flex-shrink:0;">
+      <span>👥</span><div><div style="font-size:10px;font-weight:700;color:var(--ink2);">E · 단체</div><span class="pill pu" style="font-size:8px;">별도 협상</span></div>
+    </div>
+  </div>
+
+  <!-- main 2col -->
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:14px;flex:1;min-height:0;">
+    <!-- LEFT: chart -->
+    <div style="display:flex;flex-direction:column;gap:6px;min-height:0;">
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">수락률 곡선 — A·B·D 전 실험 포인트 · 보완점 ◇ 표시 (C·E: 전 구간 0%)</div>
+      <div class="card" style="padding:10px 12px;">
+        <div id="walkSimChart" style="height:210px;width:100%;"></div>
+      </div>
+      <div class="co" style="font-size:11px;">
+        <strong>A(비즈니스):</strong> 전 구간 100% · <strong>D(예산형):</strong> <span style="color:#059669;font-weight:700;">€46 계단 임계</span> · <strong>B(레저):</strong> €91까지 100% → 이후 앵커링으로 급락
+      </div>
+    </div>
+    <!-- RIGHT: hint table + claim -->
+    <div style="display:flex;flex-direction:column;gap:7px;">
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">D 아키타입: Normative Hint 제거 효과</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>오퍼</th><th>hint 有</th><th>hint 無</th><th>변화</th></tr></thead>
+          <tbody>
+            <tr><td>€29</td><td>0%</td><td>0%</td><td style="color:var(--ink3);">±0</td></tr>
+            <tr class="hi"><td><strong>€46</strong></td><td>0%</td><td><strong>100%</strong></td><td style="color:#059669;font-weight:700;">+100%p</td></tr>
+            <tr class="hi"><td><strong>€66</strong></td><td>0%</td><td><strong>97.5%</strong></td><td style="color:#059669;font-weight:700;">+97.5%p</td></tr>
+            <tr class="hi"><td><strong>€81</strong></td><td>0%</td><td><strong>100%</strong></td><td style="color:#059669;font-weight:700;">+100%p</td></tr>
+            <tr><td>€99</td><td>95%</td><td>100%</td><td style="color:#059669;">+5%p</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="co re" style="font-size:11px;">
+        <strong>Horton &amp; Argyle 2023 실증:</strong> "a higher offer is likely to be accepted" 문구가 D 거절 임계값을 €99까지 인위적 상승. 제거 후 €46부터 100% 수락.
+      </div>
+      <div style="background:var(--surface);border-radius:9px;padding:8px 12px;border:1px solid var(--bd);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:2px;">Claim 2 확정</div>
+        <div style="font-size:11px;color:var(--ink2);line-height:1.6;">Family(0%) = Group(0%) &lt; Budget OTA(€46 임계) &lt; Business(100%)<br>walk_difficulty 높을수록 수락률 낮음 — 방향성 유효</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+
+<!-- ══ 11 SUPPLEMENTARY EXPERIMENTS ══ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">13 / 15</div></div>
+<div class="content">
+  <div class="lbl">보완 실험 · 240 추가 runs <span class="tag-new">신규</span></div>
+  <h2 class="ttl" style="margin-bottom:14px;">임계값과 역설 — <span class="hl">그래프가 말하는 것.</span></h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+
+    <!-- D threshold -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">D 아키타입 · 임계값 정밀화 (room_cost = €110)</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>오퍼</th><th>비율</th><th>수락률</th><th>n</th></tr></thead>
+          <tbody>
+            <tr><td>€29</td><td>26%</td><td>0%</td><td>40</td></tr>
+            <tr><td>€33 <span class="tag-new" style="font-size:8px;">보완</span></td><td>30%</td><td>0%</td><td>40</td></tr>
+            <tr><td>€37 <span class="tag-new" style="font-size:8px;">보완</span></td><td>34%</td><td>0%</td><td>40</td></tr>
+            <tr class="hi"><td><strong>€42 <span class="tag-new" style="font-size:8px;">보완</span></strong></td><td>38%</td><td><strong>12.5%</strong></td><td>40</td></tr>
+            <tr class="gn"><td><strong>€46</strong></td><td>42%</td><td><strong>100%</strong></td><td>40</td></tr>
+            <tr class="gn"><td>€66</td><td>60%</td><td>97.5%</td><td>40</td></tr>
+            <tr class="gn"><td>€81</td><td>74%</td><td>100%</td><td>40</td></tr>
+            <tr class="gn"><td>€99</td><td>90%</td><td>100%</td><td>40</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="co gn" style="font-size:13px;">
+        <strong>Step function 확인:</strong> €42(12.5%) → €46(100%), €4 차이에서 계단 전환. → <strong>이론적 디폴트 오퍼: ADR×42% (€46)</strong>
+      </div>
+    </div>
+
+    <!-- B anchoring -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">B 아키타입 · Ceiling 검증 → 앵커링 역설 발견 (ceiling = €114)</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>오퍼</th><th>수락률</th><th>R1 역제안</th><th>R2 제시</th></tr></thead>
+          <tbody>
+            <tr><td>€49</td><td>65%</td><td>—</td><td>—</td></tr>
+            <tr class="gn"><td>€80</td><td>100%</td><td>—</td><td>—</td></tr>
+            <tr class="gn"><td><strong>€91 <span class="tag-new" style="font-size:8px;">보완</span></strong></td><td><strong>100%</strong></td><td>€140</td><td><strong>€114</strong></td></tr>
+            <tr class="wa"><td><strong>€99 <span class="tag-new" style="font-size:8px;">보완</span></strong></td><td><strong>0%</strong></td><td>€150</td><td><strong>€114</strong></td></tr>
+            <tr class="wa"><td>€106 <span class="tag-new" style="font-size:8px;">보완</span></td><td>0%</td><td>€150</td><td>€114</td></tr>
+            <tr class="wa"><td>€114</td><td>0%</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="co" style="font-size:13px;">
+        <strong>앵커링 역설 (Tversky &amp; Kahneman 1974):</strong> €91·€99 모두 R2=€114 동일, 결과는 반대. → <strong>이론적 디폴트 오퍼 상한: ADR×48% (€91)</strong>
+      </div>
+    </div>
+  </div>
+  <div class="co bl" style="font-size:13px;">
+    <strong>Flexi 설계 함의:</strong> 단일 공식은 B에게 역효과 — 아키타입별 차별 오퍼 필요. 지금은 LLM 기반 이론적 디폴트이며, 앱이 수집한 실 협상 데이터로 per-archetype 보정 예정.
+  </div>
+</div>
+</section>
+
+
+<!-- ══ 11 VISION ══ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">14 / 15</div></div>
+<div class="content">
+  <div class="lbl">궁극의 비전 · 미래 모델</div>
+  <h2 class="ttl" style="margin-bottom:4px;">LLM은 <span class="hl">데이터 공백의 브릿지</span>입니다.</h2>
+  <p class="lead" style="margin-bottom:13px;">실 협상 데이터가 누적되면 ML이 이 역할을 대체합니다 — 우리 앱이 바로 그 데이터를 모읍니다.</p>
+  <div style="display:flex;align-items:center;margin-bottom:12px;gap:0;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--gold-s);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#92400E;">1</div>
+      <div style="font-size:8.5px;font-weight:700;color:#92400E;white-space:nowrap;">지금</div>
+    </div>
+    <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--accent),var(--brand));margin-bottom:13px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--blue-s);border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--brand);">2</div>
+      <div style="font-size:8.5px;font-weight:700;color:var(--brand);white-space:nowrap;">앱 운용 후</div>
+    </div>
+    <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--brand),var(--green));margin-bottom:13px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:50%;background:#F0FDF4;border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#059669;">3</div>
+      <div style="font-size:8.5px;font-weight:700;color:#059669;white-space:nowrap;">궁극의 모델</div>
+    </div>
+  </div>
+  <div class="g3" style="margin-bottom:12px;">
+    <div class="card acc" style="padding:15px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#92400E;margin-bottom:9px;">캐글 + LLM 합성</div>
+      <ul style="display:flex;flex-direction:column;gap:5px;">
+        <li style="font-size:11px;color:#78350F;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#D97706;display:inline-block;"></span>119K 예약으로 취소 패턴 학습</li>
+        <li style="font-size:11px;color:#78350F;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#D97706;display:inline-block;"></span>LLM으로 재배치 협상 이력 합성</li>
+        <li style="font-size:11px;color:#78350F;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#D97706;display:inline-block;"></span>Flexi 운영 가설 검증 + DSS 앱 배포</li>
+        <li style="font-size:11px;color:#78350F;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#D97706;display:inline-block;"></span>앱이 실 운영 데이터 수집 시작</li>
+      </ul>
+    </div>
+    <div class="card blu" style="padding:15px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand);margin-bottom:9px;">실 데이터 + 하이브리드</div>
+      <ul style="display:flex;flex-direction:column;gap:5px;">
+        <li style="font-size:11px;color:#1D4ED8;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--brand);display:inline-block;"></span>실제 협상 기록이 앱을 통해 누적</li>
+        <li style="font-size:11px;color:#1D4ED8;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--brand);display:inline-block;"></span>LLM 예측 + 실데이터 병행 활용</li>
+        <li style="font-size:11px;color:#1D4ED8;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--brand);display:inline-block;"></span>실데이터 비중 증가 → 정확도 향상</li>
+        <li style="font-size:11px;color:#1D4ED8;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--brand);display:inline-block;"></span>LLM 의존도 점진적 감소</li>
+      </ul>
+    </div>
+    <div class="card grn" style="padding:15px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#059669;margin-bottom:9px;">순수 ML 완성</div>
+      <ul style="display:flex;flex-direction:column;gap:5px;">
+        <li style="font-size:11px;color:#166534;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--green);display:inline-block;"></span>P(수락 | 손님 피처, 보상금액) 직접 학습</li>
+        <li style="font-size:11px;color:#166534;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--green);display:inline-block;"></span>LightGBM이 수락 확률 직접 예측</li>
+        <li style="font-size:11px;color:#166534;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--green);display:inline-block;"></span>LLM 브릿지 역할 완전 종료</li>
+        <li style="font-size:11px;color:#166534;line-height:1.5;padding-left:12px;position:relative;"><span style="position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--green);display:inline-block;"></span>모델이 운영 데이터와 함께 성장</li>
+      </ul>
+    </div>
+  </div>
+  <div class="co gn" style="font-size:12px;">
+    <strong>ML은 "데이터가 쌓이면 의미 있다"는 말이 맞습니다.</strong> 우리 앱이 바로 그 데이터를 모읍니다. 지금 LLM은 그 시작점을 만드는 브릿지입니다.
+    <span style="display:inline-block;margin-top:3px;font-size:10px;color:#166534;opacity:.8;">궁극의 모델: P(수락 | 예약 피처 32개, 제안 보상금액) → LightGBM 직접 예측</span>
+  </div>
+</div>
+</section>
+
+
+<!-- ══ 12 CLOSING ══ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">15 / 15</div></div>
 <div style="flex:1;display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;">
   <div>
     <div class="lbl">Closing</div>
-    <h1 class="hero" style="font-size:38px;line-height:1.2;margin-bottom:18px;">
-      저희는 <span class="hl">마찰을 줄이는<br>운영 가이드라인</span>을 만듭니다.
+    <h1 class="hero" style="font-size:42px;line-height:1.15;margin-bottom:18px;">
+      저희는 <span class="hl">두뇌</span>를 만듭니다.
     </h1>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:10px;padding:12px 15px;background:var(--blue-s);border-radius:9px;border:1px solid #BFDBFE;">
-        <span class="pill bl" style="flex-shrink:0;">Q1</span><span style="font-size:13px;color:var(--brand);font-weight:500;">LightGBM + 점유율 임계값 → RevPAR +81% (threshold=0.60 파일럿, n=50)</span>
+        <span class="pill bl" style="flex-shrink:0;">Q1</span><span style="font-size:13px;color:var(--brand);font-weight:500;">LightGBM + 점유율 임계값 → RevPAR +81%</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;padding:12px 15px;background:var(--gold-s);border-radius:9px;border:1px solid #FDE68A;">
-        <span class="pill am" style="flex-shrink:0;">Q2</span><span style="font-size:13px;color:#92400E;font-weight:500;">LLM 1,240 runs → D: €46 디폴트 · B: €91 이하 · 앵커링 역설 발견</span>
+        <span class="pill am" style="flex-shrink:0;">Q2</span><span style="font-size:13px;color:#92400E;font-weight:500;">LLM 시뮬레이션 1,240 runs → 유형별 임계값 실측 + 앵커링 역설 발견</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;padding:12px 15px;background:#F0FDF4;border-radius:9px;border:1px solid #BBF7D0;">
-        <span class="pill gr" style="flex-shrink:0;">앱</span><span style="font-size:13px;color:#166534;font-weight:500;">Streamlit DSS 3탭 + 데이터 수집 인프라 → ML ② 성장 기반</span>
+        <span class="pill gr" style="flex-shrink:0;">앱</span><span style="font-size:13px;color:#166534;font-weight:500;">Streamlit DSS — Tab 1 우선순위 · Tab 2 Flexi 관리 · Tab 3 오늘 예약 관리</span>
       </div>
     </div>
-    <p style="font-size:11.5px;color:var(--ink3);line-height:1.85;">PMS 연동 · 결제 시스템 · 협력 호텔 네트워크는 범위 밖입니다.<br>저희는 <strong style="color:var(--ink2);">취소 예측 + 협상 가이드 + 데이터 수집 인프라</strong>를 만듭니다.</p>
+    <p style="font-size:11.5px;color:var(--ink3);line-height:1.85;">PMS 연동 · 결제 시스템 · 협력 호텔 네트워크는 범위 밖입니다.<br>저희는 <strong style="color:var(--ink2);">취소 예측 엔진 + 재배치 보상 전략 두뇌</strong>를 만듭니다.</p>
   </div>
   <div>
     <div style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:11px;">완료 + 남은 작업</div>
@@ -667,7 +880,7 @@ tr.gn td strong{color:#059669;}
       </div>
       <div class="dbox">
         <span style="font-size:9px;font-weight:700;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;flex-shrink:0;">W6</span>
-        <div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:1px;">앱 데이터 수집 구조 점검</div><div style="font-size:10.5px;color:var(--ink3);">매니저 협상 결과 기록·저장 구조 확인 — 실데이터 누적 준비</div></div>
+        <div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:1px;">앱 데이터 수집 구조 점검</div><div style="font-size:10.5px;color:var(--ink3);">매니저 협상 결과(수락/거절/금액) 기록·저장 구조 확인 — 실데이터 누적 준비</div></div>
       </div>
     </div>
     <div style="text-align:right;border-top:1px solid var(--bd);padding-top:13px;">
@@ -682,6 +895,7 @@ tr.gn td strong{color:#059669;}
 </div>
 </div>
 
+<!-- ── 동영상 폴백 모달 ──────────────────────────────────────────── -->
 <div id="videoModal" onclick="if(event.target===this)closeVideoModal()"
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="position:relative;border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.6);">
@@ -696,7 +910,6 @@ tr.gn td strong{color:#059669;}
   </button>
   <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.5px;">DSS_DEMO.mp4 · 오프라인 폴백 모드</div>
 </div>
-
 <!-- ─────────────────────────────────────────────────────────────── -->
 
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
@@ -709,12 +922,7 @@ const DATA = {
     labels: ['Dummy', 'Logistic Reg.', 'Random Forest', 'XGBoost', 'LightGBM ★'],
     prauc:  [0.387,   0.782,           0.779,            0.805,     0.819],
   },
-  thresholds: {
-    labels:    ['50%','60%','70%','80%','85%','90%','95%','99%'],
-    precision: [78.7, 80.6, 83.3, 88.6, 95.3, 98.6, 99.9,100.0],
-    recall:    [61.0, 56.6, 49.3, 38.0, 29.6, 23.4, 17.0,  6.5],
-    f1:        [68.7, 66.5, 62.0, 53.2, 45.2, 37.8, 29.1, 12.2],
-  },
+  // Walk sim: D는 hint 제거(nohint) 최종 결과 기준
   walkSim: {
     A: { label: 'A · 비즈니스 솔로', offers: [62,  101, 144, 178, 216], accept: [1.00, 1.00, 1.00, 1.00, 1.00] },
     B: { label: 'B · 레저 커플',     offers: [49,   80, 114, 141, 171], accept: [0.65, 1.00, 0.00, 0.00, 0.00] },
@@ -783,69 +991,45 @@ function initCharts() {
   const el1 = document.getElementById('prauc');
   if (el1 && !charts.prauc) {
     charts.prauc = echarts.init(el1, null, { renderer: 'svg' });
-    const td = DATA.thresholds;
     charts.prauc.setOption({
       animation: false,
       backgroundColor: 'transparent',
-      tooltip: {
-        trigger: 'axis',
-        formatter: params => {
-          const thr = params[0].axisValue;
-          return `<div style="font-size:11px;font-family:Inter,sans-serif;"><b>임계값 ${thr}</b><br>` +
-            params.map(p => `${p.marker}${p.seriesName}: <b>${p.value}%</b>`).join('<br>') + '</div>';
-        },
-      },
-      legend: {
-        data: ['Precision', 'Recall', 'F1'],
-        top: 0, right: 4,
-        itemWidth: 14, itemHeight: 3,
-        textStyle: { fontSize: 10, color: '#475569', fontFamily: 'Inter,sans-serif' },
-      },
-      grid: { left: 36, right: 14, top: 22, bottom: 22 },
-      xAxis: {
-        type: 'category', data: td.labels,
-        axisLabel: { color: '#94A3B8', fontSize: 9.5, fontFamily: 'Inter,sans-serif' },
-        axisLine: { lineStyle: { color: '#E2E8F0' } },
-        axisTick: { show: false },
-      },
+      grid: { left: 108, right: 52, top: 6, bottom: 8 },
       yAxis: {
-        type: 'value', min: 0, max: 100,
-        axisLabel: { formatter: v => v + '%', color: '#94A3B8', fontSize: 9, fontFamily: 'Inter,sans-serif' },
-        splitLine: { lineStyle: { color: '#F1F5F9' } },
+        type: 'category', data: DATA.models.labels,
+        axisLabel: { color: '#475569', fontSize: 11, fontFamily: 'Inter,sans-serif', fontWeight: '500' },
         axisLine: { show: false }, axisTick: { show: false },
       },
-      series: [
-        {
-          name: 'Precision', type: 'line', data: td.precision,
-          symbol: 'circle', symbolSize: 5,
-          itemStyle: { color: '#1E3A8A' }, lineStyle: { color: '#1E3A8A', width: 2.5 },
-          markLine: {
-            silent: true,
-            data: [{ xAxis: '60%', lineStyle: { color: '#D97706', width: 2, type: 'dashed' },
-              label: { formatter: '0.60★', color: '#D97706', fontSize: 10, fontWeight: '700',
-                       fontFamily: 'Inter,sans-serif', position: 'insideEndTop' } }],
+      xAxis: {
+        type: 'value', min: 0.3, max: 0.88,
+        splitLine: { lineStyle: { color: '#F1F5F9' } },
+        axisLabel: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter,sans-serif' },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      series: [{
+        type: 'bar', barMaxWidth: 19,
+        data: DATA.models.prauc.map((v, i) => ({
+          value: v,
+          itemStyle: {
+            borderRadius: [0,4,4,0],
+            color: i === DATA.models.prauc.length - 1
+              ? { type:'linear', x:0, y:0, x2:1, y2:0, colorStops:[{offset:0,color:'#1E3A8A'},{offset:1,color:'#3B82F6'}] }
+              : i >= 3 ? '#60A5FA' : i > 0 ? '#93C5FD' : '#CBD5E1',
           },
-        },
-        {
-          name: 'Recall', type: 'line', data: td.recall,
-          symbol: 'circle', symbolSize: 5,
-          itemStyle: { color: '#DC2626' }, lineStyle: { color: '#DC2626', width: 2.5 },
-        },
-        {
-          name: 'F1', type: 'line', data: td.f1,
-          symbol: 'circle', symbolSize: 5,
-          itemStyle: { color: '#059669' }, lineStyle: { color: '#059669', width: 2, type: 'dashed' },
-        },
-      ],
+        })),
+        label: { show: true, position: 'right', formatter: '{c}', color: '#64748B', fontSize: 10.5, fontFamily: 'Inter,sans-serif', fontWeight: '600' },
+      }],
     });
   }
 
   const el3 = document.getElementById('walkSimChart');
   if (el3 && !charts.walkSimChart) {
     charts.walkSimChart = echarts.init(el3, null, { renderer: 'svg' });
+    // [offer_mult%, accept_rate] — all data points incl. supplementary
     const dA = [[26,1],[42,1],[60,1],[74,1],[90,1]];
     const dB = [[25.8,0.65],[42.1,1],[47.9,1],[52.1,0],[55.8,0],[60,0],[74.2,0],[90,0]];
     const dD = [[26.4,0],[30,0],[33.6,0],[38.2,0.125],[41.8,1],[60,0.975],[73.6,1],[90,1]];
+    // supplementary points (hollow diamond overlay)
     const suppPts = [[30,0],[33.6,0],[38.2,0.125],[47.9,1],[52.1,0],[55.8,0]];
     charts.walkSimChart.setOption({
       animation: false,
@@ -881,10 +1065,28 @@ function initCharts() {
         axisLine: { show: false }, axisTick: { show: false },
       },
       series: [
-        { name: 'A · 비즈니스 솔로', type: 'line', smooth: false, data: dA, symbol: 'circle', symbolSize: 5, itemStyle: { color: '#3B82F6' }, lineStyle: { color: '#3B82F6', width: 2 } },
-        { name: 'B · 레저 커플', type: 'line', smooth: false, data: dB, symbol: 'circle', symbolSize: 5, itemStyle: { color: '#D97706' }, lineStyle: { color: '#D97706', width: 2 } },
-        { name: 'D · 가격민감형 고객', type: 'line', smooth: false, data: dD, symbol: 'circle', symbolSize: 5, itemStyle: { color: '#059669' }, lineStyle: { color: '#059669', width: 2 } },
-        { name: '보완', type: 'scatter', data: suppPts, symbol: 'diamond', symbolSize: 11, itemStyle: { color: 'transparent', borderColor: '#7C3AED', borderWidth: 2 }, legendHoverLink: false, emphasis: { disabled: true } },
+        {
+          name: 'A · 비즈니스 솔로', type: 'line', smooth: false,
+          data: dA, symbol: 'circle', symbolSize: 5,
+          itemStyle: { color: '#3B82F6' }, lineStyle: { color: '#3B82F6', width: 2 },
+        },
+        {
+          name: 'B · 레저 커플', type: 'line', smooth: false,
+          data: dB, symbol: 'circle', symbolSize: 5,
+          itemStyle: { color: '#D97706' }, lineStyle: { color: '#D97706', width: 2 },
+        },
+        {
+          name: 'D · 가격민감형 고객', type: 'line', smooth: false,
+          data: dD, symbol: 'circle', symbolSize: 5,
+          itemStyle: { color: '#059669' }, lineStyle: { color: '#059669', width: 2 },
+        },
+        {
+          name: '보완', type: 'scatter',
+          data: suppPts,
+          symbol: 'diamond', symbolSize: 11,
+          itemStyle: { color: 'transparent', borderColor: '#7C3AED', borderWidth: 2 },
+          legendHoverLink: false, emphasis: { disabled: true },
+        },
       ],
     });
   }

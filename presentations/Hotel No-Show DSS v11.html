@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hotel No-Show DSS v11</title>
+
+<!-- Reveal.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* ══ Design Tokens ══ */
+:root{
+  --brand:#1E3A8A;--brand-l:#3B82F6;--accent:#D97706;--accent-l:#F59E0B;
+  --ink:#0F172A;--ink2:#475569;--ink3:#94A3B8;
+  --bg:#FFFFFF;--surface:#F8FAFC;--blue-s:#EFF6FF;--gold-s:#FFFBEB;
+  --green:#059669;--red:#DC2626;--bd:#E2E8F0;--dark:#06091A;
+  --sh:0 1px 4px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.07);
+  --sh-sm:0 1px 3px rgba(0,0,0,.05);
+}
+
+/* ══ Reveal base overrides ══ */
+.reveal{
+  font-family:'Inter','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.reveal .slides{ text-align:left; }
+.reveal .slides>section{
+  display:flex!important; flex-direction:column;
+  width:100%!important; height:100%!important;
+  padding:40px 76px 34px; box-sizing:border-box;
+  top:0!important; left:0!important;
+}
+.reveal .progress{ height:3px; }
+.reveal .progress span{
+  background:linear-gradient(90deg,var(--brand),var(--accent));
+  transition:width .4s cubic-bezier(.4,0,.2,1);
+}
+/* Reveal text reset */
+.reveal h1,.reveal h2,.reveal h3,.reveal h4{ margin:0; text-transform:none; word-wrap:normal; }
+.reveal p{ margin:0; }
+.reveal ul,.reveal ol{ padding:0; margin:0; list-style:none; }
+
+/* ══ Topbar ══ */
+.tb{
+  display:flex; justify-content:space-between; align-items:center;
+  padding-bottom:14px; border-bottom:1px solid var(--bd);
+  margin-bottom:22px; flex-shrink:0;
+}
+.dk .tb{ border-bottom-color:rgba(255,255,255,.07); }
+.bl .tb{ border-bottom-color:#BFDBFE; }
+.brand{ font-size:10px; font-weight:600; letter-spacing:3.5px; text-transform:uppercase; color:var(--ink3); }
+.dk .brand{ color:rgba(255,255,255,.2); }
+.brand b{ color:var(--accent); }
+.sn{ font-size:9.5px; font-weight:500; color:var(--ink3); letter-spacing:.5px; }
+.dk .sn{ color:rgba(255,255,255,.18); }
+
+/* ══ Typography ══ */
+.lbl{ font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+.hero{ font-size:48px; font-weight:800; line-height:1.1; letter-spacing:-1.8px; color:#F1F5F9; }
+.ttl{ font-size:30px; font-weight:800; line-height:1.2; letter-spacing:-1px; color:var(--ink); }
+.dk .ttl{ color:#F1F5F9; }
+.bl-ttl{ color:var(--brand); }
+.hl{ color:var(--accent); }
+.hl-b{ color:var(--brand); }
+.lead{ font-size:14px; font-weight:400; color:var(--ink2); line-height:1.75; }
+.dk .lead{ color:var(--ink3); }
+
+/* ══ Layout ══ */
+.content{ flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
+.cx{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; }
+.g2{ display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+.g3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
+.g5{ display:grid; grid-template-columns:repeat(5,1fr); gap:9px; }
+
+/* ══ Cards ══ */
+.card{
+  border-radius:12px; padding:18px 20px;
+  background:#fff; border:1px solid var(--bd); box-shadow:var(--sh);
+}
+.card.acc{ background:var(--gold-s); border-color:#FDE68A; }
+.card.blu{ background:var(--blue-s); border-color:#BFDBFE; }
+.card.red{ background:#FFF5F5; border-color:#FECACA; }
+.card.grn{ background:#F0FDF4; border-color:#BBF7D0; }
+.card.gst{ background:transparent; border-color:var(--bd); box-shadow:none; }
+.card.dk-c{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
+.card h3{ font-size:12.5px; font-weight:700; margin-bottom:4px; color:var(--ink); }
+.card.blu h3{ color:var(--brand); }
+.card p{ font-size:12px; color:var(--ink2); line-height:1.7; margin:0; }
+.card.blu p{ color:#1D4ED8; }
+
+/* ══ Pills ══ */
+.pill{
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:5px;
+  font-size:10px; font-weight:600; letter-spacing:.3px; white-space:nowrap;
+}
+.pill.gr{ background:#DCFCE7; color:#166534; }
+.pill.am{ background:#FEF3C7; color:#92400E; }
+.pill.bl{ background:#DBEAFE; color:#1E3A8A; }
+.pill.rd{ background:#FEE2E2; color:#991B1B; }
+.pill.pu{ background:#EDE9FE; color:#6D28D9; }
+
+/* ══ Callouts ══ */
+.co{
+  border-left:3px solid var(--accent); padding:12px 17px;
+  border-radius:0 10px 10px 0; background:var(--gold-s);
+  font-size:12.5px; font-weight:500; color:#78350F; line-height:1.7;
+}
+.co.bl{ border-left-color:var(--brand); background:var(--blue-s); color:#1E3A8A; }
+.co.gn{ border-left-color:var(--green); background:#F0FDF4; color:#166534; }
+
+/* ══ Table ══ */
+.tw{ border-radius:10px; overflow:hidden; border:1px solid var(--bd); box-shadow:var(--sh-sm); }
+table{ border-collapse:collapse; width:100%; }
+thead{ background:var(--surface); }
+th{
+  font-size:9.5px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--ink3); padding:8px 13px; border-bottom:1px solid var(--bd); text-align:left;
+}
+td{ font-size:12px; color:var(--ink2); padding:8px 13px; border-bottom:1px solid var(--bd); background:#fff; }
+tr:last-child td{ border-bottom:none; }
+td strong{ color:var(--ink); font-weight:600; }
+tr.hi td{ background:var(--gold-s); }
+tr.hi td strong{ color:#92400E; }
+tr.wa td{ background:#FFF5F5; }
+tr.wa td strong{ color:#991B1B; }
+
+/* ══ Vision stage cards ══ */
+.vs{ border-radius:13px; padding:16px 15px; border:2px solid transparent; display:flex; flex-direction:column; gap:8px; }
+.vs.vnow{ background:var(--gold-s); border-color:#FDE68A; }
+.vs.vnxt{ background:var(--blue-s); border-color:#BFDBFE; }
+.vs.vfut{ background:#F0FDF4; border-color:#BBF7D0; }
+.vs-badge{
+  font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  padding:2px 7px; border-radius:4px; display:inline-block; margin-bottom:1px;
+}
+.vnow .vs-badge{ background:#FDE68A; color:#92400E; }
+.vnxt .vs-badge{ background:#BFDBFE; color:#1E3A8A; }
+.vfut .vs-badge{ background:#BBF7D0; color:#065F46; }
+.vs-title{ font-size:13.5px; font-weight:800; letter-spacing:-.5px; }
+.vnow .vs-title{ color:#92400E; }
+.vnxt .vs-title{ color:var(--brand); }
+.vfut .vs-title{ color:#059669; }
+.vs ul{ display:flex; flex-direction:column; gap:3px; }
+.vs ul li{ font-size:11px; line-height:1.5; padding-left:12px; position:relative; }
+.vs ul li::before{ content:''; position:absolute; left:0; top:6px; width:4px; height:4px; border-radius:50%; }
+.vnow ul li{ color:#78350F; }
+.vnow ul li::before{ background:#D97706; }
+.vnxt ul li{ color:#1D4ED8; }
+.vnxt ul li::before{ background:var(--brand); }
+.vfut ul li{ color:#166534; }
+.vfut ul li::before{ background:var(--green); }
+.varr{ display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#CBD5E1; font-size:18px; padding:0 8px; }
+
+/* ══ Step circles ══ */
+.sr{ display:flex; align-items:flex-start; gap:9px; }
+.sn2{
+  width:19px; height:19px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; flex-shrink:0; margin-top:2px; font-size:10px; font-weight:700;
+}
+.sn2.b{ background:var(--blue-s); border:1px solid #BFDBFE; color:var(--brand); }
+.sn2.a{ background:var(--gold-s); border:1px solid #FDE68A; color:#92400E; }
+
+/* ══ Paper row ══ */
+.pr{ display:flex; align-items:flex-start; gap:6px; }
+.pr>span:last-child{ font-size:11px; color:var(--ink2); line-height:1.5; }
+.pr strong{ color:var(--ink); }
+
+/* ══ Dark row box ══ */
+.dbox{
+  display:flex; align-items:flex-start; gap:10px;
+  padding:11px 13px; border-radius:9px; border-left:3px solid var(--accent);
+  background:rgba(217,119,6,.08);
+}
+.dbox.dim{ border-left-color:rgba(255,255,255,.12); background:rgba(255,255,255,.04); }
+
+/* ══ Mermaid ══ */
+.mw{ background:rgba(255,255,255,.97); border-radius:10px; padding:10px 14px; border:1px solid var(--bd); overflow:hidden; }
+.mw .mermaid svg{ max-width:100%; height:auto; }
+
+/* ══ ECharts boxes ══ */
+.ec{ width:100%; min-height:170px; }
+
+/* ══ Dark slide ambient background ══ */
+.dk-bg-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.dk-bg-layer::before{
+  content:'';position:absolute;
+  width:720px;height:720px;border-radius:50%;
+  background:radial-gradient(circle,rgba(59,130,246,.12) 0%,transparent 65%);
+  top:-300px;right:-180px;
+  animation:blobFloat 11s ease-in-out infinite alternate;
+}
+.dk-bg-layer::after{
+  content:'';position:absolute;
+  width:520px;height:520px;border-radius:50%;
+  background:radial-gradient(circle,rgba(217,119,6,.09) 0%,transparent 65%);
+  bottom:-220px;left:-80px;
+  animation:blobFloat 14s ease-in-out 3s infinite alternate-reverse;
+}
+.dk-bg-dots{
+  position:absolute;inset:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.038) 1.5px,transparent 1.5px);
+  background-size:36px 36px;
+}
+@keyframes blobFloat{
+  from{transform:translate(0,0) scale(1);opacity:.6;}
+  to{transform:translate(38px,24px) scale(1.2);opacity:1;}
+}
+
+/* ══ Progress shimmer ══ */
+.reveal .progress span{position:relative;overflow:hidden;}
+.reveal .progress span::after{
+  content:'';position:absolute;
+  top:0;left:-120%;width:42%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  animation:progShimmer 3.2s ease-in-out 1.5s infinite;
+}
+@keyframes progShimmer{0%{left:-120%;}100%{left:280%;}}
+
+/* ══ Stat glow after count-up ══ */
+@keyframes statGlowB{
+  0%,100%{filter:none;}
+  40%,60%{filter:drop-shadow(0 0 10px rgba(59,130,246,.9)) drop-shadow(0 0 24px rgba(59,130,246,.5));}
+}
+@keyframes statGlowA{
+  0%,100%{filter:none;}
+  40%,60%{filter:drop-shadow(0 0 10px rgba(217,119,6,.95)) drop-shadow(0 0 24px rgba(217,119,6,.55));}
+}
+.stat-glow-b{animation:statGlowB 1s ease-in-out 1 forwards;}
+.stat-glow-a{animation:statGlowA 1s ease-in-out 1 forwards;}
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════ 01 TITLE ══════════════════════════════════ -->
+<section data-background-color="#06091A" class="dk">
+<div class="dk-bg-layer" aria-hidden="true"><div class="dk-bg-dots"></div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">01 / 12</div></div>
+<div style="flex:1;display:flex;align-items:center;">
+  <div style="max-width:680px;">
+    <div class="lbl">2026 · 데이터사이언스 프로젝트</div>
+    <h1 class="hero" style="margin-bottom:16px;">
+      <span class="hl1" style="display:block;">취소를 예측하고,</span>
+      <span class="hl2" style="display:block;"><span class="hl">결정을 지원합니다.</span></span>
+    </h1>
+    <p class="s1-sub" style="font-size:15px;color:rgba(255,255,255,.35);line-height:1.85;max-width:540px;margin-bottom:26px;">
+      Q1. 몇 개 오버부킹할까? — ML 예측 + 수학적 최적화<br>
+      Q2. 재배치 시 얼마 보상? — LLM 에이전트 시뮬레이션
+    </p>
+    <div class="s1-pills" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:36px;">
+      <span class="pill am">LightGBM · PR-AUC 0.82</span>
+      <span class="pill bl">점유율 연동 임계값</span>
+      <span class="pill pu">LLM 보상 협상 시뮬레이션</span>
+      <span class="pill gr">Streamlit DSS 앱</span>
+    </div>
+    <div class="s1-team" style="display:flex;align-items:center;gap:16px;">
+      <div style="width:26px;height:1px;background:rgba(255,255,255,.08);"></div>
+      <span style="font-size:11px;color:rgba(255,255,255,.18);letter-spacing:.8px;">심재형 &nbsp;·&nbsp; 이고은 &nbsp;·&nbsp; 김나리 &nbsp;&nbsp;|&nbsp;&nbsp; 한양대학교 데이터사이언스</span>
+    </div>
+  </div>
+</div>
+<aside class="notes">Q1(수학)과 Q2(시뮬레이션) 두 가지 질문으로 오버부킹 문제를 분리하는 접근을 소개합니다.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 02 PROBLEM ══════════════════════════════════ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">02 / 12</div></div>
+<div class="content">
+  <div class="lbl">The Problem</div>
+  <h2 class="ttl" style="margin-bottom:5px;">오버부킹 딜레마 —<br><span class="hl">두 방향 모두 비용이 있습니다.</span></h2>
+  <p class="lead" style="margin-bottom:16px;">아무것도 하지 않으면 빈방을 잃고, 과도하게 오버부킹하면 손님 불만을 삽니다.</p>
+  <div class="g2" style="margin-bottom:13px;">
+    <div class="card red" style="padding:20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#DC2626;margin-bottom:7px;">빈방 손실</div>
+      <div style="font-size:36px;font-weight:800;letter-spacing:-2px;line-height:1;color:#DC2626;margin-bottom:3px;">37%</div>
+      <div style="font-size:11px;font-weight:500;color:#991B1B;margin-bottom:2px;">평균 취소율</div>
+      <div style="font-size:10.5px;color:#B91C1C;margin-bottom:9px;">City Hotel 41.7% · Resort Hotel 27.8%</div>
+      <p style="font-size:12px;color:#991B1B;">예약 10개 중 3~4개가 체크인 전 사라집니다. 빈방은 팔 수 없는 시간입니다.</p>
+    </div>
+    <div class="card acc" style="padding:20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#D97706;margin-bottom:7px;">손님 재배치 보상</div>
+      <div style="font-size:36px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--accent);margin-bottom:3px;">€300+</div>
+      <div style="font-size:11px;font-weight:500;color:#92400E;margin-bottom:2px;">오버부킹 발생 시 보상 비용</div>
+      <div style="font-size:10.5px;color:#B45309;margin-bottom:9px;">예약한 방이 없을 때 다른 호텔로 모심</div>
+      <p style="font-size:12px;color:#78350F;">보상금 + 대안 호텔 비용 + 평판 손상. 가족 손님은 특히 영향이 큽니다.</p>
+    </div>
+  </div>
+  <div class="co"><strong>정밀한 예측 없이는 정밀한 대응이 없습니다.</strong> 어느 예약이 취소될지 알아야, 얼마나 오버부킹할지 결정하고 재배치 손님을 최소화할 수 있습니다.</div>
+</div>
+<aside class="notes">빈방 손실과 과잉 오버부킹 — 양방향 모두 비용. 37% 취소율이 문제의 규모를 설명합니다.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 03 TWO QUESTIONS ══════════════════════════════════ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">03 / 12</div></div>
+<div class="content">
+  <div class="lbl">우리의 접근</div>
+  <h2 class="ttl" style="margin-bottom:5px;">오버부킹은 <span class="hl">두 가지 질문</span>입니다.</h2>
+  <p class="lead" style="margin-bottom:16px;">각 질문이 다른 도구를 요구합니다 — 수학과 시뮬레이션을 분리해서 씁니다.</p>
+  <div class="g2" style="margin-bottom:13px;">
+    <div class="card" style="padding:20px;border-top:3px solid var(--brand);">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
+        <span class="pill bl">Q1 · 수학</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--brand);">몇 개 오버부킹?</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div class="sr"><div class="sn2 b">1</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">LightGBM으로 각 예약의 취소 확률 계산</p></div>
+        <div class="sr"><div class="sn2 b">2</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">점유율 연동 임계값으로 Flexi 풀 크기 결정</p></div>
+        <div class="sr"><div class="sn2 b">3</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">재배치율 &lt; 2% 제약 하에 RevPAR 최대화</p></div>
+      </div>
+    </div>
+    <div class="card" style="padding:20px;border-top:3px solid var(--accent);">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
+        <span class="pill am">Q2 · 시뮬레이션</span>
+        <span style="font-size:13.5px;font-weight:700;color:#92400E;">재배치 시 얼마?</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div class="sr"><div class="sn2 a">1</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">취소가 예상보다 적으면 일부 손님 재배치 발생</p></div>
+        <div class="sr"><div class="sn2 a">2</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">보상 협상 이력이 실제로 존재하지 않음</p></div>
+        <div class="sr"><div class="sn2 a">3</div><p style="font-size:12.5px;color:var(--ink2);line-height:1.6;margin:0;">LLM 에이전트로 손님 반응 시뮬레이션 생성</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="co bl"><strong>Q1을 잘 풀수록 Q2가 드물게 발생합니다.</strong> Q1은 예방, Q2는 사후 처리 — 두 레이어가 순서대로 작동합니다.</div>
+</div>
+<aside class="notes">핵심 프레임: Q1(수학적 최적화)과 Q2(LLM 시뮬레이션)를 분리하는 이유를 명확히 설명합니다.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 04 Q1 ML ══════════════════════════════════ -->
+<section data-background-color="#EFF6FF" class="bl">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">04 / 12</div></div>
+<div class="content">
+  <div class="lbl" style="color:var(--brand);">Q1 · 몇 개 오버부킹?</div>
+  <h2 class="ttl bl-ttl" style="margin-bottom:4px;">취소 예측 기반으로<br><span class="hl-b">수학적으로 결정합니다.</span></h2>
+  <p class="lead" style="margin-bottom:12px;color:#3730A3;">119,390건 예약 학습 → LightGBM 취소 확률 → 점유율 임계값 → RevPAR 최적화</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start;">
+    <div class="card" style="padding:16px 18px;">
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:11px;">PR-AUC 모델 비교 · 테스트셋 취소율 38.7%</div>
+      <div id="prauc" class="ec" style="height:190px;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;">
+      <div class="card" style="padding:12px 16px;">
+        <div style="font-size:34px;font-weight:800;letter-spacing:-2px;line-height:1;color:var(--brand);margin-bottom:2px;" id="n-prauc">0.8189</div>
+        <div style="font-size:11px;font-weight:500;color:var(--ink2);">LightGBM · 최종 선택</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:1px;">Dummy 대비 +0.43 향상</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;border:1px solid #BFDBFE;overflow:hidden;">
+        <div style="background:var(--brand);padding:5px 12px;">
+          <span style="font-size:8.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.7);">점유율 연동 임계값</span>
+        </div>
+        <div style="padding:4px 9px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:4px 0;border-bottom:1px solid #EFF6FF;">
+            <span style="font-size:9px;color:var(--ink3);">점유율</span><span style="font-size:9px;color:var(--ink3);">임계값</span><span style="font-size:9px;color:var(--ink3);">전략</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:6px 0;border-bottom:1px solid #EFF6FF;">
+            <span style="font-size:11px;color:var(--ink2);">&lt; 60%</span><span style="font-size:12px;font-weight:700;color:var(--brand);">0.55</span><span style="font-size:10px;color:#166534;font-weight:600;">적극</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:6px 0;background:var(--blue-s);border-bottom:1px solid #BFDBFE;">
+            <span style="font-size:11px;color:var(--ink2);">60~80%</span><span style="font-size:12px;font-weight:700;color:var(--brand);">0.60</span><span style="font-size:10px;color:var(--brand);font-weight:600;">표준 ★</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:6px 0;">
+            <span style="font-size:11px;color:var(--ink2);">&gt; 80%</span><span style="font-size:12px;font-weight:700;color:var(--brand);">0.65</span><span style="font-size:10px;color:#92400E;font-weight:600;">신중</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+        <div style="background:var(--gold-s);border:1px solid #FDE68A;border-radius:9px;padding:10px;text-align:center;">
+          <div style="font-size:21px;font-weight:800;color:var(--accent);letter-spacing:-1px;" id="n-revpar">+81%</div>
+          <div style="font-size:9px;color:#92400E;margin-top:1px;">RevPAR 개선<br>(임계값 0.60 파일럿)</div>
+        </div>
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:9px;padding:10px;text-align:center;">
+          <div style="font-size:21px;font-weight:800;color:var(--green);letter-spacing:-1px;">&lt;2%</div>
+          <div style="font-size:9px;color:#166534;margin-top:1px;">재배치율<br>목표 제약</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<aside class="notes">LightGBM PR-AUC 0.8189. 점유율에 따라 임계값을 0.55/0.60/0.65로 동적 조정. 파일럿에서 RevPAR +81% 달성.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 05 FLEXI ══════════════════════════════════ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">05 / 12</div></div>
+<div class="content">
+  <div class="lbl">핵심 개념 · Flexi 시스템</div>
+  <h2 class="ttl" style="margin-bottom:4px;">오버부킹을 <span class="hl">수익으로 바꾸는</span> 메커니즘</h2>
+  <p class="lead" style="margin-bottom:14px;">취소 위험 예약을 별도 풀에 모아 할인으로 유도 — 빈방을 줄이면서도 손님을 잃지 않습니다.</p>
+  <!-- Flow diagram -->
+  <div style="display:flex;align-items:stretch;gap:0;margin-bottom:13px;">
+    <div class="card" style="flex:1;text-align:center;padding:14px 10px;border-top:3px solid var(--brand);">
+      <div class="sn2 b" style="margin:0 auto 7px;">1</div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:4px;">취소 확률 계산</div>
+      <div style="font-size:10.5px;color:var(--ink2);line-height:1.55;">LightGBM →<br>예약마다 0~1 점수</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 7px;color:var(--ink3);font-size:17px;flex-shrink:0;">→</div>
+    <div class="card acc" style="flex:1;text-align:center;padding:14px 10px;border-top:3px solid var(--accent);">
+      <div class="sn2 a" style="margin:0 auto 7px;">2</div>
+      <div style="font-size:11.5px;font-weight:700;color:#92400E;margin-bottom:4px;">임계값 판별</div>
+      <div style="font-size:10.5px;color:#78350F;line-height:1.55;">점유율 따라<br>0.55 / 0.60 / 0.65</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 7px;color:var(--ink3);font-size:17px;flex-shrink:0;">→</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+      <div class="card grn" style="flex:1;text-align:center;padding:10px 8px;">
+        <div style="font-size:9.5px;font-weight:700;color:#059669;margin-bottom:2px;">확률 &gt; 임계값</div>
+        <div style="font-size:13px;font-weight:800;color:#065F46;">Flexi 풀 배정</div>
+        <div style="font-size:10px;color:#166534;margin-top:2px;">할인 5~18% 제공</div>
+      </div>
+      <div class="card gst" style="flex:1;text-align:center;padding:10px 8px;">
+        <div style="font-size:9.5px;font-weight:700;color:var(--ink3);margin-bottom:2px;">확률 ≤ 임계값</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);">일반 배정</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px;">Standard 처리</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 7px;color:var(--ink3);font-size:17px;flex-shrink:0;">→</div>
+    <div class="card blu" style="flex:1;text-align:center;padding:14px 10px;border-top:3px solid var(--brand);">
+      <div style="width:19px;height:19px;border-radius:50%;background:var(--blue-s);border:1px solid #BFDBFE;margin:0 auto 7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--brand);">↑</div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:4px;">RevPAR 상승</div>
+      <div style="font-size:10.5px;color:#1D4ED8;line-height:1.55;">빈방 최소화<br>= 수익 최대화</div>
+    </div>
+  </div>
+  <!-- Key terms -->
+  <div class="g3" style="gap:9px;">
+    <div style="background:var(--blue-s);border:1px solid #BFDBFE;border-radius:9px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand);margin-bottom:5px;">Flexi 풀</div>
+      <div style="font-size:11px;color:#1D4ED8;line-height:1.6;">취소 위험 높은 예약을 모아 할인 혜택으로 묶는 가상 버킷. 취소되어도 빈방, 안 해도 매출.</div>
+    </div>
+    <div style="background:var(--gold-s);border:1px solid #FDE68A;border-radius:9px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#92400E;margin-bottom:5px;">RevPAR</div>
+      <div style="font-size:11px;color:#78350F;line-height:1.6;">Revenue Per Available Room — 판매 가능 객실 하나당 얼마를 벌었는가. 빈방이 줄면 올라갑니다.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;">할인율 공식</div>
+      <div style="font-family:'Courier New',monospace;font-size:11.5px;color:#7C3AED;font-weight:600;line-height:1.8;">5% + (취소확률 − 0.5) × 26%</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px;">위험 높을수록 더 큰 할인 · 5%~18% 상한</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">Flexi 풀: 취소 위험 예약 → 할인으로 유도 → 빈방 방지. RevPAR는 빈방이 줄면 자동 상승. 할인율은 위험도 비례.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 06 APP DEMO ══════════════════════════════════ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">06 / 12</div></div>
+<div class="content">
+  <div class="lbl">앱 데모</div>
+  <h2 class="ttl" style="margin-bottom:5px;">예측이 <span class="hl">결정으로 이어지는</span> 두 화면</h2>
+  <p class="lead" style="margin-bottom:14px;">매니저가 바로 쓸 수 있는 Streamlit DSS 앱 — 취소 위험 리스트부터 Flexi 라우팅까지</p>
+  <div class="g2" style="margin-bottom:11px;">
+    <div class="card" style="padding:18px;border-top:3px solid var(--brand);">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;"><span class="pill bl">Tab 1</span><span style="font-size:12.5px;font-weight:600;">예약 우선순위 리스트</span></div>
+      <p style="font-size:12px;line-height:1.85;">취소 확률 내림차순으로 예약 정렬<br>예약별 SHAP 위험 근거 3가지 자동 출력<br><em style="color:var(--ink3);">"왜 이 손님이 위험한가"</em> 즉시 확인</p>
+      <div style="margin-top:8px;font-size:10.5px;color:var(--brand);font-weight:600;">country · lead_time · special_requests →</div>
+    </div>
+    <div class="card" style="padding:18px;border-top:3px solid var(--accent);">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;"><span class="pill am">Tab 2</span><span style="font-size:12.5px;font-weight:600;">Flexi 할인 라우팅</span></div>
+      <p style="font-size:12px;line-height:1.85;">신규 예약 피처 입력 → 취소 확률 실시간 계산<br>임계값 초과 → Flexi 풀 라우팅 권장<br>할인율 자동 계산 (5% ~ 18%)</p>
+      <div style="margin-top:8px;font-size:10.5px;color:var(--accent);font-weight:600;">할인율 = 5% + (확률 − 0.5) × 26%</div>
+    </div>
+  </div>
+  <div style="border:2px dashed #CBD5E1;border-radius:13px;background:#fff;flex:1;min-height:80px;display:flex;align-items:center;justify-content:center;">
+    <div style="text-align:center;">
+      <div style="font-size:26px;opacity:.22;margin-bottom:4px;">🖥️</div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--ink2);">직접 시연</div>
+      <div style="font-size:10.5px;color:var(--ink3);margin-top:2px;">Streamlit DSS 앱 실행 중</div>
+    </div>
+  </div>
+  <div style="margin-top:7px;display:flex;justify-content:flex-end;">
+    <div style="background:var(--surface);border-radius:7px;border:1px solid var(--bd);padding:6px 12px;font-size:10.5px;color:var(--ink2);">⚖️ &nbsp;GDPR Art.22 — 자동화 권장이지만 <strong>최종 결정은 매니저 승인</strong></div>
+  </div>
+</div>
+<aside class="notes">Tab 1: 기존 예약 위험 우선순위. Tab 2: 신규 예약 Flexi 라우팅. 앱 직접 시연.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 07 Q2 GAP ══════════════════════════════════ -->
+<section data-background-color="#06091A" class="dk">
+<div class="dk-bg-layer" aria-hidden="true"><div class="dk-bg-dots"></div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">07 / 12</div></div>
+<div class="cx">
+  <div class="lbl">Q2 · 데이터 공백</div>
+  <h1 class="hero" style="font-size:40px;text-align:center;line-height:1.22;max-width:700px;">
+    취소가 예상보다 적게 발생하면 —<br><span class="hl">누구를 재배치하고, 얼마면 수락할까요?</span>
+  </h1>
+  <p style="font-size:15.5px;color:rgba(255,255,255,.38);max-width:560px;line-height:1.8;text-align:center;">
+    이 협상 이력은 <strong style="color:#E2E8F0;">데이터에 존재하지 않습니다.</strong><br>실제 호텔이 재배치 협상을 기록해야만 쌓이는 데이터입니다.
+  </p>
+  <div style="display:flex;gap:11px;">
+    <div class="gap-box" style="padding:15px 20px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.08);text-align:center;">
+      <div style="font-size:19px;margin-bottom:5px;color:#4ADE80;">✓</div>
+      <div style="font-size:12px;font-weight:600;color:#E2E8F0;">취소 예측</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.27);margin-top:1px;">데이터 있음</div>
+    </div>
+    <div class="gap-box" style="padding:15px 20px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.08);text-align:center;">
+      <div style="font-size:19px;margin-bottom:5px;color:#4ADE80;">✓</div>
+      <div style="font-size:12px;font-weight:600;color:#E2E8F0;">Flexi 라우팅</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.27);margin-top:1px;">설계 완료</div>
+    </div>
+    <div class="gap-box" style="padding:15px 20px;background:rgba(220,38,38,.15);border-radius:10px;border:1px solid rgba(220,38,38,.4);text-align:center;">
+      <div style="font-size:19px;margin-bottom:5px;color:#FCA5A5;">✗</div>
+      <div style="font-size:12px;font-weight:600;color:#FCA5A5;">재배치 협상 이력</div>
+      <div style="font-size:10px;color:#F87171;margin-top:1px;">존재하지 않음</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">핵심 문제 제기: 오버부킹 발생 시 보상 협상 데이터가 없습니다. 이것이 LLM을 쓰는 이유입니다.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 08 LLM JUSTIFICATION ══════════════════════════════════ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">08 / 12</div></div>
+<div class="content">
+  <div class="lbl">LLM 정당성 · Claim 1 → 2</div>
+  <h2 class="ttl" style="margin-bottom:4px;">데이터 공백을 <span class="hl">논리로 메웁니다.</span></h2>
+  <p class="lead" style="margin-bottom:12px;">두 단계 Claim으로 LLM 시뮬레이션 타당성을 구성하고, 선행 연구의 한계도 명시합니다.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+    <!-- Left: Claim 1→2 logic chain -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="card" style="padding:14px 16px;border-left:3px solid var(--brand);">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
+          <span class="pill bl">Claim 1</span>
+          <span style="font-size:12px;font-weight:700;color:var(--brand);">LLM은 호텔 도메인을 이해한다</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div class="sr"><div class="sn2 b">①</div><p style="font-size:11.5px;color:var(--ink2);line-height:1.55;margin:0;">Zero-shot으로 취소 확률 예측 (Qwen2.5-14B)</p></div>
+          <div class="sr"><div class="sn2 b">②</div><p style="font-size:11.5px;color:var(--ink2);line-height:1.55;margin:0;">테스트셋 40,687건 — 별도 파인튜닝 없음</p></div>
+          <div class="sr"><div class="sn2 b">③</div><p style="font-size:11.5px;color:var(--ink2);line-height:1.55;margin:0;">SHAP Top 7 피처를 자연어로 변환해 입력</p></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding-left:14px;">
+        <div style="width:2px;height:18px;background:var(--bd);"></div>
+        <span style="font-size:10px;color:var(--ink3);font-style:italic;">취소 행동 이해 → 보상 반응도 이해</span>
+      </div>
+      <div class="card" style="padding:14px 16px;border-left:3px solid var(--accent);">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
+          <span class="pill am">Claim 2</span>
+          <span style="font-size:12px;font-weight:700;color:#92400E;">보상 협상 반응을 시뮬레이션할 수 있다</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div class="sr"><div class="sn2 a">①</div><p style="font-size:11.5px;color:var(--ink2);line-height:1.55;margin:0;">동일 SHAP 피처 → 손님 유형 → 보상 제안 → JSON 응답</p></div>
+          <div class="sr"><div class="sn2 a">②</div><p style="font-size:11.5px;color:var(--ink2);line-height:1.55;margin:0;"><strong style="color:#92400E;">한계 인정:</strong> 시뮬레이션 ≠ 실제 협상 이력</p></div>
+          <div class="sr"><div class="sn2 a">③</div><p style="font-size:11.5px;color:var(--ink2);line-height:1.55;margin:0;">목적: 패턴 탐색 + 최적 보상 구간 추정</p></div>
+        </div>
+      </div>
+    </div>
+    <!-- Right: Papers with limitations -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:1px;">선행 연구 근거 · 한계 인정</div>
+      <div class="card" style="padding:11px 14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span class="pill pu" style="font-size:9px;flex-shrink:0;">시뮬레이션</span>
+          <strong style="font-size:11px;">Park et al., UIST 2023</strong>
+        </div>
+        <p style="font-size:10.5px;color:var(--ink2);line-height:1.5;margin-bottom:5px;">LLM 에이전트가 인간의 사회적 행동·의사결정을 현실적으로 시뮬레이션함을 실증</p>
+        <div style="font-size:9.5px;color:#92400E;background:var(--gold-s);border-radius:5px;padding:3px 8px;display:inline-block;">한계: 실험실 환경 — 실제 배포 상황 검증 미비</div>
+      </div>
+      <div class="card" style="padding:11px 14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span class="pill pu" style="font-size:9px;flex-shrink:0;">재현성</span>
+          <strong style="font-size:11px;">Aher et al., ICML 2023</strong>
+        </div>
+        <p style="font-size:10.5px;color:var(--ink2);line-height:1.5;margin-bottom:5px;">LLM이 인간 피험자 연구 결과를 통계적으로 재현. 합성 레이블 신뢰성 근거</p>
+        <div style="font-size:9.5px;color:#92400E;background:var(--gold-s);border-radius:5px;padding:3px 8px;display:inline-block;">한계: 영어 중심 — 호텔 협상 특화 실험 아님</div>
+      </div>
+      <div class="card" style="padding:11px 14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span class="pill bl" style="font-size:9px;flex-shrink:0;">Zero-shot</span>
+          <strong style="font-size:11px;">Kojima et al., NeurIPS 2022</strong>
+        </div>
+        <p style="font-size:10.5px;color:var(--ink2);line-height:1.5;margin-bottom:5px;">파인튜닝 없이 도메인 추론 가능. Claim 1의 이론적 기반</p>
+        <div style="font-size:9.5px;color:#92400E;background:var(--gold-s);border-radius:5px;padding:3px 8px;display:inline-block;">한계: 일반 추론 작업 — 협상 구체성은 우리가 설계</div>
+      </div>
+      <div class="co bl" style="font-size:11px;">
+        <strong>논문 한계를 우리가 보완하는 방법:</strong> JSON 강제 출력으로 환각 차단 + 손님 유형·보상 구조 명시적 설계
+      </div>
+    </div>
+  </div>
+</div>
+<aside class="notes">Claim 1(취소 이해) → Claim 2(협상 시뮬레이션). 논문 3개 + 각 한계 인정 + 우리의 보완 방법으로 마무리.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 09 ARCHETYPES ══════════════════════════════════ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">09 / 12</div></div>
+<div class="content">
+  <div class="lbl">Claim 2 · 5가지 손님 유형</div>
+  <h2 class="ttl" style="margin-bottom:7px;">각자가 원하는 보상이 <span class="hl">다릅니다.</span></h2>
+  <div class="g5" style="margin-bottom:11px;">
+    <div class="card" style="text-align:center;padding:13px 8px;"><div style="font-size:21px;margin-bottom:5px;">💼</div><div style="font-size:11px;font-weight:700;margin-bottom:3px;">A · 비즈니스 솔로</div><div style="font-size:10px;color:var(--ink2);margin-bottom:6px;line-height:1.5;">Corporate 채널<br>1~2박 단기</div><span class="pill gr" style="font-size:9px;">재배치 용이</span></div>
+    <div class="card" style="text-align:center;padding:13px 8px;"><div style="font-size:21px;margin-bottom:5px;">💑</div><div style="font-size:11px;font-weight:700;margin-bottom:3px;">B · 레저 커플</div><div style="font-size:10px;color:var(--ink2);margin-bottom:6px;line-height:1.5;">Online TA<br>주말 체류</div><span class="pill am" style="font-size:9px;">중간 난이도</span></div>
+    <div class="card red" style="text-align:center;padding:13px 8px;"><div style="font-size:21px;margin-bottom:5px;">👨‍👩‍👧</div><div style="font-size:11px;font-weight:700;margin-bottom:3px;color:#991B1B;">C · 가족</div><div style="font-size:10px;color:#7F1D1D;margin-bottom:6px;line-height:1.5;">어린이 동반<br>장기 체류</div><span class="pill rd" style="font-size:9px;">재배치 제외</span></div>
+    <div class="card" style="text-align:center;padding:13px 8px;"><div style="font-size:21px;margin-bottom:5px;">🎒</div><div style="font-size:11px;font-weight:700;margin-bottom:3px;">D · 예산형 OTA</div><div style="font-size:10px;color:var(--ink2);margin-bottom:6px;line-height:1.5;">저 ADR<br>특별요청 없음</div><span class="pill gr" style="font-size:9px;">금액 반응형</span></div>
+    <div class="card" style="text-align:center;padding:13px 8px;"><div style="font-size:21px;margin-bottom:5px;">👥</div><div style="font-size:11px;font-weight:700;margin-bottom:3px;">E · 단체</div><div style="font-size:10px;color:var(--ink2);margin-bottom:6px;line-height:1.5;">Groups<br>10인 이상</div><span class="pill pu" style="font-size:9px;">별도 협상</span></div>
+  </div>
+  <div class="card" style="padding:14px 18px;">
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start;">
+      <div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--ink);margin-bottom:7px;">2라운드 보상 협상 구조</div>
+        <div class="mw">
+          <div class="mermaid">
+sequenceDiagram
+  participant H as 호텔 담당자
+  participant G as 손님 에이전트(LLM)
+  H->>G: Round 1 제안 (ADR × 0.30)
+  alt 수락
+    G-->>H: ✓ 수락 (JSON)
+  else 거절·협상
+    G-->>H: ✗ 거절 + 조건 (JSON)
+    H->>G: Round 2 조정 (ADR × 0.40)
+    G-->>H: 최종 수락 / 거절 (JSON)
+  end
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10.5px;font-weight:700;color:var(--ink);margin-bottom:7px;">시뮬레이션 규모</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;text-align:center;margin-bottom:7px;">
+          <div style="background:var(--surface);border-radius:8px;padding:8px;border:1px solid var(--bd);">
+            <div style="font-size:19px;font-weight:800;color:var(--brand);">5</div><div style="font-size:9px;color:var(--ink3);">손님 유형</div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:8px;border:1px solid var(--bd);">
+            <div style="font-size:19px;font-weight:800;color:var(--brand);">5</div><div style="font-size:9px;color:var(--ink3);">보상 구간</div>
+          </div>
+          <div style="background:var(--gold-s);border-radius:8px;padding:8px;border:1px solid #FDE68A;">
+            <div style="font-size:19px;font-weight:800;color:var(--accent);">1,000</div><div style="font-size:9px;color:#92400E;">총 시뮬레이션</div>
+          </div>
+        </div>
+        <div style="font-size:10.5px;color:var(--ink3);line-height:1.6;">JSON 강제 출력으로 환각 차단.<br>수락률 곡선 → 최소 비용 최적 보상 도출.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<aside class="notes">5 아키타입. C(가족)는 재배치 제외. Mermaid 시퀀스 다이어그램으로 2라운드 협상 구조 설명. 1,000회 시뮬레이션 예정.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 10 RESULTS ══════════════════════════════════ -->
+<section data-background-color="#FFFFFF">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">10 / 12</div></div>
+<div class="content">
+  <div class="lbl">파일럿 결과 · 시뮬레이션</div>
+  <h2 class="ttl" style="margin-bottom:4px;">적은 보상으로도 <span class="hl">수락이 일어납니다.</span></h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+    <!-- Left: pilot chart + callout -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">파일럿 수락률 — A·D 유형 (n=10/유형)</div>
+      <div class="card" style="padding:13px 14px;">
+        <div id="pilot" class="ec" style="height:148px;"></div>
+      </div>
+      <div class="co" style="font-size:11.5px;">A(비즈니스 €62) · D(예산형 €29) — Tier 1에서 <strong>두 유형 모두 60% 수락</strong>.<br>할인율을 먼저 정하는 게 아닙니다 —<br><strong>시뮬레이션 결과가 최적 tier를 도출합니다.</strong></div>
+      <div style="font-size:9.5px;color:var(--ink3);padding:5px 9px;border-radius:6px;background:var(--surface);border:1px solid var(--bd);">★ Week 5: 5 유형 × 5 구간 × 40회 = 1,000 runs 완료 후 업데이트</div>
+    </div>
+    <!-- Right: prompt structure + result placeholders -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:9px;font-weight:600;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;">사용 프롬프트 구조</div>
+      <div style="background:#0F172A;border-radius:9px;padding:11px 14px;font-family:'Courier New',monospace;font-size:9.5px;color:#E2E8F0;line-height:1.65;border:1px solid rgba(255,255,255,.05);">
+        <span style="color:#475569;">// system</span><br>
+        <span style="color:#7DD3FC;">You are a hotel guest (</span><span style="color:#FDE68A;">{archetype}</span><span style="color:#7DD3FC;">).</span><br>
+        <span style="color:#7DD3FC;">Reply ONLY in JSON: {"accept": bool, "reason": str}</span><br><br>
+        <span style="color:#475569;">// user</span><br>
+        <span style="color:#BEF264;">We must relocate you tonight.</span><br>
+        <span style="color:#BEF264;">Compensation offered: </span><span style="color:#FDE68A;">€{offer}</span><br>
+        <span style="color:#BEF264;">Do you accept?</span>
+      </div>
+      <div class="card" style="padding:12px 14px;border:2px dashed #CBD5E1;background:var(--surface);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:7px;">전체 시뮬레이션 완료 후 추가 예정</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink2);"><span style="color:var(--accent);font-weight:700;">○</span>수락률 곡선 — 유형별 5구간</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink2);"><span style="color:var(--accent);font-weight:700;">○</span>API vs vLLM 비용·속도 비교</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink2);"><span style="color:var(--accent);font-weight:700;">○</span>유형별 최적 보상 tier 확정</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<aside class="notes">파일럿: A(€62)·D(€29) Tier 1에서 각 60% 수락. 프롬프트는 system+user 구조, JSON 강제 출력. Week 5 전체 시뮬레이션 후 차트 업데이트.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 11 VISION ══════════════════════════════════ -->
+<section data-background-color="#F8FAFC">
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">11 / 12</div></div>
+<div class="content">
+  <div class="lbl">궁극의 비전 · 미래 모델</div>
+  <h2 class="ttl" style="margin-bottom:4px;">LLM은 <span class="hl">데이터 공백의 브릿지</span>입니다.</h2>
+  <p class="lead" style="margin-bottom:13px;">실 협상 데이터가 누적되면 ML이 이 역할을 대체합니다 — 우리 앱이 바로 그 데이터를 모읍니다.</p>
+  <!-- Timeline header: numbered circles + gradient connectors -->
+  <div style="display:flex;align-items:center;margin-bottom:12px;gap:0;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--gold-s);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#92400E;box-shadow:0 0 0 4px rgba(217,119,6,.1);">1</div>
+      <div style="font-size:8.5px;font-weight:700;color:#92400E;letter-spacing:.3px;white-space:nowrap;">지금</div>
+    </div>
+    <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--accent),var(--brand));margin-bottom:13px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--blue-s);border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--brand);box-shadow:0 0 0 4px rgba(30,58,138,.08);">2</div>
+      <div style="font-size:8.5px;font-weight:700;color:var(--brand);letter-spacing:.3px;white-space:nowrap;">앱 운용 후</div>
+    </div>
+    <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--brand),var(--green));margin-bottom:13px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:50%;background:#F0FDF4;border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#059669;box-shadow:0 0 0 4px rgba(5,150,105,.08);">3</div>
+      <div style="font-size:8.5px;font-weight:700;color:#059669;letter-spacing:.3px;white-space:nowrap;">궁극의 모델</div>
+    </div>
+  </div>
+  <!-- Three stage cards with step bullets -->
+  <div class="g3" style="margin-bottom:12px;">
+    <div class="card acc" style="padding:15px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#92400E;margin-bottom:9px;">캐글 + LLM 합성</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div class="sr"><div class="sn2 a">①</div><p style="font-size:11px;color:#78350F;line-height:1.5;margin:0;">119K 예약으로 취소 패턴 학습</p></div>
+        <div class="sr"><div class="sn2 a">②</div><p style="font-size:11px;color:#78350F;line-height:1.5;margin:0;">LLM으로 재배치 협상 이력 합성</p></div>
+        <div class="sr"><div class="sn2 a">③</div><p style="font-size:11px;color:#78350F;line-height:1.5;margin:0;">Flexi 운영 가설 검증 + DSS 앱 배포</p></div>
+        <div class="sr"><div class="sn2 a">④</div><p style="font-size:11px;color:#78350F;line-height:1.5;margin:0;">앱이 실 운영 데이터 수집 시작</p></div>
+      </div>
+    </div>
+    <div class="card blu" style="padding:15px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand);margin-bottom:9px;">실 데이터 + 하이브리드</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div class="sr"><div class="sn2 b">①</div><p style="font-size:11px;color:#1D4ED8;line-height:1.5;margin:0;">실제 협상 기록이 앱을 통해 누적</p></div>
+        <div class="sr"><div class="sn2 b">②</div><p style="font-size:11px;color:#1D4ED8;line-height:1.5;margin:0;">LLM 예측 + 실데이터 병행 활용</p></div>
+        <div class="sr"><div class="sn2 b">③</div><p style="font-size:11px;color:#1D4ED8;line-height:1.5;margin:0;">실데이터 비중 증가 → 정확도 향상</p></div>
+        <div class="sr"><div class="sn2 b">④</div><p style="font-size:11px;color:#1D4ED8;line-height:1.5;margin:0;">LLM 의존도 점진적 감소</p></div>
+      </div>
+    </div>
+    <div class="card grn" style="padding:15px 14px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#059669;margin-bottom:9px;">순수 ML 완성</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div class="sr"><div class="sn2" style="background:#F0FDF4;border:1px solid #BBF7D0;color:#059669;">①</div><p style="font-size:11px;color:#166534;line-height:1.5;margin:0;">P(수락 | 손님 피처, 보상금액) 직접 학습</p></div>
+        <div class="sr"><div class="sn2" style="background:#F0FDF4;border:1px solid #BBF7D0;color:#059669;">②</div><p style="font-size:11px;color:#166534;line-height:1.5;margin:0;">LightGBM이 수락 확률 직접 예측</p></div>
+        <div class="sr"><div class="sn2" style="background:#F0FDF4;border:1px solid #BBF7D0;color:#059669;">③</div><p style="font-size:11px;color:#166634;line-height:1.5;margin:0;">LLM 브릿지 역할 완전 종료</p></div>
+        <div class="sr"><div class="sn2" style="background:#F0FDF4;border:1px solid #BBF7D0;color:#059669;">④</div><p style="font-size:11px;color:#166534;line-height:1.5;margin:0;">모델이 운영 데이터와 함께 성장</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="co gn" style="font-size:12px;">
+    <strong>ML은 "데이터가 쌓이면 의미 있다"는 말이 맞습니다.</strong>&nbsp;우리 앱이 바로 그 데이터를 모읍니다. 지금 LLM은 그 시작점을 만드는 브릿지입니다.
+    <span style="display:inline-block;margin-top:3px;font-size:10px;color:#166534;opacity:.8;">궁극의 모델: P(수락 | 예약 피처 32개, 제안 보상금액) → LightGBM 직접 예측</span>
+  </div>
+</div>
+<aside class="notes">비전: LLM은 임시 브릿지. Stage 3에서 실제 협상 이력으로 학습한 순수 ML로 대체됩니다. 타임라인 1→2→3.</aside>
+</section>
+
+
+<!-- ══════════════════════════════════ 12 CLOSING ══════════════════════════════════ -->
+<section data-background-color="#06091A" class="dk">
+<div class="dk-bg-layer" aria-hidden="true"><div class="dk-bg-dots"></div></div>
+<div class="tb"><div class="brand"><b>H</b>OTEL NO-SHOW &nbsp;·&nbsp; DSS</div><div class="sn">12 / 12</div></div>
+<div style="flex:1;display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;">
+  <div>
+    <div class="lbl">Closing</div>
+    <h1 class="hero" style="font-size:38px;line-height:1.15;margin-bottom:16px;">
+      저희는 <span class="hl">두뇌</span>를 만듭니다.
+    </h1>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,255,255,.04);border-radius:9px;border:1px solid rgba(255,255,255,.07);">
+        <span class="pill bl" style="flex-shrink:0;">Q1</span><span style="font-size:12px;color:#E2E8F0;font-weight:500;">LightGBM + 점유율 임계값 → RevPAR +81%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,255,255,.04);border-radius:9px;border:1px solid rgba(255,255,255,.07);">
+        <span class="pill am" style="flex-shrink:0;">Q2</span><span style="font-size:12px;color:#E2E8F0;font-weight:500;">LLM 보상 시뮬레이션 → 유형별 최적 가이드</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,255,255,.04);border-radius:9px;border:1px solid rgba(255,255,255,.07);">
+        <span class="pill gr" style="flex-shrink:0;">앱</span><span style="font-size:12px;color:#E2E8F0;font-weight:500;">Streamlit DSS — Tab 1 우선순위 · Tab 2 Flexi</span>
+      </div>
+    </div>
+    <p style="font-size:10.5px;color:rgba(255,255,255,.17);line-height:1.85;">PMS 연동 · 결제 시스템 · 협력 호텔 네트워크는 범위 밖입니다.<br>저희는 <strong style="color:rgba(255,255,255,.33);">취소 예측 엔진 + 재배치 보상 전략 두뇌</strong>를 만듭니다.</p>
+  </div>
+  <div>
+    <div style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:11px;">Week 5–6 남은 작업</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+      <div class="dbox"><span style="font-size:9px;font-weight:700;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;flex-shrink:0;">W5</span><div><div style="font-size:12px;font-weight:600;color:#FDE68A;margin-bottom:1px;">전체 시뮬레이션 완료</div><div style="font-size:10.5px;color:rgba(255,255,255,.3);">5 유형 × 5 구간 × 40회 = 1,000 runs</div></div></div>
+      <div class="dbox"><span style="font-size:9px;font-weight:700;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;flex-shrink:0;">W5</span><div><div style="font-size:12px;font-weight:600;color:#FDE68A;margin-bottom:1px;">Claim 1 검증</div><div style="font-size:10.5px;color:rgba(255,255,255,.3);">LLM zero-shot PR-AUC (테스트셋 40,687건)</div></div></div>
+      <div class="dbox dim"><span style="font-size:9px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;flex-shrink:0;">W6</span><div><div style="font-size:12px;font-weight:600;color:#E2E8F0;margin-bottom:1px;">최종 모델 확정 + 앱 완성</div><div style="font-size:10.5px;color:rgba(255,255,255,.27);">Phase 2 실험 반영 → 6/10 최종발표</div></div></div>
+    </div>
+    <div style="text-align:right;border-top:1px solid rgba(255,255,255,.06);padding-top:13px;">
+      <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.42);margin-bottom:2px;">감사합니다</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.17);line-height:1.7;">심재형 · 이고은 · 김나리<br>한양대학교 데이터사이언스</div>
+    </div>
+  </div>
+</div>
+<aside class="notes">Q1/Q2/앱 요약. Week 5: 1,000회 시뮬레이션 + Claim 1 검증. Week 6: 최종 모델 확정. 6/10 최종발표.</aside>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<!-- ════════════════════════════ SCRIPTS ════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+<script>
+/* ── Reveal.js ── */
+Reveal.initialize({
+  hash: true,
+  transition: 'slide',
+  transitionSpeed: 'fast',
+  backgroundTransition: 'fade',
+  controls: false,
+  progress: true,
+  slideNumber: false,
+  center: false,
+  width: 1280,
+  height: 720,
+  margin: 0,
+  minScale: 0.18,
+  maxScale: 2.0,
+});
+
+/* ── Mermaid ── */
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#EFF6FF',
+    primaryTextColor: '#0F172A',
+    primaryBorderColor: '#1E3A8A',
+    lineColor: '#D97706',
+    secondaryColor: '#FFFBEB',
+    tertiaryColor: '#F8FAFC',
+    fontSize: '12px',
+  },
+  sequence: {
+    diagramMarginX: 10, diagramMarginY: 6,
+    actorMargin: 55, width: 185, height: 32,
+    boxMargin: 6, boxTextMargin: 4,
+    noteMargin: 6, messageMargin: 24,
+  },
+});
+
+/* ── ECharts ── */
+let charts = {};
+
+function initCharts() {
+  /* PR-AUC */
+  const el1 = document.getElementById('prauc');
+  if(el1 && !charts.prauc) {
+    charts.prauc = echarts.init(el1, null, { renderer: 'svg' });
+    charts.prauc.setOption({
+      animation: true, animationDuration: 1000, animationEasing: 'cubicOut',
+      backgroundColor: 'transparent',
+      grid: { left: 108, right: 52, top: 6, bottom: 8 },
+      yAxis: {
+        type: 'category',
+        data: ['Dummy','Logistic Reg.','Random Forest','XGBoost','LightGBM ★'],
+        axisLabel: { color: '#475569', fontSize: 11, fontFamily: 'Inter,sans-serif', fontWeight: '500' },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      xAxis: {
+        type: 'value', min: 0.3, max: 0.88,
+        splitLine: { lineStyle: { color: '#F1F5F9' } },
+        axisLabel: { color: '#94A3B8', fontSize: 10, fontFamily: 'Inter,sans-serif' },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      series: [{
+        type: 'bar', barMaxWidth: 19,
+        data: [
+          { value: 0.387, itemStyle: { color: '#CBD5E1', borderRadius: [0,4,4,0] } },
+          { value: 0.782, itemStyle: { color: '#93C5FD', borderRadius: [0,4,4,0] } },
+          { value: 0.779, itemStyle: { color: '#93C5FD', borderRadius: [0,4,4,0] } },
+          { value: 0.805, itemStyle: { color: '#60A5FA', borderRadius: [0,4,4,0] } },
+          { value: 0.819, itemStyle: { borderRadius: [0,4,4,0], color: { type:'linear', x:0, y:0, x2:1, y2:0, colorStops:[{offset:0,color:'#1E3A8A'},{offset:1,color:'#3B82F6'}] } } },
+        ],
+        label: { show: true, position: 'right', formatter: '{c}', color: '#64748B', fontSize: 10.5, fontFamily: 'Inter,sans-serif', fontWeight: '600' },
+      }],
+    });
+  }
+
+  /* SHAP */
+  const el2 = document.getElementById('shap');
+  if(el2 && !charts.shap) {
+    charts.shap = echarts.init(el2, null, { renderer: 'svg' });
+    const amberGrad = (a, b) => ({ type:'linear', x:0, y:0, x2:1, y2:0, colorStops:[{offset:0,color:a},{offset:1,color:b}] });
+    charts.shap.setOption({
+      animation: true, animationDuration: 1000, animationEasing: 'cubicOut',
+      backgroundColor: 'transparent',
+      grid: { left: 102, right: 52, top: 6, bottom: 8 },
+      yAxis: {
+        type: 'category',
+        data: ['adr','Online TA','prev_cancels','lead_time','special_req','car_parking','country_PRT'],
+        axisLabel: { color: '#78350F', fontSize: 10.5, fontFamily: 'Inter,sans-serif' },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      xAxis: {
+        type: 'value', min: 0, max: 1.2,
+        splitLine: { lineStyle: { color: '#FEF3C7' } },
+        axisLabel: { color: '#B45309', fontSize: 9.5, fontFamily: 'Inter,sans-serif' },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      series: [{
+        type: 'bar', barMaxWidth: 15,
+        data: [
+          { value: 0.253, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#FEF3C7','#FDE68A') } },
+          { value: 0.371, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#FDE68A','#FBBF24') } },
+          { value: 0.394, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#FDE68A','#FBBF24') } },
+          { value: 0.531, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#FBBF24','#F59E0B') } },
+          { value: 0.644, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#F59E0B','#D97706') } },
+          { value: 0.680, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#D97706','#B45309') } },
+          { value: 1.064, itemStyle: { borderRadius:[0,3,3,0], color: amberGrad('#B45309','#92400E') } },
+        ],
+        label: { show: true, position: 'right', formatter: '{c}', color: '#92400E', fontSize: 10, fontFamily: 'Inter,sans-serif', fontWeight: '600' },
+      }],
+    });
+  }
+
+  /* Pilot chart */
+  const el3 = document.getElementById('pilot');
+  if(el3 && !charts.pilot) {
+    charts.pilot = echarts.init(el3, null, { renderer: 'svg' });
+    charts.pilot.setOption({
+      animation: true, animationDuration: 800,
+      backgroundColor: 'transparent',
+      legend: { data:['A · 비즈니스 솔로','D · 예산형 OTA'], top: 0, textStyle: { fontSize: 9.5, color: '#475569', fontFamily: 'Inter,sans-serif' } },
+      grid: { left: 42, right: 16, top: 22, bottom: 20 },
+      xAxis: {
+        type: 'category', data: ['Tier 1','Tier 2','Tier 3'],
+        axisLabel: { color: '#94A3B8', fontSize: 9.5, fontFamily: 'Inter,sans-serif' },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: 1,
+        axisLabel: { formatter: v => (v*100)+'%', color: '#94A3B8', fontSize: 9, fontFamily: 'Inter,sans-serif' },
+        splitLine: { lineStyle: { color: '#F1F5F9' } },
+        axisLine: { show: false }, axisTick: { show: false },
+      },
+      series: [
+        {
+          name: 'A · 비즈니스 솔로', type: 'bar', barMaxWidth: 18,
+          data: [0.60, 0.60, 0.40],
+          itemStyle: { borderRadius:[3,3,0,0], color: { type:'linear',x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'#3B82F6'},{offset:1,color:'#1E3A8A'}] } },
+          label: { show: true, position: 'top', formatter: p => (p.value*100)+'%', fontSize: 9.5, color: '#1E3A8A', fontWeight: '600', fontFamily: 'Inter,sans-serif' },
+        },
+        {
+          name: 'D · 예산형 OTA', type: 'bar', barMaxWidth: 18,
+          data: [0.60, 0.50, 0.50],
+          itemStyle: { borderRadius:[3,3,0,0], color: { type:'linear',x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'#F59E0B'},{offset:1,color:'#D97706'}] } },
+          label: { show: true, position: 'top', formatter: p => (p.value*100)+'%', fontSize: 9.5, color: '#92400E', fontWeight: '600', fontFamily: 'Inter,sans-serif' },
+        },
+      ],
+    });
+  }
+}
+
+window.addEventListener('load', () => {
+  initCharts();
+  Reveal.on('resize', () => {
+    Object.values(charts).forEach(c => { try{ c.resize(); }catch(e){} });
+  });
+});
+
+/* ── Per-slide GSAP entrance animations ── */
+const activeTls = {};
+
+function animateSlideIn(section, idx) {
+  if(activeTls[idx]) activeTls[idx].kill();
+  const t = gsap.timeline({ delay: 0.13, defaults: { ease:'power2.out' } });
+
+  /* ── Slide 1: title hero entrance ── */
+  if(idx === 1) {
+    const lbl  = section.querySelector('.lbl');
+    const hl1  = section.querySelector('.hl1');
+    const hl2  = section.querySelector('.hl2');
+    const sub  = section.querySelector('.s1-sub');
+    const pills= [...section.querySelectorAll('.s1-pills .pill')];
+    const team = section.querySelector('.s1-team');
+    if(lbl)         t.from(lbl,   {opacity:0, y:10,  duration:0.3},  0);
+    if(hl1)         t.from(hl1,   {opacity:0, y:38,  duration:0.65, ease:'power3.out'}, 0.15);
+    if(hl2)         t.from(hl2,   {opacity:0, y:38,  duration:0.65, ease:'power3.out'}, 0.3);
+    if(sub)         t.from(sub,   {opacity:0,         duration:0.4},  0.52);
+    if(pills.length)t.from(pills, {opacity:0, x:-14, stagger:0.08,   duration:0.35},    0.62);
+    if(team)        t.from(team,  {opacity:0,         duration:0.35}, 0.8);
+    activeTls[idx] = t; return;
+  }
+
+  /* ── Slide 7: Q2 gap — boxes stagger + ✗ shake ── */
+  if(idx === 7) {
+    const lbl  = section.querySelector('.lbl');
+    const hero = section.querySelector('.hero');
+    const p    = section.querySelector('p');
+    const boxes= [...section.querySelectorAll('.gap-box')];
+    if(lbl)         t.from(lbl,   {opacity:0, y:8,   duration:0.3},  0);
+    if(hero)        t.from(hero,  {opacity:0, y:30,  duration:0.65, ease:'power3.out'}, 0.12);
+    if(p)           t.from(p,     {opacity:0,         duration:0.4},  0.35);
+    if(boxes.length){
+      t.from(boxes, {opacity:0, y:28, stagger:0.14, duration:0.55, ease:'back.out(1.4)'}, 0.52);
+      /* ✗ box shake after entering */
+      t.to(boxes[2], {x:6,  duration:0.07, ease:'power1.inOut'}, 0.95);
+      t.to(boxes[2], {x:-6, duration:0.07, ease:'power1.inOut'}, 1.02);
+      t.to(boxes[2], {x:4,  duration:0.06, ease:'power1.inOut'}, 1.09);
+      t.to(boxes[2], {x:0,  duration:0.06, ease:'power1.inOut'}, 1.15);
+    }
+    activeTls[idx] = t; return;
+  }
+
+  /* ── Default: all other slides ── */
+  const lbl     = section.querySelector('.lbl');
+  const ttl     = section.querySelector('.ttl');
+  const hero    = section.querySelector('.hero');
+  const lead    = section.querySelector('.lead');
+  const g2c     = [...section.querySelectorAll('.g2>.card')];
+  const g3c     = [...section.querySelectorAll('.g3>.card')];
+  const g5c     = [...section.querySelectorAll('.g5>.card')];
+  const vsc     = [...section.querySelectorAll('.vs')];
+  const cos     = [...section.querySelectorAll('.co')];
+  const dbxs    = [...section.querySelectorAll('.dbox')];
+  const tw      = section.querySelector('.tw');
+  const mw      = section.querySelector('.mw');
+  /* ec cards: parent .card of an .ec element */
+  const ecCards = [...new Set([...section.querySelectorAll('.ec')].map(e => {
+    const p = e.closest('.card'); return p;
+  }).filter(Boolean))];
+
+  if(lbl)  t.from(lbl,  {opacity:0, y:8,  duration:0.3},  0);
+  if(ttl)  t.from(ttl,  {opacity:0, y:20, duration:0.5,  ease:'power3.out'}, 0.1);
+  if(hero) t.from(hero, {opacity:0, y:20, duration:0.5,  ease:'power3.out'}, 0.1);
+  if(lead) t.from(lead, {opacity:0,        duration:0.35}, 0.28);
+
+  const cards = [...new Set([...g2c,...g3c,...g5c,...vsc,...ecCards])];
+  if(cards.length) t.from(cards, {opacity:0, y:26, stagger:0.1, duration:0.55, ease:'back.out(1.3)'}, 0.32);
+
+  cos.forEach( (el,i) => t.from(el, {opacity:0, x:-18, duration:0.45}, 0.5 + i*0.12));
+  dbxs.forEach((el,i) => t.from(el, {opacity:0, x:-14, duration:0.4},  0.38 + i*0.11));
+  if(tw) t.from(tw, {opacity:0, y:14, duration:0.45}, 0.38);
+  if(mw) t.from(mw, {opacity:0, scale:0.97, transformOrigin:'center center', duration:0.45}, 0.5);
+
+  activeTls[idx] = t;
+}
+
+/* ── Slide 4: count-up + glow ── */
+function animateSlide4() {
+  const n1 = document.getElementById('n-prauc');
+  const n2 = document.getElementById('n-revpar');
+  if(n1) {
+    n1.classList.remove('stat-glow-b');
+    gsap.fromTo({v:0.387},{v:0.8189},{ duration:1.3, ease:'power2.out', delay:0.4,
+      onUpdate(){ n1.textContent = this.targets()[0].v.toFixed(4); },
+      onComplete(){ void n1.offsetWidth; n1.classList.add('stat-glow-b'); }
+    });
+  }
+  if(n2) {
+    n2.classList.remove('stat-glow-a');
+    gsap.fromTo({v:0},{v:81},{ duration:1.1, ease:'power2.out', delay:0.65,
+      onUpdate(){ n2.textContent = '+' + Math.round(this.targets()[0].v) + '%'; },
+      onComplete(){ void n2.offsetWidth; n2.classList.add('stat-glow-a'); }
+    });
+  }
+}
+
+Reveal.on('ready', e => animateSlideIn(e.currentSlide, 1));
+Reveal.on('slidechanged', e => {
+  const idx = e.indexh + 1;
+  animateSlideIn(e.currentSlide, idx);
+  if(idx === 4) animateSlide4();
+});
+</script>
+</body>
+</html>
