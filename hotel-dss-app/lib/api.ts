@@ -9,7 +9,7 @@ import type {
   FlexiPreview,
 } from "@/types/api";
 
-const BASE_URL = "http://localhost:8000/api/v1";
+const BASE_URL = "http://localhost:8001/api/v1";
 
 // ── 에러 처리 헬퍼 ──────────────────────────────────────────────────
 async function handleResponse<T>(res: Response): Promise<T> {

@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.predictor import predict
 from api.schemas import (
+    BookingAnalysis,
     BookingListItem,
     BookingListResponse,
     BookingRequest,
@@ -53,6 +54,7 @@ app.add_middleware(
 # 인메모리 예약 저장소
 # ──────────────────────────────────────────
 _bookings: list[BookingListItem] = []
+_analyses: dict[str, BookingAnalysis] = {}  # booking_id → 분석 데이터
 
 
 def _seed_bookings() -> None:
@@ -91,17 +93,50 @@ def _seed_bookings() -> None:
 
 CURRENT_THRESHOLD: float = 0.65
 
-_seed_bookings()
-
-
-# ──────────────────────────────────────────
-# 헬퍼
-# ──────────────────────────────────────────
 
 def _confidence(score: float) -> ConfidenceLevel:
     if score < 0.35 or score > 0.75:
         return "HIGH"
     return "MEDIUM"
+
+
+_FACTOR_POOL = [
+    RiskFactor(feature="lead_time", label="리드타임 120일 이상", shap_value=0.64),
+    RiskFactor(feature="country_grouped_PRT", label="국적: 포르투갈 (PRT)", shap_value=0.94),
+    RiskFactor(feature="total_of_special_requests", label="특별 요청 없음", shap_value=0.53),
+    RiskFactor(feature="market_segment_Online TA", label="채널: Online TA", shap_value=0.41),
+    RiskFactor(feature="previous_cancellations", label="이전 취소 이력 있음", shap_value=1.12),
+    RiskFactor(feature="required_car_parking_spaces", label="주차 요청 없음", shap_value=0.29),
+    RiskFactor(feature="adults", label="성인 1명 단독 예약", shap_value=0.22),
+]
+
+_RATIONALE_MAP = {
+    True:  "리드타임이 길고 특별 요청이 없어 가격 탐색형 예약으로 분류됩니다. Flexi Rate 제안으로 빈 방 위험을 선제 관리하세요.",
+    False: "취소 위험도가 낮아 Standard 배정을 권장합니다.",
+}
+
+
+def _make_seed_analysis(b: BookingListItem) -> BookingAnalysis:
+    factors = random.sample(_FACTOR_POOL, min(3, len(_FACTOR_POOL)))
+    adr_est = random.uniform(80, 160)
+    nights_est = b.nights
+    return BookingAnalysis(
+        booking_id=b.booking_id,
+        risk_score=b.risk_score,
+        flexi_recommended=b.flexi_recommended,
+        discount_rate=b.discount_rate,
+        confidence=_confidence(b.risk_score),
+        top_risk_factors=factors,
+        flexi_rationale=_RATIONALE_MAP[b.flexi_recommended],
+        estimated_loss_if_cancel=round(adr_est * nights_est, 1),
+        estimated_flexi_discount=round(adr_est * nights_est * (b.discount_rate or 0), 1),
+    )
+
+
+_seed_bookings()
+
+for _b in _bookings:
+    _analyses[_b.booking_id] = _make_seed_analysis(_b)
 
 
 # ──────────────────────────────────────────
@@ -142,20 +177,40 @@ def create_booking(booking: BookingRequest) -> BookingResponse:
         created_at=datetime.now(),
     )
 
-    # 저장소에 추가 (App 2 대시보드에서 바로 보이도록)
-    _bookings.append(BookingListItem(
+    nights = (booking.departure_date - booking.arrival_date).days
+
+    list_item = BookingListItem(
         booking_id=response.booking_id,
         hotel=booking.hotel,
         country=booking.country,
         arrival_date=booking.arrival_date,
-        nights=(booking.departure_date - booking.arrival_date).days,
+        nights=nights,
         adults=booking.adults,
         risk_score=round(risk_score, 4),
         flexi_recommended=flexi,
         discount_rate=disc,
         status=status,
         created_at=response.created_at,
-    ))
+    )
+    _bookings.append(list_item)
+
+    # 분석 데이터 저장 (상세 페이지용)
+    rationale = (
+        "리드타임이 길고 취소 이력이 있어 고위험으로 분류됩니다. Flexi Rate 제안으로 빈 방 위험을 선제 관리하세요."
+        if flexi else
+        "취소 위험도가 낮아 Standard 배정을 권장합니다."
+    )
+    _analyses[response.booking_id] = BookingAnalysis(
+        booking_id=response.booking_id,
+        risk_score=round(risk_score, 4),
+        flexi_recommended=flexi,
+        discount_rate=disc,
+        confidence=_confidence(risk_score),
+        top_risk_factors=top_risk_factors,
+        flexi_rationale=rationale,
+        estimated_loss_if_cancel=round(booking.adr * nights, 1),
+        estimated_flexi_discount=round(booking.adr * nights * (disc or 0), 1),
+    )
 
     return response
 
@@ -187,6 +242,21 @@ def get_booking(booking_id: str) -> BookingListItem:
     for b in _bookings:
         if b.booking_id == booking_id:
             return b
+    raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
+
+
+@app.get(
+    "/api/v1/bookings/{booking_id}/analysis",
+    response_model=BookingAnalysis,
+    summary="예약 위험도 상세 분석 (SHAP 포함)",
+)
+def get_booking_analysis(booking_id: str) -> BookingAnalysis:
+    if booking_id in _analyses:
+        return _analyses[booking_id]
+    # _analyses에 없으면 bookings에서 기본 분석 생성
+    for b in _bookings:
+        if b.booking_id == booking_id:
+            return _make_seed_analysis(b)
     raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
 
 
