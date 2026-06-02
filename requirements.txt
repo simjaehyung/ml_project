@@ -2,6 +2,7 @@ pandas
 numpy
 scikit-learn
 xgboost
+lightgbm
 shap
 streamlit
 requests
@@ -10,3 +11,9 @@ matplotlib
 seaborn
 jupyter
 ipykernel
+# --- Week 6: DSS/PMS 백엔드 (FastAPI 서버) ---
+fastapi
+uvicorn[standard]
+httpx
+# --- Week 6: LLM 손님 에이전트 시뮬레이션 ---
+anthropic
