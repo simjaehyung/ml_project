@@ -2,6 +2,7 @@ pandas
 numpy
 scikit-learn
 xgboost
+lightgbm
 shap
 streamlit
 requests
@@ -10,3 +11,9 @@ matplotlib
 seaborn
 jupyter
 ipykernel
+# API servers
+fastapi
+uvicorn
+# LLM simulation
+anthropic
+httpx

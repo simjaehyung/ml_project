@@ -25,6 +25,9 @@ credentials.json
 .env
 wandb/
 
+# 서버 로그
+*.log
+
 # 시스템
 .DS_Store
 Thumbs.db
