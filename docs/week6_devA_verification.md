@@ -1,8 +1,40 @@
 # Week 6 — DSS + PMS 2단 검증 결과 (Dev A)
 
-> 작성: 이고은 (Dev A) | 검증일: 2026-06-02
-> 대상: `api/` (DSS, port 8000) + `app_pms/` (PMS, port 3001) + `hotel-dss-app/` (Next.js, port 3000)
+> 작성: 이고은 (Dev A) | 1차 검증: 2026-06-02 / 2차 검증: 2026-06-04
+> 대상: `api/` (DSS) + `app_pms/` (PMS, port 3001) + `hotel-dss-app/` (Next.js, port 3000)
 > 목적: 최종발표 Demo 슬라이드 신뢰도 검증 — "실제로 돌아간다" 증명 + 버그·개선점 정리
+
+---
+
+## 🔄 2차 검증 업데이트 (2026-06-04) — 1차 버그 대부분 해결됨
+
+> PM 커밋 `f10e7d7`(PMS 프론트 + admin API + LLM 시뮬레이션)으로 1차 발견 버그가 해결됨. 재검증 결과:
+
+| 버그 | 1차(06-02) | 2차(06-04) |
+|------|-----------|-----------|
+| **B1** 포트 불일치 | DSS_BASE_URL=8000 | ✅ **해결** — 코드가 `8001`로 수정됨 (가이드와 일치). DSS를 8001로 띄우면 정상 |
+| **B2** admin API 미구현 | `/admin/*` 404 | ✅ **해결** — `/admin/stats`·`/admin/reservations`·`/admin/activity` 3개 모두 동작 검증 |
+| **B3** Next.js PMS 페이지 없음 | `app/pms/` 없음 | ✅ **해결** — `pms/page.tsx`·`reservations/page.tsx`·`lib/pms-api.ts`·`types/pms.ts` 추가됨 |
+| **B4** llm_sim 폴더 없음 | 없음 | ✅ **해결** — `personas.py`·`agents.py`·`run_simulation.py` 추가됨 |
+| **B5** requirements 누락 | fastapi 등 없음 | ✅ **해결** — Dev A가 커밋 `005d1b2`로 추가 완료 |
+
+### 2차 검증 — admin API + 손님 예약 → 실시간 반영 (실제 확인)
+
+| 단계 | 결과 |
+|------|------|
+| 예약 전 `/admin/stats` | `{total_reservations: 0}` |
+| 손님 예약 POST (Ana, PRT) | `PMS-955C8D`, Flexi Rate, 할인 14.3% |
+| 예약 후 `/admin/stats` | **`total:1, flexi:1, agents:1, activity:2`** 실시간 반영 ✅ |
+| `/admin/reservations` | **`dss_risk_score`·`dss_booking_id` 필드 포함** → PMS↔DSS 데이터 연결 확인 ✅ |
+| `/admin/activity` | `booking` → `confirmed` 2이벤트 로그 ✅ |
+| `lib/pms-api.ts` ↔ 백엔드 | 프론트가 admin API 3개를 정확히 호출 (코드 확인) ✅ |
+
+→ **PMS↔DSS 백엔드 전체 흐름 정상. admin API로 UI 폴링 데이터 소스 확보됨.**
+
+### 2차 검증에서 아직 못 한 것 (회의 안건)
+
+- 🟡 **Next.js `/pms` 화면 시각 검증**: `node_modules` 미설치(`npm install` 필요) → 실제 브라우저 화면(페르소나 카드·활동 피드·색상 배지)은 미확인. 발표 라이브 데모 전 1회 필수.
+- 🟡 **LLM 시뮬레이션 실행**: `ANTHROPIC_API_KEY` 필요 + 비용($7 예산). `.env` PM이 세팅했으나 Dev A 로컬엔 키 없음.
 
 ---
 
