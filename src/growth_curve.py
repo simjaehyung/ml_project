@@ -23,7 +23,7 @@ src/growth_curve.py
   results/growth_curve.png       - 5곡선 + CI 밴드(누적) + 슬라이딩 오버레이
 """
 import sys, io, time, argparse
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
 
 import numpy as np
 import pandas as pd
@@ -136,6 +136,7 @@ def main():
     ap.add_argument("--boot", type=int, default=1000)
     ap.add_argument("--seeds", type=int, default=len(SEEDS_DEFAULT))
     ap.add_argument("--windows", choices=["cumulative", "sliding", "both"], default="both")
+    ap.add_argument("--stride", type=int, default=1, help="누적 컷오프 N개마다 1개만 (곡선 점 수 축소·속도↑)")
     args = ap.parse_args()
 
     seeds = SEEDS_DEFAULT[:args.seeds]
@@ -170,6 +171,8 @@ def main():
             cutoffs.append(t)
     if args.quick:
         cutoffs = cutoffs[:: max(1, len(cutoffs) // 5)][:5]
+    elif args.stride > 1:
+        cutoffs = cutoffs[::args.stride]
     print(f"[구간] 누적 컷오프 {len(cutoffs)}개: {cutoffs[0]}~{cutoffs[-1]}")
 
     rng = np.random.default_rng(0)
