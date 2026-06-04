@@ -130,6 +130,68 @@ def bootstrap_ci(y_true, proba, n_boot, rng):
     return float(np.percentile(aps, 2.5)), float(np.percentile(aps, 97.5))
 
 
+PALETTE = {"Dummy": "gray", "Logistic Regression": "steelblue",
+           "Random Forest": "darkorange", "XGBoost": "seagreen", "LightGBM": "crimson"}
+
+
+def compute_robust_W(agg):
+    """robust 전환주차 = 누적창에서 LGB CI하한 > LR CI상한이 '이후 끝까지 지속'되는 첫 주차.
+    소표본 1회성 노이즈 분리를 배제한다(발표 방어용). 그런 주차가 없으면 None."""
+    cum = agg[agg["window"] == "cumulative"]
+    if not {"ci_low", "ci_high"}.issubset(cum.columns):
+        return None
+    sub = cum[cum["model"].isin(["Logistic Regression", "LightGBM"])]
+    if sub.empty:
+        return None
+    piv = sub.pivot(index="cutoff_week", columns="model", values=["ci_low", "ci_high"])
+    wks = sorted(piv.index)
+
+    def lgb_over_lr(w):
+        try:
+            lg = piv.loc[w, ("ci_low", "LightGBM")]
+            lr = piv.loc[w, ("ci_high", "Logistic Regression")]
+            return pd.notna(lg) and pd.notna(lr) and lg > lr
+        except KeyError:
+            return False
+
+    for i, wk in enumerate(wks):
+        if all(lgb_over_lr(w) for w in wks[i:]):
+            return int(wk)
+    return None
+
+
+def finalize(agg, t_start=None):
+    """W 계산 + 곡선 플롯 + 저장. 학습 결과(agg)와 --replot(csv 로드) 양쪽에서 재사용."""
+    W = compute_robust_W(agg)
+    print(f"\n★ robust 전환주차 W = {W}  (LGB CI하한 > LR CI상한이 끝까지 지속되는 첫 누적주차)")
+
+    fig, axA = plt.subplots(figsize=(10, 6))
+    cum = agg[agg["window"] == "cumulative"]
+    for name, g in cum.groupby("model"):
+        g = g.sort_values("cutoff_week")
+        c = PALETTE.get(name, "black")
+        axA.plot(g["cutoff_week"], g["pr_auc"], "-", color=c, lw=2, label=f"{name} (cumulative)")
+        if {"ci_low", "ci_high"}.issubset(g.columns) and g["ci_low"].notna().any():
+            axA.fill_between(g["cutoff_week"], g["ci_low"], g["ci_high"], color=c, alpha=0.15)
+    sld = agg[agg["window"] == "sliding"]
+    for name, g in sld.groupby("model"):
+        g = g.sort_values("cutoff_week")
+        axA.plot(g["cutoff_week"], g["pr_auc"], "--", color=PALETTE.get(name, "black"),
+                 lw=1, alpha=0.6)
+    if W is not None:
+        axA.axvline(W, color="black", ls=":", alpha=0.7)
+        axA.text(W, axA.get_ylim()[0], f" W={W} (robust)", fontsize=10)
+    axA.set_xlabel("cumulative week (arrival, point-in-time)")
+    axA.set_ylabel("PR-AUC (fixed summer test)")
+    axA.set_title("Growth curve — solid=cumulative(+95% CI), dashed=sliding robustness")
+    axA.legend(fontsize=8, ncol=2); axA.grid(alpha=0.3)
+    plt.tight_layout()
+    fig.savefig(RESULTS / "growth_curve.png", dpi=120)
+    print(f"\n[산출물]\n  results/growth_curve_raw.csv\n  results/growth_curve_agg.csv\n  results/growth_curve.png")
+    if t_start is not None:
+        print(f"[완료] {time.time()-t_start:.0f}s")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="스모크: 구간 5개 + 시드 1 + boot 100")
@@ -137,7 +199,13 @@ def main():
     ap.add_argument("--seeds", type=int, default=len(SEEDS_DEFAULT))
     ap.add_argument("--windows", choices=["cumulative", "sliding", "both"], default="both")
     ap.add_argument("--stride", type=int, default=1, help="누적 컷오프 N개마다 1개만 (곡선 점 수 축소·속도↑)")
+    ap.add_argument("--replot", action="store_true", help="학습 생략, 기존 agg.csv로 곡선·W만 재생성")
     args = ap.parse_args()
+
+    if args.replot:
+        print("[replot] 기존 results/growth_curve_agg.csv 로 곡선·W 재생성 (학습 생략)")
+        finalize(pd.read_csv(RESULTS / "growth_curve_agg.csv"))
+        return
 
     seeds = SEEDS_DEFAULT[:args.seeds]
     n_boot = args.boot
@@ -239,45 +307,7 @@ def main():
         agg = agg.merge(ci, on=["cutoff_week", "model"], how="left")
     agg.to_csv(RESULTS / "growth_curve_agg.csv", index=False)
 
-    # 전환 주차 W: 누적창에서 LGB CI하한 > LR CI상한 첫 주차
-    W = None
-    if not ci.empty and {"Logistic Regression", "LightGBM"} <= set(ci["model"].unique()):
-        piv = ci.pivot(index="cutoff_week", columns="model", values=["ci_low", "ci_high"])
-        for wk in sorted(piv.index):
-            lg_low = piv.loc[wk, ("ci_low", "LightGBM")]
-            lr_hi  = piv.loc[wk, ("ci_high", "Logistic Regression")]
-            if pd.notna(lg_low) and pd.notna(lr_hi) and lg_low > lr_hi:
-                W = int(wk); break
-    print(f"\n★ 전환 주차 W = {W}  (LightGBM CI하한 > LR CI상한 첫 누적주차)")
-
-    # 플롯: 누적 5곡선 + CI밴드 + 슬라이딩 오버레이
-    PALETTE = {"Dummy": "gray", "Logistic Regression": "steelblue",
-               "Random Forest": "darkorange", "XGBoost": "seagreen", "LightGBM": "crimson"}
-    fig, axA = plt.subplots(figsize=(10, 6))
-    cum = agg[agg["window"] == "cumulative"]
-    for name, g in cum.groupby("model"):
-        g = g.sort_values("cutoff_week")
-        c = PALETTE.get(name, "black")
-        axA.plot(g["cutoff_week"], g["pr_auc"], "-", color=c, lw=2, label=f"{name} (cumulative)")
-        if {"ci_low", "ci_high"} <= set(g.columns) and g["ci_low"].notna().any():
-            axA.fill_between(g["cutoff_week"], g["ci_low"], g["ci_high"], color=c, alpha=0.15)
-    sld = agg[agg["window"] == "sliding"]
-    for name, g in sld.groupby("model"):
-        g = g.sort_values("cutoff_week")
-        axA.plot(g["cutoff_week"], g["pr_auc"], "--", color=PALETTE.get(name, "black"),
-                 lw=1, alpha=0.6)
-    if W is not None:
-        axA.axvline(W, color="black", ls=":", alpha=0.7)
-        axA.text(W, axA.get_ylim()[0], f" W={W}", fontsize=10)
-    axA.set_xlabel("cumulative week (arrival, point-in-time)")
-    axA.set_ylabel("PR-AUC (fixed summer test)")
-    axA.set_title("Growth curve — solid=cumulative(+95% CI), dashed=sliding robustness")
-    axA.legend(fontsize=8, ncol=2); axA.grid(alpha=0.3)
-    plt.tight_layout()
-    fig.savefig(RESULTS / "growth_curve.png", dpi=120)
-
-    print(f"\n[산출물]\n  results/growth_curve_raw.csv\n  results/growth_curve_agg.csv\n  results/growth_curve.png")
-    print(f"[완료] {time.time()-t_start:.0f}s")
+    finalize(agg, t_start)
 
 
 if __name__ == "__main__":
