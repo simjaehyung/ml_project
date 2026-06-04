@@ -19,6 +19,20 @@ import argparse
 import os
 import sys
 import time
+from pathlib import Path
+
+# ── .env 자동 로드 (의존성 없는 최소 파서) ──────────────────────────────
+#    프로젝트 루트의 .env 에 ANTHROPIC_API_KEY 를 넣어두면 자동으로 환경변수에 올린다.
+#    .env 는 .gitignore 로 막혀 있어 키가 git에 노출되지 않는다.
+_ENV_FILE = Path(__file__).parent.parent / ".env"
+if _ENV_FILE.exists():
+    for _line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _key, _val = _line.split("=", 1)
+            _val = _val.strip().strip('"').strip("'")
+            if _val:
+                os.environ.setdefault(_key.strip(), _val)
 
 from llm_sim.agents import run_agent
 from llm_sim.personas import PERSONAS, PERSONA_BY_ID
