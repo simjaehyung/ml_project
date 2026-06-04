@@ -11,9 +11,9 @@ matplotlib
 seaborn
 jupyter
 ipykernel
-# API servers
+# --- Week 6: DSS/PMS 백엔드 (FastAPI 서버) ---
 fastapi
-uvicorn
-# LLM simulation
-anthropic
+uvicorn[standard]
 httpx
+# --- Week 6: LLM 손님 에이전트 시뮬레이션 ---
+anthropic
