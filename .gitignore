@@ -20,6 +20,9 @@ __pycache__/
 # 시뮬레이션 대용량 응답 파일
 results/*.jsonl
 
+# 미사용 대용량 허브 스트림 (앱은 hub_stream.json 사용, lite는 미참조 — 6.8MB)
+hotel-dss-app/public/hub_stream_lite.json
+
 # 인증 / 비밀키 — 절대 커밋 금지
 credentials.json
 .env

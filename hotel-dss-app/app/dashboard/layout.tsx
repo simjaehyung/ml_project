@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Settings2,
   Plus,
+  Activity,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,12 @@ const NAV_ITEMS = [
     label: "Flexi Policy",
     href: "/dashboard/flexi",
     icon: Settings2,
+    exact: false,
+  },
+  {
+    label: "Hub",
+    href: "/dashboard/hub",
+    icon: Activity,
     exact: false,
   },
 ] as const;
