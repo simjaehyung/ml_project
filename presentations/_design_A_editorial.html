@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction A — Light Editorial Keynote · Growth Curve</title>
+<style>
+  /* ============================================================
+     DIRECTION A — LIGHT EDITORIAL KEYNOTE
+     Warm-paper background · ink-black type · single signature ink (Klein-adjacent indigo)
+     One slide = one idea · full-bleed data moment · generous whitespace
+     ============================================================ */
+
+  /* ---- Color system (tokens) ---- */
+  :root{
+    --paper:        #F4F2EC;   /* warm paper — slide field */
+    --paper-deep:   #ECE9E1;   /* recessed panel / footer rule field */
+    --surface:      #FBFAF6;   /* raised card / chart plate (near-white) */
+    --ink:          #16151A;   /* primary text — near-black, warm */
+    --ink-2:        #4B4A52;   /* secondary text */
+    --ink-3:        #8B8A90;   /* tertiary / captions / axis */
+    --rule:         #D8D4C8;   /* hairlines on paper */
+    --rule-soft:    #E6E2D8;   /* softest divider */
+    --signature:    #1B3A8F;   /* THE single accent — editorial ink-indigo */
+    --signature-2:  #2E55C2;   /* signature tint for fills */
+    --signature-wash:#1B3A8F14;/* 8% wash */
+    /* risk semantics — used ONLY for risk/data meaning, never decoration */
+    --risk-hi:      #B23A2E;   /* high risk / cancel — muted brick, not neon */
+    --risk-mid:     #B8862B;   /* mid */
+    --risk-lo:      #3F7A52;   /* low / safe */
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(120% 80% at 18% 0%, #F7F5EF 0%, var(--paper) 46%, #EFECE3 100%);
+    color:var(--ink);
+    /* Refined grotesque with robust system fallback chain */
+    font-family:"Helvetica Neue","Segoe UI Variable Display","Pretendard","Segoe UI",
+                "Apple SD Gothic Neo","Malgun Gothic",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; padding:32px;
+  }
+
+  /* one accent serif tone for the signature word (system serif fallback) */
+  .serif{
+    font-family:"Iowan Old Style","Apple Garamond","Times New Roman",
+                "Nanum Myeongjo","Batang",Georgia,serif;
+    font-style:italic;
+    letter-spacing:-0.01em;
+  }
+
+  /* ---- Slide frame — 16:9 stage ---- */
+  .slide{
+    position:relative;
+    width:1280px; height:720px;
+    background:var(--paper);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.6) inset,
+      0 30px 80px -30px rgba(30,28,22,.28),
+      0 2px 8px rgba(30,28,22,.06);
+    border:1px solid var(--rule-soft);
+    border-radius:4px;
+    /* 96px outer margin (generous editorial whitespace) on a 12-col implied grid */
+    padding:64px 96px 60px;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+
+  /* signature edge — left rule in the accent ink (the recurring motif anchor) */
+  .slide::before{
+    content:"";
+    position:absolute; left:0; top:0; bottom:0; width:6px;
+    background:var(--signature);
+  }
+
+  /* ---- Top meta row: eyebrow + section + progress ---- */
+  .topbar{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .eyebrow{
+    display:flex; align-items:center; gap:14px;
+    font-size:14px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink-3);
+  }
+  .eyebrow .num{
+    font-variant-numeric:tabular-nums;
+    color:var(--signature); font-weight:700;
+  }
+  .eyebrow .tick{ width:26px; height:1px; background:var(--rule); }
+
+  /* progress — segmented editorial dots, slide 4 of 13 lit */
+  .progress{ display:flex; gap:6px; align-items:center; }
+  .progress i{
+    width:13px; height:3px; border-radius:2px;
+    background:var(--rule); display:block;
+  }
+  .progress i.on{ background:var(--signature); }
+  .progress .lbl{
+    margin-left:10px; font-size:13px; letter-spacing:.04em;
+    color:var(--ink-3); font-variant-numeric:tabular-nums;
+  }
+
+  /* ---- Headline (one idea) ---- */
+  .head{
+    margin:4px 0 10px;
+  }
+  h1{
+    font-size:46px; line-height:1.08; font-weight:700;
+    letter-spacing:-0.02em; color:var(--ink); max-width:21ch;
+  }
+  h1 .lede{ color:var(--ink); }
+  h1 .accent{ color:var(--signature); }
+  .dek{
+    margin-top:14px; font-size:19px; line-height:1.5;
+    color:var(--ink-2); max-width:52ch; font-weight:400;
+  }
+  .dek b{ color:var(--ink); font-weight:650; }
+
+  /* honesty pin — small badge, paper-toned, not a glowing chip */
+  .pin{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:13px; font-weight:600; letter-spacing:.02em;
+    color:var(--ink-2);
+    background:var(--surface);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--signature);
+    padding:5px 11px; border-radius:3px;
+    vertical-align:middle; margin-left:14px;
+    white-space:nowrap;
+  }
+  .pin::before{
+    content:""; width:6px; height:6px; border-radius:50%;
+    background:var(--signature); flex:none;
+  }
+
+  /* ---- Main body: full-bleed chart + slim rail ---- */
+  .body{
+    flex:1; display:grid;
+    grid-template-columns: 1fr 320px;
+    gap:48px; align-items:stretch;
+    margin-top:8px; min-height:0;
+  }
+
+  /* chart plate */
+  .plate{
+    background:var(--surface);
+    border:1px solid var(--rule-soft);
+    border-radius:6px;
+    padding:18px 22px 12px;
+    display:flex; flex-direction:column;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset;
+  }
+  .plate svg{ width:100%; height:100%; display:block; }
+  .plate .src{
+    margin-top:2px; font-size:13px; color:var(--ink-3);
+    letter-spacing:.01em;
+  }
+  .plate .src b{ color:var(--ink-2); font-weight:600; }
+
+  /* right rail — readings, not a card stack */
+  .rail{ display:flex; flex-direction:column; justify-content:center; gap:0; }
+
+  .kpi{ margin-bottom:26px; }
+  .kpi .v{
+    font-size:54px; font-weight:700; letter-spacing:-0.025em;
+    color:var(--signature); line-height:1; font-variant-numeric:tabular-nums;
+  }
+  .kpi .v small{ font-size:24px; font-weight:650; color:var(--ink-2); margin-left:2px;}
+  .kpi .k{
+    margin-top:9px; font-size:15px; line-height:1.45; color:var(--ink-2);
+  }
+  .kpi .k b{ color:var(--ink); font-weight:650; }
+
+  .rail hr{
+    border:0; border-top:1px solid var(--rule-soft); margin:0 0 22px;
+  }
+
+  .reads{ list-style:none; display:flex; flex-direction:column; gap:14px; }
+  .reads li{
+    display:grid; grid-template-columns:18px 1fr; gap:11px;
+    font-size:15.5px; line-height:1.42; color:var(--ink-2);
+  }
+  .reads li .mk{
+    margin-top:7px; width:14px; height:2.5px; border-radius:2px; align-self:start;
+  }
+  .reads li b{ color:var(--ink); font-weight:650; }
+
+  /* ---- Footer: thesis line ---- */
+  .foot{
+    margin-top:16px; padding-top:14px;
+    border-top:1px solid var(--rule);
+    display:flex; align-items:baseline; gap:14px;
+  }
+  .foot .q{
+    font-size:21px; line-height:1.35; color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .foot .q b{ color:var(--signature); font-weight:700; }
+  .foot .pg{
+    margin-left:auto; font-size:13px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink-3); white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+  <section class="slide">
+
+    <!-- META ROW -->
+    <div class="topbar">
+      <div class="eyebrow">
+        <span class="num">02</span>
+        <span class="tick"></span>
+        <span>작동 증거 ① · 정량 심장</span>
+      </div>
+      <div class="progress" aria-label="슬라이드 4 / 13">
+        <i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+        <span class="lbl">04 / 13</span>
+      </div>
+    </div>
+
+    <!-- HEADLINE — one idea -->
+    <div class="head">
+      <h1><span class="lede">데이터가 쌓일수록 모델이 자란다</span><br>
+        — 우리는 모델을 고르지 않는다, <span class="accent serif">데이터가 고른다</span>
+        <span class="pin">국적 피처 윤리 → S11</span>
+      </h1>
+      <p class="dek">콜드스타트에선 단순한 LR이 앞서고, 약 <b>5.4만 건</b>에서
+        LightGBM이 <b>통계적으로</b> 추월해 끝까지 유지한다. 같은 데이터, 바뀌는 승자.</p>
+    </div>
+
+    <!-- BODY -->
+    <div class="body">
+
+      <!-- FULL-BLEED DATA MOMENT -->
+      <div class="plate">
+        <svg viewBox="0 0 1240 660" preserveAspectRatio="xMidYMid meet" font-family="inherit" role="img"
+             aria-label="누적 학습 데이터 건수에 따른 PR-AUC 성장곡선: LR과 LightGBM">
+
+          <!-- horizontal gridlines (hairline on plate) -->
+          <g stroke="#E6E2D8" stroke-width="1">
+            <line x1="140" y1="187" x2="1180" y2="187"/>
+            <line x1="140" y1="281" x2="1180" y2="281"/>
+            <line x1="140" y1="375" x2="1180" y2="375"/>
+            <line x1="140" y1="469" x2="1180" y2="469"/>
+            <line x1="140" y1="563" x2="1180" y2="563"/>
+          </g>
+
+          <!-- axes -->
+          <line x1="140" y1="610" x2="1180" y2="610" stroke="#C9C4B7" stroke-width="1.4"/>
+          <line x1="140" y1="140" x2="140" y2="610" stroke="#C9C4B7" stroke-width="1.4"/>
+
+          <!-- y tick labels -->
+          <g fill="#8B8A90" font-size="18" text-anchor="end" font-variant-numeric="tabular-nums">
+            <text x="124" y="193">0.80</text>
+            <text x="124" y="287">0.70</text>
+            <text x="124" y="381">0.60</text>
+            <text x="124" y="475">0.50</text>
+            <text x="124" y="569">0.40</text>
+          </g>
+          <text x="48" y="375" fill="#8B8A90" font-size="18" text-anchor="middle"
+                transform="rotate(-90 48 375)">PR-AUC</text>
+
+          <!-- x tick labels -->
+          <g fill="#8B8A90" font-size="18" text-anchor="middle" font-variant-numeric="tabular-nums">
+            <text x="140" y="640">0.8천</text>
+            <text x="404" y="640">2만</text>
+            <text x="669" y="640">4만</text>
+            <text x="933" y="640">6만</text>
+            <text x="1180" y="640">7.9만</text>
+          </g>
+          <text x="660" y="660" fill="#8B8A90" font-size="18" text-anchor="middle">
+            누적 학습 데이터 건수 · 주 단위 · point-in-time 라벨</text>
+
+          <!-- Dummy baseline (0.387) -->
+          <line x1="140" y1="575.2" x2="1180" y2="575.2" stroke="#B8B3A6" stroke-width="1.4" stroke-dasharray="2 5"/>
+          <text x="1176" y="569" fill="#8B8A90" font-size="16" text-anchor="end">Dummy 0.387</text>
+
+          <!-- TIE region (CI overlap, before W) -->
+          <rect x="404" y="140" width="444.5" height="470" fill="#16151A" opacity="0.035"/>
+          <text x="500" y="166" fill="#8B8A90" font-size="16" font-style="italic"
+                font-family="Georgia,serif">구분 불가 (tie · CI 겹침)</text>
+
+          <!-- CI band: LR (signature, faint) -->
+          <path d="M 151.2,482.7 L 204.8,436.9 L 271.9,384.3 L 361.2,270.4 L 402.2,268.0 L 433.7,261.9 L 469.1,236.1 L 533.4,228.9 L 628.3,213.5 L 712.1,207.7 L 793.6,201.7 L 863.0,198.1 L 938.6,197.7 L 1046.8,199.8 L 1124.0,199.4 L 1180.0,198.0 L 1180.0,210.4 L 1124.0,211.9 L 1046.8,213.0 L 938.6,210.6 L 863.0,210.5 L 793.6,214.1 L 712.1,220.3 L 628.3,226.5 L 533.4,242.2 L 469.1,249.7 L 433.7,275.9 L 402.2,282.8 L 361.2,284.9 L 271.9,399.9 L 204.8,452.1 L 151.2,497.1 Z"
+                fill="#8B8A90" opacity="0.16"/>
+          <!-- CI band: LightGBM (signature ink) -->
+          <path d="M 151.2,595.8 L 204.8,409.6 L 271.9,379.1 L 361.2,327.1 L 402.2,329.7 L 433.7,302.3 L 469.1,271.4 L 533.4,246.0 L 628.3,226.3 L 712.1,195.3 L 793.6,188.1 L 863.0,181.0 L 938.6,172.0 L 1046.8,167.4 L 1124.0,165.4 L 1180.0,163.3 L 1180.0,173.1 L 1124.0,175.5 L 1046.8,177.4 L 938.6,182.3 L 863.0,191.4 L 793.6,198.3 L 712.1,206.3 L 628.3,238.1 L 533.4,258.2 L 469.1,285.7 L 433.7,316.4 L 402.2,344.4 L 361.2,342.6 L 271.9,395.7 L 204.8,425.6 L 151.2,607.2 Z"
+                fill="#1B3A8F" opacity="0.12"/>
+
+          <!-- LR curve — neutral graphite (the model that loses late) -->
+          <path d="M 151.2,490.0 L 204.8,444.6 L 271.9,392.3 L 361.2,277.9 L 402.2,275.6 L 433.7,268.8 L 469.1,243.1 L 533.4,235.4 L 628.3,220.3 L 712.1,214.3 L 793.6,208.1 L 863.0,204.1 L 938.6,204.0 L 1046.8,206.4 L 1124.0,205.7 L 1180.0,204.3"
+                fill="none" stroke="#6F6E74" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- LightGBM curve — signature ink (the winner) -->
+          <path d="M 151.2,601.5 L 204.8,417.1 L 271.9,387.5 L 361.2,334.7 L 402.2,337.2 L 433.7,309.0 L 469.1,278.5 L 533.4,252.0 L 628.3,232.5 L 712.1,201.0 L 793.6,193.2 L 863.0,186.0 L 938.6,177.3 L 1046.8,172.8 L 1124.0,170.2 L 1180.0,168.2"
+                fill="none" stroke="#1B3A8F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- W transition marker -->
+          <line x1="848.5" y1="140" x2="848.5" y2="610" stroke="#1B3A8F" stroke-width="1.4" stroke-dasharray="5 5" opacity="0.55"/>
+          <circle cx="848.5" cy="181" r="7" fill="#1B3A8F" stroke="#FBFAF6" stroke-width="2.5"/>
+          <g font-family="inherit">
+            <text x="864" y="172" fill="#16151A" font-size="20" font-weight="700">W ≈ 5.4만 건</text>
+            <text x="864" y="194" fill="#4B4A52" font-size="16">여기서 추월 — 끝까지 유지</text>
+          </g>
+
+          <!-- end labels -->
+          <text x="1176" y="220" fill="#6F6E74" font-size="19" font-weight="700" text-anchor="end">LR · 0.78</text>
+          <text x="1176" y="160" fill="#1B3A8F" font-size="20" font-weight="700" text-anchor="end">LightGBM · 0.820</text>
+        </svg>
+
+        <div class="src">실데이터 — Kaggle, <b>우리 두 호텔의 실제 2년 기록</b> (City 리스본 · Resort 알가르브) ·
+          누적창 79주 · Bootstrap 95% CI · 하이쿠 미사용</div>
+      </div>
+
+      <!-- RAIL: one big reading + 3 supporting -->
+      <div class="rail">
+        <div class="kpi">
+          <div class="v">0.820</div>
+          <div class="k">full-data <b>PR-AUC</b> — Dummy 0.387 대비 <b>2.1배</b></div>
+        </div>
+        <hr>
+        <ul class="reads">
+          <li><span class="mk" style="background:#6F6E74"></span>
+            <span>콜드스타트엔 <b>단순한 LR</b>이 우위 — 빠르게 올라 0.78에서 plateau.</span></li>
+          <li><span class="mk" style="background:#1B3A8F"></span>
+            <span>약 5.4만 건에서 <b>LightGBM이 통계적으로 추월</b>, 끝까지 앞선다.</span></li>
+          <li><span class="mk" style="background:#16151A;opacity:.18"></span>
+            <span>그 사이 음영은 <b>구분 불가(tie)</b> — CI가 겹치면 "교차"라 부르지 않는다.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FOOTER: thesis -->
+    <div class="foot">
+      <p class="q">성장형 시스템은 모델을 고정하지 않는다 — <b>데이터량이 최적 모델을 정한다.</b></p>
+      <span class="pg">Hotel No-Show DSS · 2026.06.10</span>
+    </div>
+
+  </section>
+</body>
+</html>

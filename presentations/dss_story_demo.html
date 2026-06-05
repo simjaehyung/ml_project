@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Hotel No-Show DSS — 데이터 유입에서 모델 진화까지</title>
+<style>
+:root{
+  --indigo:#1B3A8F; --indigo-deep:#13245A; --amber:#8A5A0F;
+  --brick:#B23A2E; --ochre:#B8862B; --forest:#3F7A52;
+  --ink:#15171C; --ink-soft:#3A3F4A; --line:#D7D3C8; --line-soft:#E7E3D8;
+  --paper:#F4F1E8; --paper-2:#EDE9DC; --card:#FBFAF4; --white:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Helvetica Neue",Arial,"Segoe UI","Noto Sans KR",sans-serif;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+.mono{font-family:"SFMono-Regular",ui-monospace,"DejaVu Sans Mono","Consolas",monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+#stageWrap{position:fixed;inset:0;display:grid;place-items:center;background:
+  radial-gradient(120% 120% at 18% 0%, #F7F4EB 0%, #EFEBDF 55%, #E7E2D4 100%);}
+#stage{
+  position:relative;width:1280px;height:720px;background:var(--paper);
+  box-shadow:0 24px 80px -30px rgba(19,36,90,.55),0 2px 0 rgba(0,0,0,.04);
+  overflow:hidden;transform-origin:center;border:1px solid var(--line);
+}
+.grid{position:absolute;inset:0;display:grid;
+  grid-template-columns: 1fr 446px;
+  grid-template-rows: 84px 1fr 46px;}
+header.deck{grid-column:1/3;display:flex;align-items:stretch;border-bottom:1.5px solid var(--ink);}
+.brandblock{display:flex;flex-direction:column;justify-content:center;padding:0 26px;border-right:1px solid var(--line);}
+.kicker{font-size:10.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--indigo);font-weight:700}
+.brand{font-size:20px;font-weight:800;letter-spacing:-.015em;margin-top:3px;color:var(--ink)}
+.brand .accent{color:var(--brick)}
+.headmeta{flex:1;display:flex;align-items:center;gap:0;}
+.hm{display:flex;flex-direction:column;justify-content:center;padding:0 22px;height:100%;border-right:1px solid var(--line-soft);min-width:118px}
+.hm:last-child{border-right:none}
+.hm .lab{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
+.hm .val{font-size:21px;font-weight:700;margin-top:2px;color:var(--ink)}
+.hm .val.amber{color:var(--amber)}
+.hm .sub{font-size:10px;color:var(--ink-soft);margin-top:1px}
+.hubpane{grid-column:1/2;grid-row:2/3;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#F4F1E8 0%, #EEEADD 100%);border-right:1px solid var(--line);}
+#hubCanvas{position:absolute;inset:0;width:100%;height:100%}
+.beatcaption{position:absolute;left:26px;bottom:18px;right:26px;pointer-events:none}
+.beatnum{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--indigo);font-weight:700}
+.beattext{font-size:18px;font-weight:600;line-height:1.32;color:var(--ink);margin-top:5px;max-width:560px;text-shadow:0 1px 0 rgba(244,241,232,.9)}
+.beattext em{font-style:normal;color:var(--brick);font-weight:800}
+.beattext .lg{color:var(--forest);font-weight:800;font-style:normal}
+.curvepane{grid-column:2/3;grid-row:2/3;position:relative;background:var(--card);display:flex;flex-direction:column}
+.curvehead{padding:14px 20px 6px;border-bottom:1px solid var(--line-soft)}
+.curvehead .t{font-size:13px;font-weight:800;letter-spacing:-.01em}
+.curvehead .s{font-size:10.5px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+.curvebody{flex:1;position:relative}
+#curveCanvas{position:absolute;inset:0;width:100%;height:100%}
+.legend{position:absolute;top:10px;right:16px;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.lg-row{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600}
+.lg-row .sw{width:16px;height:2.5px;border-radius:1px}
+.lg-row .v{font-size:10.5px;color:var(--ink-soft);font-weight:700;min-width:34px;text-align:right}
+footer.deck{grid-column:1/3;grid-row:3/4;display:flex;align-items:center;border-top:1px solid var(--ink);padding:0 22px;gap:18px;background:var(--paper-2)}
+.foot-note{font-size:9.5px;color:var(--ink-soft);line-height:1.35;flex:1}
+.foot-note b{color:var(--ink);font-weight:700}
+.controls{position:absolute;top:96px;right:462px;display:flex;gap:6px;z-index:30}
+.chapbtns{position:absolute;left:0;right:0;bottom:46px;display:flex;justify-content:center;gap:0;z-index:30;pointer-events:none}
+.chapbtns .inner{display:flex;background:var(--white);border:1px solid var(--ink);box-shadow:0 6px 20px -10px rgba(19,36,90,.5);pointer-events:auto}
+.chip{appearance:none;border:none;background:transparent;font-family:inherit;cursor:pointer;padding:7px 14px;font-size:11px;font-weight:700;color:var(--ink-soft);border-right:1px solid var(--line-soft);letter-spacing:.02em;transition:background .15s,color .15s}
+.chip:last-child{border-right:none}
+.chip .n{font-family:"SFMono-Regular",ui-monospace,monospace;color:var(--indigo);margin-right:6px}
+.chip:hover{background:var(--paper-2)}
+.chip.on{background:var(--indigo);color:#fff}
+.chip.on .n{color:#BFD0F2}
+.tbtn{appearance:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:11px;border:1px solid var(--ink);background:var(--white);color:var(--ink);padding:6px 12px;display:flex;align-items:center;gap:6px;letter-spacing:.03em}
+.tbtn:hover{background:var(--paper-2)}
+.tbtn.primary{background:var(--ink);color:#fff}
+.tbtn .ic{font-size:12px;line-height:1}
+.speed{display:flex;border:1px solid var(--ink);background:var(--white)}
+.speed button{appearance:none;border:none;background:transparent;font-family:inherit;cursor:pointer;padding:6px 9px;font-size:10.5px;font-weight:700;color:var(--ink-soft);border-right:1px solid var(--line-soft)}
+.speed button:last-child{border-right:none}
+.speed button.on{background:var(--amber);color:#fff}
+.capdot{position:absolute;top:100px;left:26px;z-index:25;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--brick);opacity:0;transition:opacity .3s}
+.capdot.show{opacity:1}
+.capdot .blip{width:8px;height:8px;border-radius:50%;background:var(--brick);box-shadow:0 0 0 0 rgba(178,58,46,.5);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(178,58,46,.45)}70%{box-shadow:0 0 0 9px rgba(178,58,46,0)}100%{box-shadow:0 0 0 0 rgba(178,58,46,0)}}
+.scalehint{position:fixed;bottom:8px;right:12px;font-size:10px;color:#9a958a;z-index:5}
+</style>
+</head>
+<body>
+<div id="stageWrap">
+  <div id="stage">
+    <div class="grid">
+      <header class="deck">
+        <div class="brandblock">
+          <div class="kicker">Hotel No-Show DSS</div>
+          <div class="brand">수집 허브 <span class="accent">·</span> 모델 성장곡선</div>
+        </div>
+        <div class="headmeta">
+          <div class="hm"><div class="lab">현재 시점</div><div class="val mono" id="mDate">2015-01-01</div><div class="sub mono" id="mWeek">학습 wk —</div></div>
+          <div class="hm"><div class="lab">누적 수집</div><div class="val mono amber" id="mCount">0</div><div class="sub">예약 레코드</div></div>
+          <div class="hm"><div class="lab">관측 취소율</div><div class="val mono" id="mCxr">—</div><div class="sub">누적 기준</div></div>
+          <div class="hm"><div class="lab">현재 챔피언</div><div class="val" id="mModel" style="font-size:16px">—</div><div class="sub mono" id="mPr">PR-AUC —</div></div>
+        </div>
+      </header>
+
+      <section class="hubpane">
+        <canvas id="hubCanvas"></canvas>
+        <div class="capdot" id="capDot"><span class="blip"></span><span>캡쳐 포인트 · 정지</span></div>
+        <div class="beatcaption">
+          <div class="beatnum" id="beatNum">BEAT 1 / 4</div>
+          <div class="beattext" id="beatText">중앙 허브가 가동된다. 아직 데이터는 0건 — 모델은 분류할 근거가 없다.</div>
+        </div>
+      </section>
+
+      <aside class="curvepane">
+        <div class="curvehead">
+          <div class="t">학습량 &rarr; 성능 (PR-AUC)</div>
+          <div class="s">walk-forward 누적학습 · x=학습표본 n · 실측 곡선</div>
+        </div>
+        <div class="curvebody">
+          <canvas id="curveCanvas"></canvas>
+          <div class="legend">
+            <div class="lg-row"><span class="sw" style="background:#3F7A52"></span>LightGBM<span class="v mono" id="lgVal">—</span></div>
+            <div class="lg-row"><span class="sw" style="background:#1B3A8F"></span>Logistic<span class="v mono" id="lrVal">—</span></div>
+            <div class="lg-row"><span class="sw" style="background:#9A958A"></span>Dummy<span class="v mono" id="dmVal">0.387</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <footer class="deck">
+        <div class="foot-note">
+          <b>정직성 각주.</b> 흐르는 <b>risk</b>는 최종 LightGBM으로 사전계산한 값(point-in-time 재현 아님, 시연용). 허브 점은 전체 119,390건을 <b>25k로 다운샘플</b>한 데모 스트림(여기선 앞 300건)이며, 성장곡선만 전수 walk-forward 실측이다.
+        </div>
+      </footer>
+    </div>
+
+    <div class="controls">
+      <button class="tbtn primary" id="btnPlay"><span class="ic" id="playIc">&#9646;&#9646;</span><span id="playLab">일시정지</span></button>
+      <div class="speed" id="speed">
+        <button data-s="0.5">0.5&times;</button>
+        <button data-s="1" class="on">1&times;</button>
+        <button data-s="2">2&times;</button>
+        <button data-s="4">4&times;</button>
+      </div>
+    </div>
+
+    <div class="chapbtns"><div class="inner" id="chips">
+      <button class="chip on" data-ch="0"><span class="n mono">1</span>허브 가동</button>
+      <button class="chip" data-ch="1"><span class="n mono">2</span>데이터 유입</button>
+      <button class="chip" data-ch="2"><span class="n mono">3</span>모델 진화</button>
+      <button class="chip" data-ch="3"><span class="n mono">4</span>지금 0.820</button>
+    </div></div>
+  </div>
+</div>
+<div class="scalehint mono">16:9 · 1280&times;720</div>
+
+<script id="streamData" type="application/json">[{"d":"2015-01-01","arr":"2015-09-03","wk":36,"c":"GBR","ch":"Direct","h":0,"lead":245,"adr":70,"risk":0.014,"cx":0,"col":"low"},{"d":"2015-01-01","arr":"2015-09-15","wk":38,"c":"GBR","ch":"TA/TO","h":0,"lead":257,"adr":62,"risk":0.009,"cx":0,"col":"low"},{"d":"2015-01-01","arr":"2015-09-01","wk":36,"c":"Other","ch":"TA/TO","h":1,"lead":243,"adr":65,"risk":0.008,"cx":0,"col":"low"},{"d":"2015-01-02","arr":"2015-10-03","wk":40,"c":"PRT","ch":"TA/TO","h":0,"lead":274,"adr":36,"risk":0.999,"cx":1,"col":"high"},{"d":"2015-01-03","arr":"2015-07-11","wk":28,"c":"PRT","ch":"Direct","h":0,"lead":189,"adr":160,"risk":0.194,"cx":0,"col":"low"},{"d":"2015-01-28","arr":"2015-09-18","wk":38,"c":"PRT","ch":"TA/TO","h":1,"lead":233,"adr":120,"risk":0.996,"cx":1,"col":"high"},{"d":"2015-02-01","arr":"2015-08-16","wk":34,"c":"FRA","ch":"TA/TO","h":1,"lead":196,"adr":56,"risk":0.012,"cx":0,"col":"low"},{"d":"2015-02-10","arr":"2015-09-20","wk":39,"c":"GBR","ch":"TA/TO","h":0,"lead":222,"adr":50,"risk":0.007,"cx":0,"col":"low"},{"d":"2015-02-20","arr":"2016-05-16","wk":74,"c":"PRT","ch":"TA/TO","h":1,"lead":451,"adr":60,"risk":0.995,"cx":1,"col":"high"},{"d":"2015-02-20","arr":"2015-11-09","wk":46,"c":"PRT","ch":"TA/TO","h":1,"lead":262,"adr":63,"risk":0.997,"cx":1,"col":"high"},{"d":"2015-02-26","arr":"2015-08-02","wk":32,"c":"PRT","ch":"TA/TO","h":0,"lead":157,"adr":120,"risk":0.127,"cx":0,"col":"low"},{"d":"2015-03-03","arr":"2015-08-03","wk":32,"c":"PRT","ch":"TA/TO","h":1,"lead":153,"adr":12,"risk":0.994,"cx":1,"col":"high"},{"d":"2015-03-10","arr":"2015-10-17","wk":42,"c":"FRA","ch":"TA/TO","h":1,"lead":221,"adr":65,"risk":0.013,"cx":0,"col":"low"},{"d":"2015-03-17","arr":"2015-10-19","wk":43,"c":"PRT","ch":"TA/TO","h":1,"lead":216,"adr":12,"risk":0.914,"cx":1,"col":"high"},{"d":"2015-03-26","arr":"2015-07-13","wk":29,"c":"PRT","ch":"Direct","h":0,"lead":109,"adr":164,"risk":0.256,"cx":0,"col":"low"},{"d":"2015-04-03","arr":"2015-09-13","wk":38,"c":"GBR","ch":"TA/TO","h":0,"lead":163,"adr":62,"risk":0.015,"cx":0,"col":"low"},{"d":"2015-04-06","arr":"2015-08-08","wk":32,"c":"ITA","ch":"TA/TO","h":1,"lead":124,"adr":72,"risk":0.025,"cx":0,"col":"low"},{"d":"2015-04-13","arr":"2015-07-03","wk":27,"c":"PRT","ch":"TA/TO","h":0,"lead":81,"adr":86,"risk":0.726,"cx":0,"col":"high"},{"d":"2015-04-19","arr":"2015-10-10","wk":41,"c":"PRT","ch":"TA/TO","h":1,"lead":174,"adr":70,"risk":0.843,"cx":1,"col":"high"},{"d":"2015-04-24","arr":"2015-07-01","wk":27,"c":"IRL","ch":"TA/TO","h":0,"lead":68,"adr":97,"risk":0.017,"cx":0,"col":"low"},{"d":"2015-05-06","arr":"2015-07-26","wk":31,"c":"PRT","ch":"TA/TO","h":1,"lead":81,"adr":76,"risk":0.546,"cx":1,"col":"med"},{"d":"2015-05-14","arr":"2015-09-09","wk":37,"c":"GBR","ch":"TA/TO","h":0,"lead":118,"adr":59,"risk":0.011,"cx":0,"col":"low"},{"d":"2015-05-19","arr":"2015-07-15","wk":29,"c":"PRT","ch":"Direct","h":0,"lead":57,"adr":99,"risk":0.327,"cx":0,"col":"low"},{"d":"2015-05-25","arr":"2015-09-16","wk":38,"c":"GBR","ch":"TA/TO","h":0,"lead":114,"adr":86,"risk":0.011,"cx":0,"col":"low"},{"d":"2015-05-29","arr":"2015-10-31","wk":44,"c":"PRT","ch":"Direct","h":0,"lead":155,"adr":42,"risk":0.001,"cx":0,"col":"low"},{"d":"2015-06-04","arr":"2015-07-20","wk":30,"c":"Other","ch":"TA/TO","h":0,"lead":46,"adr":112,"risk":0.019,"cx":0,"col":"low"},{"d":"2015-06-09","arr":"2015-08-05","wk":32,"c":"PRT","ch":"TA/TO","h":0,"lead":57,"adr":183,"risk":0.746,"cx":1,"col":"high"},{"d":"2015-06-15","arr":"2015-09-09","wk":37,"c":"FRA","ch":"Corporate","h":1,"lead":86,"adr":100,"risk":0.082,"cx":0,"col":"low"},{"d":"2015-06-22","arr":"2015-08-05","wk":32,"c":"ESP","ch":"TA/TO","h":0,"lead":44,"adr":148,"risk":0.001,"cx":0,"col":"low"},{"d":"2015-06-26","arr":"2015-09-05","wk":36,"c":"PRT","ch":"TA/TO","h":0,"lead":71,"adr":113,"risk":0.83,"cx":0,"col":"high"},{"d":"2015-06-30","arr":"2015-07-18","wk":29,"c":"PRT","ch":"TA/TO","h":1,"lead":18,"adr":75,"risk":0.596,"cx":0,"col":"med"},{"d":"2015-06-30","arr":"2015-09-28","wk":40,"c":"PRT","ch":"TA/TO","h":1,"lead":90,"adr":170,"risk":0.963,"cx":1,"col":"high"},{"d":"2015-07-01","arr":"2015-11-18","wk":47,"c":"PRT","ch":"TA/TO","h":1,"lead":140,"adr":75,"risk":0.075,"cx":0,"col":"low"},{"d":"2015-07-02","arr":"2015-08-10","wk":33,"c":"PRT","ch":"TA/TO","h":1,"lead":39,"adr":62,"risk":0.189,"cx":0,"col":"low"},{"d":"2015-07-02","arr":"2015-09-09","wk":37,"c":"PRT","ch":"TA/TO","h":1,"lead":69,"adr":62,"risk":0.523,"cx":0,"col":"med"},{"d":"2015-07-02","arr":"2016-08-10","wk":86,"c":"PRT","ch":"TA/TO","h":1,"lead":405,"adr":65,"risk":0.995,"cx":1,"col":"high"},{"d":"2015-07-06","arr":"2015-07-06","wk":28,"c":"PRT","ch":"Direct","h":0,"lead":0,"adr":0,"risk":0.063,"cx":0,"col":"low"},{"d":"2015-07-06","arr":"2015-08-14","wk":33,"c":"DEU","ch":"TA/TO","h":1,"lead":39,"adr":109,"risk":0.012,"cx":0,"col":"low"},{"d":"2015-07-06","arr":"2015-09-12","wk":37,"c":"PRT","ch":"TA/TO","h":1,"lead":68,"adr":62,"risk":0.698,"cx":0,"col":"med"},{"d":"2015-07-06","arr":"2015-10-03","wk":40,"c":"PRT","ch":"TA/TO","h":1,"lead":89,"adr":62,"risk":0.972,"cx":1,"col":"high"},{"d":"2015-07-07","arr":"2015-07-07","wk":28,"c":"GBR","ch":"TA/TO","h":0,"lead":0,"adr":110,"risk":0.012,"cx":0,"col":"low"},{"d":"2015-07-08","arr":"2016-04-14","wk":69,"c":"PRT","ch":"TA/TO","h":1,"lead":281,"adr":62,"risk":0.994,"cx":1,"col":"high"},{"d":"2015-07-08","arr":"2016-05-26","wk":75,"c":"PRT","ch":"TA/TO","h":1,"lead":323,"adr":62,"risk":0.994,"cx":1,"col":"high"},{"d":"2015-07-08","arr":"2016-07-07","wk":81,"c":"PRT","ch":"TA/TO","h":1,"lead":365,"adr":62,"risk":0.995,"cx":1,"col":"high"},{"d":"2015-07-09","arr":"2015-08-08","wk":32,"c":"PRT","ch":"TA/TO","h":1,"lead":30,"adr":86,"risk":0.631,"cx":1,"col":"med"},{"d":"2015-07-10","arr":"2016-08-04","wk":85,"c":"PRT","ch":"TA/TO","h":1,"lead":391,"adr":62,"risk":0.995,"cx":1,"col":"high"},{"d":"2015-07-10","arr":"2016-09-22","wk":92,"c":"PRT","ch":"TA/TO","h":1,"lead":440,"adr":62,"risk":0.995,"cx":1,"col":"high"},{"d":"2015-07-10","arr":"2016-11-03","wk":98,"c":"PRT","ch":"TA/TO","h":1,"lead":482,"adr":63,"risk":0.997,"cx":1,"col":"high"},{"d":"2015-07-10","arr":"2017-01-19","wk":109,"c":"PRT","ch":"TA/TO","h":1,"lead":559,"adr":62,"risk":0.994,"cx":1,"col":"high"},{"d":"2015-07-11","arr":"2015-08-03","wk":32,"c":"ESP","ch":"TA/TO","h":0,"lead":23,"adr":211,"risk":0.018,"cx":0,"col":"low"},{"d":"2015-07-14","arr":"2015-10-14","wk":42,"c":"GBR","ch":"TA/TO","h":0,"lead":92,"adr":75,"risk":0.019,"cx":0,"col":"low"},{"d":"2015-07-15","arr":"2016-05-26","wk":75,"c":"PRT","ch":"TA/TO","h":1,"lead":316,"adr":110,"risk":0.441,"cx":0,"col":"med"},{"d":"2015-07-18","arr":"2015-12-30","wk":53,"c":"PRT","ch":"TA/TO","h":0,"lead":165,"adr":136,"risk":0.023,"cx":0,"col":"low"},{"d":"2015-07-22","arr":"2015-08-01","wk":31,"c":"PRT","ch":"Direct","h":0,"lead":10,"adr":202,"risk":0.411,"cx":1,"col":"med"},{"d":"2015-07-23","arr":"2015-10-09","wk":41,"c":"ESP","ch":"TA/TO","h":0,"lead":78,"adr":92,"risk":0.841,"cx":1,"col":"high"},{"d":"2015-07-23","arr":"2015-10-31","wk":44,"c":"ESP","ch":"TA/TO","h":1,"lead":100,"adr":62,"risk":0.021,"cx":0,"col":"low"},{"d":"2015-07-25","arr":"2015-09-08","wk":37,"c":"Other","ch":"TA/TO","h":1,"lead":45,"adr":83,"risk":0.021,"cx":0,"col":"low"},{"d":"2015-07-28","arr":"2015-09-10","wk":37,"c":"PRT","ch":"TA/TO","h":1,"lead":44,"adr":126,"risk":0.935,"cx":1,"col":"high"},{"d":"2015-07-31","arr":"2015-08-02","wk":32,"c":"Other","ch":"Direct","h":1,"lead":2,"adr":0,"risk":0.014,"cx":0,"col":"low"},{"d":"2015-08-04","arr":"2015-10-04","wk":41,"c":"FRA","ch":"TA/TO","h":1,"lead":61,"adr":73,"risk":0.009,"cx":0,"col":"low"},{"d":"2015-08-05","arr":"2015-08-05","wk":32,"c":"Other","ch":"TA/TO","h":1,"lead":0,"adr":90,"risk":0.008,"cx":0,"col":"low"},{"d":"2015-08-06","arr":"2015-10-18","wk":43,"c":"BEL","ch":"TA/TO","h":0,"lead":73,"adr":65,"risk":0.022,"cx":0,"col":"low"},{"d":"2015-08-08","arr":"2015-08-09","wk":33,"c":"ESP","ch":"TA/TO","h":1,"lead":1,"adr":98,"risk":0.014,"cx":0,"col":"low"},{"d":"2015-08-10","arr":"2015-09-16","wk":38,"c":"Other","ch":"TA/TO","h":1,"lead":37,"adr":94,"risk":0.022,"cx":0,"col":"low"},{"d":"2015-08-11","arr":"2016-05-13","wk":73,"c":"PRT","ch":"TA/TO","h":1,"lead":276,"adr":61,"risk":0.966,"cx":1,"col":"high"},{"d":"2015-08-13","arr":"2015-08-29","wk":35,"c":"FRA","ch":"TA/TO","h":1,"lead":16,"adr":90,"risk":0.01,"cx":0,"col":"low"},{"d":"2015-08-14","arr":"2016-05-13","wk":73,"c":"PRT","ch":"TA/TO","h":1,"lead":273,"adr":95,"risk":0.954,"cx":1,"col":"high"},{"d":"2015-08-17","arr":"2015-09-12","wk":37,"c":"FRA","ch":"TA/TO","h":1,"lead":26,"adr":124,"risk":0.012,"cx":0,"col":"low"},{"d":"2015-08-17","arr":"2015-11-23","wk":48,"c":"Other","ch":"TA/TO","h":1,"lead":98,"adr":70,"risk":0.039,"cx":0,"col":"low"},{"d":"2015-08-18","arr":"2015-08-18","wk":34,"c":"ESP","ch":"Direct","h":1,"lead":0,"adr":113,"risk":0.022,"cx":0,"col":"low"},{"d":"2015-08-20","arr":"2015-10-09","wk":41,"c":"PRT","ch":"TA/TO","h":1,"lead":50,"adr":85,"risk":0.616,"cx":0,"col":"med"},{"d":"2015-08-21","arr":"2016-01-19","wk":57,"c":"Other","ch":"TA/TO","h":1,"lead":151,"adr":71,"risk":0.032,"cx":0,"col":"low"},{"d":"2015-08-24","arr":"2015-09-01","wk":36,"c":"ITA","ch":"TA/TO","h":1,"lead":8,"adr":160,"risk":0.011,"cx":0,"col":"low"},{"d":"2015-08-26","arr":"2015-10-25","wk":44,"c":"PRT","ch":"TA/TO","h":1,"lead":60,"adr":89,"risk":0.424,"cx":1,"col":"med"},{"d":"2015-08-29","arr":"2015-08-30","wk":36,"c":"PRT","ch":"TA/TO","h":0,"lead":1,"adr":148,"risk":0.11,"cx":0,"col":"low"},{"d":"2015-09-01","arr":"2015-09-01","wk":36,"c":"PRT","ch":"Direct","h":0,"lead":0,"adr":128,"risk":0.059,"cx":0,"col":"low"},{"d":"2015-09-02","arr":"2016-06-21","wk":79,"c":"PRT","ch":"TA/TO","h":0,"lead":293,"adr":72,"risk":0.962,"cx":1,"col":"high"},{"d":"2015-09-03","arr":"2015-10-07","wk":41,"c":"PRT","ch":"TA/TO","h":1,"lead":34,"adr":71,"risk":0.711,"cx":1,"col":"high"},{"d":"2015-09-04","arr":"2015-11-27","wk":48,"c":"PRT","ch":"TA/TO","h":1,"lead":84,"adr":0,"risk":0.077,"cx":0,"col":"low"},{"d":"2015-09-07","arr":"2015-09-30","wk":40,"c":"PRT","ch":"TA/TO","h":1,"lead":23,"adr":111,"risk":0.41,"cx":0,"col":"med"},{"d":"2015-09-09","arr":"2016-06-12","wk":78,"c":"PRT","ch":"TA/TO","h":0,"lead":277,"adr":110,"risk":0.988,"cx":1,"col":"high"},{"d":"2015-09-09","arr":"2015-09-27","wk":40,"c":"ITA","ch":"TA/TO","h":1,"lead":18,"adr":170,"risk":0.022,"cx":0,"col":"low"},{"d":"2015-09-11","arr":"2015-09-22","wk":39,"c":"Other","ch":"TA/TO","h":1,"lead":11,"adr":98,"risk":0.019,"cx":0,"col":"low"},{"d":"2015-09-12","arr":"2015-11-24","wk":48,"c":"FRA","ch":"TA/TO","h":1,"lead":73,"adr":68,"risk":0.015,"cx":0,"col":"low"},{"d":"2015-09-14","arr":"2015-10-14","wk":42,"c":"BEL","ch":"TA/TO","h":1,"lead":30,"adr":96,"risk":0.007,"cx":0,"col":"low"},{"d":"2015-09-15","arr":"2015-10-29","wk":44,"c":"ESP","ch":"TA/TO","h":1,"lead":44,"adr":105,"risk":0.019,"cx":0,"col":"low"},{"d":"2015-09-17","arr":"2015-12-19","wk":51,"c":"PRT","ch":"Direct","h":0,"lead":93,"adr":80,"risk":0.957,"cx":1,"col":"high"},{"d":"2015-09-18","arr":"2015-09-23","wk":39,"c":"PRT","ch":"Direct","h":1,"lead":5,"adr":133,"risk":0.159,"cx":0,"col":"low"},{"d":"2015-09-19","arr":"2016-10-06","wk":94,"c":"GBR","ch":"TA/TO","h":0,"lead":383,"adr":42,"risk":0.012,"cx":0,"col":"low"},{"d":"2015-09-21","arr":"2015-11-07","wk":45,"c":"FRA","ch":"TA/TO","h":1,"lead":47,"adr":60,"risk":0.014,"cx":0,"col":"low"},{"d":"2015-09-23","arr":"2015-10-06","wk":41,"c":"FRA","ch":"TA/TO","h":1,"lead":13,"adr":75,"risk":0.011,"cx":0,"col":"low"},{"d":"2015-09-25","arr":"2016-02-12","wk":60,"c":"PRT","ch":"TA/TO","h":0,"lead":140,"adr":50,"risk":0.988,"cx":1,"col":"high"},{"d":"2015-09-28","arr":"2015-10-23","wk":43,"c":"PRT","ch":"TA/TO","h":0,"lead":25,"adr":56,"risk":0.357,"cx":0,"col":"low"},{"d":"2015-09-29","arr":"2015-10-15","wk":42,"c":"PRT","ch":"TA/TO","h":1,"lead":16,"adr":90,"risk":0.269,"cx":0,"col":"low"},{"d":"2015-09-30","arr":"2015-10-07","wk":41,"c":"ITA","ch":"TA/TO","h":1,"lead":7,"adr":164,"risk":0.011,"cx":0,"col":"low"},{"d":"2015-10-02","arr":"2015-11-06","wk":45,"c":"Other","ch":"Corporate","h":0,"lead":35,"adr":52,"risk":0.013,"cx":0,"col":"low"},{"d":"2015-10-02","arr":"2016-04-08","wk":68,"c":"PRT","ch":"TA/TO","h":1,"lead":189,"adr":12,"risk":0.995,"cx":1,"col":"high"},{"d":"2015-10-03","arr":"2016-06-15","wk":78,"c":"DEU","ch":"TA/TO","h":1,"lead":256,"adr":90,"risk":0.025,"cx":0,"col":"low"},{"d":"2015-10-03","arr":"2016-07-30","wk":84,"c":"DEU","ch":"TA/TO","h":1,"lead":301,"adr":90,"risk":0.031,"cx":0,"col":"low"},{"d":"2015-10-03","arr":"2016-10-14","wk":95,"c":"DEU","ch":"TA/TO","h":1,"lead":377,"adr":115,"risk":0.023,"cx":0,"col":"low"},{"d":"2015-10-05","arr":"2015-10-21","wk":43,"c":"PRT","ch":"TA/TO","h":0,"lead":16,"adr":86,"risk":0.253,"cx":0,"col":"low"},{"d":"2015-10-07","arr":"2015-10-11","wk":42,"c":"PRT","ch":"Direct","h":1,"lead":4,"adr":114,"risk":0.12,"cx":0,"col":"low"},{"d":"2015-10-10","arr":"2015-11-03","wk":45,"c":"ITA","ch":"Corporate","h":0,"lead":24,"adr":48,"risk":0.028,"cx":0,"col":"low"},{"d":"2015-10-12","arr":"2016-06-11","wk":77,"c":"PRT","ch":"TA/TO","h":1,"lead":243,"adr":106,"risk":0.996,"cx":1,"col":"high"},{"d":"2015-10-14","arr":"2016-03-24","wk":66,"c":"PRT","ch":"TA/TO","h":0,"lead":162,"adr":84,"risk":0.212,"cx":0,"col":"low"},{"d":"2015-10-14","arr":"2016-05-26","wk":75,"c":"GBR","ch":"Direct","h":0,"lead":225,"adr":72,"risk":0.0,"cx":0,"col":"low"},{"d":"2015-10-14","arr":"2015-10-14","wk":42,"c":"GBR","ch":"TA/TO","h":1,"lead":0,"adr":129,"risk":0.022,"cx":0,"col":"low"},{"d":"2015-10-15","arr":"2015-10-15","wk":42,"c":"Other","ch":"TA/TO","h":1,"lead":0,"adr":105,"risk":0.008,"cx":0,"col":"low"},{"d":"2015-10-16","arr":"2016-05-02","wk":72,"c":"PRT","ch":"TA/TO","h":0,"lead":199,"adr":85,"risk":0.893,"cx":1,"col":"high"},{"d":"2015-10-16","arr":"2016-03-25","wk":66,"c":"PRT","ch":"TA/TO","h":1,"lead":161,"adr":130,"risk":0.917,"cx":1,"col":"high"},{"d":"2015-10-17","arr":"2016-01-01","wk":54,"c":"PRT","ch":"TA/TO","h":0,"lead":76,"adr":58,"risk":0.536,"cx":1,"col":"med"},{"d":"2015-10-19","arr":"2015-11-20","wk":47,"c":"PRT","ch":"TA/TO","h":1,"lead":32,"adr":73,"risk":0.243,"cx":0,"col":"low"},{"d":"2015-10-20","arr":"2015-10-23","wk":43,"c":"FRA","ch":"TA/TO","h":1,"lead":3,"adr":132,"risk":0.01,"cx":0,"col":"low"},{"d":"2015-10-21","arr":"2016-09-21","wk":92,"c":"DEU","ch":"TA/TO","h":1,"lead":336,"adr":78,"risk":0.025,"cx":0,"col":"low"},{"d":"2015-10-23","arr":"2015-12-22","wk":52,"c":"GBR","ch":"Direct","h":0,"lead":60,"adr":36,"risk":0.021,"cx":0,"col":"low"},{"d":"2015-10-24","arr":"2016-02-12","wk":60,"c":"PRT","ch":"TA/TO","h":0,"lead":111,"adr":70,"risk":0.99,"cx":1,"col":"high"},{"d":"2015-10-27","arr":"2016-02-27","wk":62,"c":"ESP","ch":"Direct","h":0,"lead":123,"adr":64,"risk":0.043,"cx":0,"col":"low"},{"d":"2015-10-28","arr":"2015-11-22","wk":48,"c":"FRA","ch":"TA/TO","h":1,"lead":25,"adr":65,"risk":0.017,"cx":0,"col":"low"},{"d":"2015-10-29","arr":"2016-09-26","wk":93,"c":"GBR","ch":"TA/TO","h":0,"lead":333,"adr":75,"risk":0.137,"cx":0,"col":"low"},{"d":"2015-10-31","arr":"2015-10-31","wk":44,"c":"FRA","ch":"TA/TO","h":0,"lead":0,"adr":69,"risk":0.006,"cx":0,"col":"low"},{"d":"2015-11-02","arr":"2016-04-28","wk":71,"c":"PRT","ch":"TA/TO","h":1,"lead":178,"adr":110,"risk":0.997,"cx":1,"col":"high"},{"d":"2015-11-03","arr":"2016-09-15","wk":91,"c":"PRT","ch":"TA/TO","h":1,"lead":317,"adr":120,"risk":0.971,"cx":1,"col":"high"},{"d":"2015-11-04","arr":"2016-05-20","wk":74,"c":"PRT","ch":"TA/TO","h":1,"lead":198,"adr":58,"risk":0.531,"cx":1,"col":"med"},{"d":"2015-11-04","arr":"2015-12-08","wk":50,"c":"PRT","ch":"TA/TO","h":1,"lead":34,"adr":90,"risk":0.984,"cx":1,"col":"high"},{"d":"2015-11-04","arr":"2016-02-27","wk":62,"c":"Other","ch":"TA/TO","h":1,"lead":115,"adr":76,"risk":0.035,"cx":0,"col":"low"},{"d":"2015-11-05","arr":"2015-11-11","wk":46,"c":"PRT","ch":"Direct","h":1,"lead":6,"adr":113,"risk":0.001,"cx":0,"col":"low"},{"d":"2015-11-06","arr":"2015-12-09","wk":50,"c":"PRT","ch":"TA/TO","h":1,"lead":33,"adr":110,"risk":0.988,"cx":1,"col":"high"},{"d":"2015-11-07","arr":"2015-11-22","wk":48,"c":"PRT","ch":"TA/TO","h":1,"lead":15,"adr":93,"risk":0.748,"cx":1,"col":"high"},{"d":"2015-11-09","arr":"2015-11-09","wk":46,"c":"PRT","ch":"Corporate","h":0,"lead":0,"adr":35,"risk":0.072,"cx":0,"col":"low"},{"d":"2015-11-11","arr":"2015-11-17","wk":47,"c":"PRT","ch":"Direct","h":0,"lead":6,"adr":44,"risk":0.001,"cx":0,"col":"low"},{"d":"2015-11-12","arr":"2016-02-19","wk":61,"c":"PRT","ch":"Corporate","h":1,"lead":99,"adr":80,"risk":0.979,"cx":1,"col":"high"},{"d":"2015-11-13","arr":"2015-12-02","wk":49,"c":"DEU","ch":"Corporate","h":0,"lead":19,"adr":36,"risk":0.011,"cx":0,"col":"low"},{"d":"2015-11-16","arr":"2015-11-17","wk":47,"c":"PRT","ch":"TA/TO","h":0,"lead":1,"adr":36,"risk":0.069,"cx":0,"col":"low"},{"d":"2015-11-17","arr":"2015-12-30","wk":53,"c":"PRT","ch":"TA/TO","h":0,"lead":43,"adr":119,"risk":0.983,"cx":1,"col":"high"},{"d":"2015-11-19","arr":"2016-03-25","wk":66,"c":"PRT","ch":"Direct","h":0,"lead":127,"adr":47,"risk":0.752,"cx":1,"col":"high"},{"d":"2015-11-20","arr":"2016-06-26","wk":80,"c":"BEL","ch":"TA/TO","h":0,"lead":219,"adr":148,"risk":0.071,"cx":0,"col":"low"},{"d":"2015-11-23","arr":"2015-12-05","wk":49,"c":"ESP","ch":"TA/TO","h":1,"lead":12,"adr":64,"risk":0.009,"cx":0,"col":"low"},{"d":"2015-11-25","arr":"2015-11-27","wk":48,"c":"PRT","ch":"TA/TO","h":0,"lead":2,"adr":25,"risk":0.001,"cx":0,"col":"low"},{"d":"2015-11-26","arr":"2016-02-26","wk":62,"c":"PRT","ch":"TA/TO","h":0,"lead":92,"adr":79,"risk":0.998,"cx":1,"col":"high"},{"d":"2015-11-27","arr":"2015-12-17","wk":51,"c":"ESP","ch":"Direct","h":0,"lead":20,"adr":58,"risk":0.024,"cx":0,"col":"low"},{"d":"2015-11-30","arr":"2015-12-06","wk":50,"c":"PRT","ch":"TA/TO","h":0,"lead":6,"adr":54,"risk":0.913,"cx":1,"col":"high"},{"d":"2015-11-30","arr":"2016-09-21","wk":92,"c":"ITA","ch":"TA/TO","h":1,"lead":296,"adr":81,"risk":0.032,"cx":0,"col":"low"},{"d":"2015-12-02","arr":"2015-12-05","wk":49,"c":"ESP","ch":"TA/TO","h":0,"lead":3,"adr":68,"risk":0.026,"cx":0,"col":"low"},{"d":"2015-12-03","arr":"2016-06-14","wk":78,"c":"GBR","ch":"Direct","h":0,"lead":194,"adr":93,"risk":0.034,"cx":0,"col":"low"},{"d":"2015-12-04","arr":"2015-12-10","wk":50,"c":"DEU","ch":"TA/TO","h":1,"lead":6,"adr":0,"risk":0.015,"cx":0,"col":"low"},{"d":"2015-12-06","arr":"2016-05-26","wk":75,"c":"PRT","ch":"TA/TO","h":1,"lead":172,"adr":123,"risk":0.924,"cx":0,"col":"high"},{"d":"2015-12-08","arr":"2016-03-18","wk":65,"c":"PRT","ch":"TA/TO","h":1,"lead":101,"adr":78,"risk":0.902,"cx":1,"col":"high"},{"d":"2015-12-09","arr":"2016-05-05","wk":72,"c":"DEU","ch":"TA/TO","h":1,"lead":148,"adr":100,"risk":0.101,"cx":0,"col":"low"},{"d":"2015-12-10","arr":"2015-12-11","wk":50,"c":"PRT","ch":"TA/TO","h":0,"lead":1,"adr":48,"risk":0.107,"cx":0,"col":"low"},{"d":"2015-12-10","arr":"2016-06-15","wk":78,"c":"PRT","ch":"TA/TO","h":1,"lead":188,"adr":130,"risk":0.936,"cx":1,"col":"high"},{"d":"2015-12-11","arr":"2016-02-17","wk":61,"c":"PRT","ch":"TA/TO","h":1,"lead":68,"adr":75,"risk":0.997,"cx":1,"col":"high"},{"d":"2015-12-12","arr":"2016-03-05","wk":63,"c":"DEU","ch":"TA/TO","h":1,"lead":84,"adr":50,"risk":0.032,"cx":0,"col":"low"},{"d":"2015-12-14","arr":"2016-03-20","wk":66,"c":"PRT","ch":"TA/TO","h":1,"lead":97,"adr":79,"risk":0.997,"cx":1,"col":"high"},{"d":"2015-12-15","arr":"2016-06-24","wk":79,"c":"Other","ch":"TA/TO","h":1,"lead":192,"adr":110,"risk":0.035,"cx":0,"col":"low"},{"d":"2015-12-17","arr":"2015-12-17","wk":51,"c":"PRT","ch":"Corporate","h":0,"lead":0,"adr":25,"risk":0.07,"cx":0,"col":"low"},{"d":"2015-12-18","arr":"2016-05-24","wk":75,"c":"PRT","ch":"TA/TO","h":1,"lead":158,"adr":130,"risk":0.993,"cx":1,"col":"high"},{"d":"2015-12-19","arr":"2016-08-31","wk":89,"c":"PRT","ch":"TA/TO","h":1,"lead":256,"adr":91,"risk":0.608,"cx":0,"col":"med"},{"d":"2015-12-22","arr":"2016-08-18","wk":87,"c":"Other","ch":"TA/TO","h":1,"lead":240,"adr":86,"risk":0.054,"cx":0,"col":"low"},{"d":"2015-12-23","arr":"2016-01-25","wk":58,"c":"BRA","ch":"Corporate","h":1,"lead":33,"adr":64,"risk":0.034,"cx":0,"col":"low"},{"d":"2015-12-25","arr":"2016-03-28","wk":67,"c":"DEU","ch":"TA/TO","h":1,"lead":94,"adr":111,"risk":0.035,"cx":0,"col":"low"},{"d":"2015-12-27","arr":"2015-12-29","wk":53,"c":"BEL","ch":"Direct","h":1,"lead":2,"adr":115,"risk":0.027,"cx":0,"col":"low"},{"d":"2015-12-29","arr":"2016-01-02","wk":54,"c":"PRT","ch":"TA/TO","h":1,"lead":4,"adr":97,"risk":0.092,"cx":0,"col":"low"},{"d":"2015-12-31","arr":"2015-12-31","wk":53,"c":"PRT","ch":"Direct","h":0,"lead":0,"adr":139,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-01-02","arr":"2016-01-06","wk":55,"c":"BRA","ch":"TA/TO","h":1,"lead":4,"adr":86,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-01-03","arr":"2016-01-21","wk":57,"c":"BRA","ch":"TA/TO","h":1,"lead":18,"adr":75,"risk":0.0,"cx":0,"col":"low"},{"d":"2016-01-04","arr":"2016-02-15","wk":61,"c":"ESP","ch":"TA/TO","h":0,"lead":42,"adr":37,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-01-04","arr":"2016-05-01","wk":72,"c":"FRA","ch":"TA/TO","h":1,"lead":118,"adr":108,"risk":0.043,"cx":0,"col":"low"},{"d":"2016-01-04","arr":"2016-11-03","wk":98,"c":"PRT","ch":"TA/TO","h":1,"lead":304,"adr":89,"risk":0.984,"cx":1,"col":"high"},{"d":"2016-01-05","arr":"2016-07-02","wk":80,"c":"PRT","ch":"TA/TO","h":0,"lead":179,"adr":81,"risk":0.555,"cx":1,"col":"med"},{"d":"2016-01-05","arr":"2016-05-13","wk":73,"c":"Other","ch":"TA/TO","h":1,"lead":129,"adr":122,"risk":0.086,"cx":0,"col":"low"},{"d":"2016-01-06","arr":"2016-07-10","wk":82,"c":"GBR","ch":"TA/TO","h":0,"lead":186,"adr":107,"risk":0.006,"cx":0,"col":"low"},{"d":"2016-01-07","arr":"2016-03-12","wk":64,"c":"PRT","ch":"TA/TO","h":0,"lead":65,"adr":34,"risk":0.403,"cx":1,"col":"med"},{"d":"2016-01-07","arr":"2016-04-19","wk":70,"c":"PRT","ch":"TA/TO","h":1,"lead":103,"adr":115,"risk":0.909,"cx":1,"col":"high"},{"d":"2016-01-08","arr":"2016-06-08","wk":77,"c":"PRT","ch":"TA/TO","h":0,"lead":152,"adr":72,"risk":0.899,"cx":1,"col":"high"},{"d":"2016-01-09","arr":"2016-01-19","wk":57,"c":"PRT","ch":"TA/TO","h":0,"lead":10,"adr":0,"risk":0.108,"cx":0,"col":"low"},{"d":"2016-01-10","arr":"2016-02-27","wk":62,"c":"Other","ch":"TA/TO","h":1,"lead":48,"adr":86,"risk":0.056,"cx":0,"col":"low"},{"d":"2016-01-11","arr":"2016-06-10","wk":77,"c":"IRL","ch":"Direct","h":0,"lead":151,"adr":78,"risk":0.102,"cx":0,"col":"low"},{"d":"2016-01-12","arr":"2016-01-14","wk":56,"c":"PRT","ch":"TA/TO","h":0,"lead":2,"adr":39,"risk":0.098,"cx":0,"col":"low"},{"d":"2016-01-13","arr":"2016-01-13","wk":56,"c":"ESP","ch":"Direct","h":0,"lead":0,"adr":38,"risk":0.019,"cx":0,"col":"low"},{"d":"2016-01-13","arr":"2016-07-03","wk":81,"c":"BEL","ch":"TA/TO","h":1,"lead":172,"adr":96,"risk":0.02,"cx":0,"col":"low"},{"d":"2016-01-14","arr":"2016-04-03","wk":68,"c":"BEL","ch":"TA/TO","h":1,"lead":80,"adr":82,"risk":0.186,"cx":1,"col":"low"},{"d":"2016-01-14","arr":"2016-07-30","wk":84,"c":"ITA","ch":"TA/TO","h":1,"lead":198,"adr":96,"risk":0.012,"cx":0,"col":"low"},{"d":"2016-01-15","arr":"2016-09-29","wk":93,"c":"Other","ch":"TA/TO","h":0,"lead":258,"adr":101,"risk":0.14,"cx":0,"col":"low"},{"d":"2016-01-16","arr":"2016-03-05","wk":63,"c":"PRT","ch":"Direct","h":0,"lead":49,"adr":83,"risk":0.921,"cx":0,"col":"high"},{"d":"2016-01-16","arr":"2016-04-26","wk":71,"c":"PRT","ch":"TA/TO","h":1,"lead":101,"adr":98,"risk":0.447,"cx":0,"col":"med"},{"d":"2016-01-18","arr":"2016-09-16","wk":91,"c":"PRT","ch":"TA/TO","h":0,"lead":242,"adr":80,"risk":0.793,"cx":1,"col":"high"},{"d":"2016-01-18","arr":"2016-09-06","wk":90,"c":"FRA","ch":"TA/TO","h":0,"lead":232,"adr":150,"risk":0.043,"cx":0,"col":"low"},{"d":"2016-01-19","arr":"2016-09-01","wk":89,"c":"PRT","ch":"TA/TO","h":0,"lead":226,"adr":145,"risk":0.849,"cx":1,"col":"high"},{"d":"2016-01-19","arr":"2016-02-22","wk":62,"c":"FRA","ch":"TA/TO","h":1,"lead":34,"adr":78,"risk":0.037,"cx":0,"col":"low"},{"d":"2016-01-20","arr":"2016-01-28","wk":58,"c":"PRT","ch":"TA/TO","h":1,"lead":8,"adr":6,"risk":0.311,"cx":1,"col":"low"},{"d":"2016-01-21","arr":"2016-03-11","wk":64,"c":"PRT","ch":"TA/TO","h":0,"lead":50,"adr":39,"risk":0.42,"cx":1,"col":"med"},{"d":"2016-01-21","arr":"2016-02-29","wk":63,"c":"GBR","ch":"TA/TO","h":1,"lead":39,"adr":60,"risk":0.07,"cx":0,"col":"low"},{"d":"2016-01-22","arr":"2016-09-13","wk":91,"c":"Other","ch":"TA/TO","h":1,"lead":235,"adr":103,"risk":0.118,"cx":1,"col":"low"},{"d":"2016-01-23","arr":"2016-01-23","wk":57,"c":"Other","ch":"Direct","h":0,"lead":0,"adr":51,"risk":0.019,"cx":0,"col":"low"},{"d":"2016-01-24","arr":"2016-02-06","wk":59,"c":"ESP","ch":"TA/TO","h":1,"lead":13,"adr":86,"risk":0.082,"cx":0,"col":"low"},{"d":"2016-01-25","arr":"2016-07-20","wk":83,"c":"GBR","ch":"TA/TO","h":0,"lead":177,"adr":120,"risk":0.121,"cx":0,"col":"low"},{"d":"2016-01-25","arr":"2016-06-09","wk":77,"c":"Other","ch":"Direct","h":1,"lead":136,"adr":104,"risk":0.039,"cx":0,"col":"low"},{"d":"2016-01-26","arr":"2016-04-06","wk":68,"c":"Other","ch":"TA/TO","h":1,"lead":71,"adr":106,"risk":0.081,"cx":0,"col":"low"},{"d":"2016-01-27","arr":"2016-03-10","wk":64,"c":"FRA","ch":"TA/TO","h":1,"lead":43,"adr":73,"risk":0.054,"cx":0,"col":"low"},{"d":"2016-01-28","arr":"2016-02-12","wk":60,"c":"Other","ch":"TA/TO","h":1,"lead":15,"adr":41,"risk":0.042,"cx":0,"col":"low"},{"d":"2016-01-29","arr":"2016-02-14","wk":61,"c":"PRT","ch":"Direct","h":1,"lead":16,"adr":104,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-01-30","arr":"2016-08-09","wk":86,"c":"FRA","ch":"TA/TO","h":1,"lead":192,"adr":122,"risk":0.061,"cx":0,"col":"low"},{"d":"2016-02-01","arr":"2016-04-01","wk":67,"c":"ITA","ch":"TA/TO","h":1,"lead":60,"adr":93,"risk":0.141,"cx":1,"col":"low"},{"d":"2016-02-02","arr":"2016-04-29","wk":71,"c":"PRT","ch":"TA/TO","h":0,"lead":87,"adr":58,"risk":0.99,"cx":1,"col":"high"},{"d":"2016-02-02","arr":"2016-02-26","wk":62,"c":"PRT","ch":"TA/TO","h":1,"lead":24,"adr":79,"risk":0.364,"cx":0,"col":"low"},{"d":"2016-02-03","arr":"2016-06-07","wk":77,"c":"IRL","ch":"Direct","h":0,"lead":125,"adr":94,"risk":0.194,"cx":0,"col":"low"},{"d":"2016-02-03","arr":"2016-04-24","wk":71,"c":"Other","ch":"TA/TO","h":1,"lead":81,"adr":112,"risk":0.052,"cx":0,"col":"low"},{"d":"2016-02-04","arr":"2016-11-07","wk":99,"c":"PRT","ch":"TA/TO","h":1,"lead":277,"adr":100,"risk":0.994,"cx":1,"col":"high"},{"d":"2016-02-04","arr":"2016-02-24","wk":62,"c":"GBR","ch":"TA/TO","h":1,"lead":20,"adr":67,"risk":0.028,"cx":0,"col":"low"},{"d":"2016-02-05","arr":"2016-02-18","wk":61,"c":"FRA","ch":"TA/TO","h":1,"lead":13,"adr":87,"risk":0.035,"cx":0,"col":"low"},{"d":"2016-02-06","arr":"2016-10-15","wk":95,"c":"Other","ch":"TA/TO","h":1,"lead":252,"adr":112,"risk":0.317,"cx":1,"col":"low"},{"d":"2016-02-08","arr":"2016-02-08","wk":60,"c":"Other","ch":"Direct","h":0,"lead":0,"adr":65,"risk":0.018,"cx":0,"col":"low"},{"d":"2016-02-08","arr":"2016-04-17","wk":70,"c":"Other","ch":"TA/TO","h":1,"lead":69,"adr":99,"risk":0.049,"cx":0,"col":"low"},{"d":"2016-02-09","arr":"2016-07-24","wk":84,"c":"PRT","ch":"TA/TO","h":1,"lead":166,"adr":85,"risk":0.521,"cx":1,"col":"med"},{"d":"2016-02-10","arr":"2016-02-21","wk":62,"c":"PRT","ch":"TA/TO","h":0,"lead":11,"adr":151,"risk":0.27,"cx":1,"col":"low"},{"d":"2016-02-10","arr":"2016-03-03","wk":63,"c":"GBR","ch":"TA/TO","h":1,"lead":22,"adr":84,"risk":0.17,"cx":0,"col":"low"},{"d":"2016-02-11","arr":"2016-06-02","wk":76,"c":"PRT","ch":"TA/TO","h":1,"lead":112,"adr":120,"risk":0.271,"cx":1,"col":"low"},{"d":"2016-02-11","arr":"2016-06-02","wk":76,"c":"FRA","ch":"TA/TO","h":1,"lead":112,"adr":120,"risk":0.038,"cx":0,"col":"low"},{"d":"2016-02-12","arr":"2016-05-13","wk":73,"c":"ESP","ch":"TA/TO","h":1,"lead":91,"adr":186,"risk":0.26,"cx":1,"col":"low"},{"d":"2016-02-13","arr":"2016-04-01","wk":67,"c":"NLD","ch":"TA/TO","h":1,"lead":48,"adr":63,"risk":0.02,"cx":0,"col":"low"},{"d":"2016-02-15","arr":"2016-02-20","wk":61,"c":"PRT","ch":"TA/TO","h":0,"lead":5,"adr":80,"risk":0.129,"cx":1,"col":"low"},{"d":"2016-02-15","arr":"2016-08-26","wk":88,"c":"FRA","ch":"TA/TO","h":1,"lead":193,"adr":95,"risk":0.108,"cx":1,"col":"low"},{"d":"2016-02-16","arr":"2016-09-17","wk":91,"c":"Other","ch":"TA/TO","h":0,"lead":214,"adr":136,"risk":0.118,"cx":0,"col":"low"},{"d":"2016-02-17","arr":"2016-03-24","wk":66,"c":"PRT","ch":"TA/TO","h":0,"lead":36,"adr":81,"risk":0.397,"cx":0,"col":"low"},{"d":"2016-02-18","arr":"2016-06-05","wk":77,"c":"GBR","ch":"TA/TO","h":0,"lead":108,"adr":80,"risk":0.008,"cx":0,"col":"low"},{"d":"2016-02-19","arr":"2016-03-13","wk":65,"c":"IRL","ch":"TA/TO","h":0,"lead":23,"adr":77,"risk":0.047,"cx":0,"col":"low"},{"d":"2016-02-20","arr":"2016-10-08","wk":94,"c":"GBR","ch":"Direct","h":0,"lead":231,"adr":71,"risk":0.034,"cx":0,"col":"low"},{"d":"2016-02-21","arr":"2016-03-23","wk":66,"c":"ESP","ch":"TA/TO","h":1,"lead":31,"adr":142,"risk":0.037,"cx":0,"col":"low"},{"d":"2016-02-22","arr":"2016-03-18","wk":65,"c":"ESP","ch":"TA/TO","h":1,"lead":25,"adr":91,"risk":0.233,"cx":1,"col":"low"},{"d":"2016-02-23","arr":"2016-07-09","wk":81,"c":"Other","ch":"TA/TO","h":0,"lead":137,"adr":119,"risk":0.058,"cx":0,"col":"low"},{"d":"2016-02-24","arr":"2016-03-22","wk":66,"c":"ESP","ch":"Direct","h":1,"lead":27,"adr":278,"risk":0.203,"cx":1,"col":"low"},{"d":"2016-02-24","arr":"2016-10-21","wk":96,"c":"PRT","ch":"TA/TO","h":1,"lead":240,"adr":110,"risk":0.993,"cx":1,"col":"high"},{"d":"2016-02-24","arr":"2016-06-16","wk":78,"c":"BRA","ch":"TA/TO","h":1,"lead":113,"adr":116,"risk":0.05,"cx":0,"col":"low"},{"d":"2016-02-25","arr":"2016-03-01","wk":63,"c":"Other","ch":"TA/TO","h":1,"lead":5,"adr":51,"risk":0.026,"cx":0,"col":"low"},{"d":"2016-02-26","arr":"2016-04-18","wk":70,"c":"PRT","ch":"TA/TO","h":1,"lead":52,"adr":86,"risk":0.679,"cx":0,"col":"med"},{"d":"2016-02-27","arr":"2016-08-23","wk":88,"c":"ITA","ch":"TA/TO","h":1,"lead":178,"adr":144,"risk":0.0,"cx":0,"col":"low"},{"d":"2016-02-29","arr":"2016-05-06","wk":72,"c":"Other","ch":"TA/TO","h":0,"lead":67,"adr":76,"risk":0.047,"cx":0,"col":"low"},{"d":"2016-02-29","arr":"2016-12-29","wk":106,"c":"Other","ch":"TA/TO","h":1,"lead":304,"adr":70,"risk":0.068,"cx":0,"col":"low"},{"d":"2016-03-01","arr":"2016-03-11","wk":64,"c":"ITA","ch":"TA/TO","h":1,"lead":10,"adr":97,"risk":0.148,"cx":0,"col":"low"},{"d":"2016-03-02","arr":"2016-03-18","wk":65,"c":"FRA","ch":"TA/TO","h":1,"lead":16,"adr":103,"risk":0.023,"cx":0,"col":"low"},{"d":"2016-03-03","arr":"2016-03-04","wk":63,"c":"PRT","ch":"Direct","h":1,"lead":1,"adr":70,"risk":0.114,"cx":0,"col":"low"},{"d":"2016-03-04","arr":"2016-03-07","wk":64,"c":"PRT","ch":"TA/TO","h":1,"lead":3,"adr":103,"risk":0.129,"cx":0,"col":"low"},{"d":"2016-03-06","arr":"2016-08-22","wk":88,"c":"PRT","ch":"TA/TO","h":1,"lead":169,"adr":63,"risk":0.766,"cx":1,"col":"high"},{"d":"2016-03-07","arr":"2016-03-14","wk":65,"c":"Other","ch":"TA/TO","h":1,"lead":7,"adr":124,"risk":0.063,"cx":0,"col":"low"},{"d":"2016-03-08","arr":"2016-03-09","wk":64,"c":"PRT","ch":"Corporate","h":1,"lead":1,"adr":67,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-03-09","arr":"2016-04-04","wk":68,"c":"Other","ch":"Direct","h":1,"lead":26,"adr":119,"risk":0.123,"cx":0,"col":"low"},{"d":"2016-03-10","arr":"2016-06-26","wk":80,"c":"Other","ch":"TA/TO","h":1,"lead":108,"adr":86,"risk":0.059,"cx":0,"col":"low"},{"d":"2016-03-12","arr":"2016-03-22","wk":66,"c":"NLD","ch":"TA/TO","h":0,"lead":10,"adr":55,"risk":0.016,"cx":0,"col":"low"},{"d":"2016-03-13","arr":"2016-05-16","wk":74,"c":"DEU","ch":"Direct","h":1,"lead":64,"adr":110,"risk":0.116,"cx":0,"col":"low"},{"d":"2016-03-14","arr":"2016-03-16","wk":65,"c":"PRT","ch":"TA/TO","h":1,"lead":2,"adr":88,"risk":0.0,"cx":0,"col":"low"},{"d":"2016-03-15","arr":"2016-09-22","wk":92,"c":"Other","ch":"TA/TO","h":0,"lead":191,"adr":81,"risk":0.083,"cx":0,"col":"low"},{"d":"2016-03-16","arr":"2016-07-25","wk":84,"c":"Other","ch":"TA/TO","h":1,"lead":131,"adr":164,"risk":0.188,"cx":1,"col":"low"},{"d":"2016-03-17","arr":"2016-03-24","wk":66,"c":"PRT","ch":"TA/TO","h":1,"lead":7,"adr":175,"risk":0.213,"cx":0,"col":"low"},{"d":"2016-03-18","arr":"2016-03-22","wk":66,"c":"PRT","ch":"TA/TO","h":1,"lead":4,"adr":137,"risk":0.319,"cx":0,"col":"low"},{"d":"2016-03-19","arr":"2016-08-19","wk":87,"c":"FRA","ch":"TA/TO","h":1,"lead":153,"adr":186,"risk":0.192,"cx":0,"col":"low"},{"d":"2016-03-21","arr":"2016-03-22","wk":66,"c":"GBR","ch":"Direct","h":0,"lead":1,"adr":58,"risk":0.025,"cx":0,"col":"low"},{"d":"2016-03-22","arr":"2016-03-26","wk":66,"c":"ESP","ch":"TA/TO","h":0,"lead":4,"adr":121,"risk":0.0,"cx":0,"col":"low"},{"d":"2016-03-23","arr":"2016-04-28","wk":71,"c":"NLD","ch":"TA/TO","h":1,"lead":36,"adr":152,"risk":0.032,"cx":0,"col":"low"},{"d":"2016-03-24","arr":"2016-12-27","wk":106,"c":"DEU","ch":"TA/TO","h":1,"lead":278,"adr":84,"risk":0.149,"cx":0,"col":"low"},{"d":"2016-03-26","arr":"2016-08-13","wk":86,"c":"PRT","ch":"TA/TO","h":0,"lead":140,"adr":259,"risk":0.868,"cx":1,"col":"high"},{"d":"2016-03-26","arr":"2017-07-15","wk":134,"c":"PRT","ch":"TA/TO","h":1,"lead":476,"adr":113,"risk":0.636,"cx":1,"col":"med"},{"d":"2016-03-27","arr":"2016-03-29","wk":67,"c":"Other","ch":"TA/TO","h":0,"lead":2,"adr":0,"risk":0.026,"cx":0,"col":"low"},{"d":"2016-03-28","arr":"2016-03-30","wk":67,"c":"IRL","ch":"TA/TO","h":1,"lead":2,"adr":101,"risk":0.032,"cx":0,"col":"low"},{"d":"2016-03-29","arr":"2016-09-08","wk":90,"c":"PRT","ch":"TA/TO","h":1,"lead":163,"adr":110,"risk":0.434,"cx":1,"col":"med"},{"d":"2016-03-30","arr":"2016-04-13","wk":69,"c":"PRT","ch":"TA/TO","h":1,"lead":14,"adr":90,"risk":0.065,"cx":0,"col":"low"},{"d":"2016-04-01","arr":"2016-04-07","wk":68,"c":"GBR","ch":"TA/TO","h":0,"lead":6,"adr":75,"risk":0.028,"cx":0,"col":"low"},{"d":"2016-04-02","arr":"2016-07-14","wk":82,"c":"PRT","ch":"TA/TO","h":1,"lead":103,"adr":94,"risk":0.372,"cx":0,"col":"low"},{"d":"2016-04-04","arr":"2016-04-09","wk":68,"c":"IRL","ch":"TA/TO","h":0,"lead":5,"adr":48,"risk":0.03,"cx":0,"col":"low"},{"d":"2016-04-04","arr":"2016-06-14","wk":78,"c":"PRT","ch":"TA/TO","h":1,"lead":71,"adr":120,"risk":0.926,"cx":1,"col":"high"},{"d":"2016-04-05","arr":"2016-04-15","wk":69,"c":"ESP","ch":"TA/TO","h":0,"lead":10,"adr":75,"risk":0.077,"cx":1,"col":"low"},{"d":"2016-04-06","arr":"2016-05-09","wk":73,"c":"Other","ch":"TA/TO","h":1,"lead":33,"adr":104,"risk":0.198,"cx":1,"col":"low"},{"d":"2016-04-07","arr":"2016-07-16","wk":82,"c":"ESP","ch":"TA/TO","h":1,"lead":100,"adr":122,"risk":0.122,"cx":1,"col":"low"},{"d":"2016-04-08","arr":"2016-07-21","wk":83,"c":"ITA","ch":"TA/TO","h":1,"lead":104,"adr":123,"risk":0.053,"cx":0,"col":"low"},{"d":"2016-04-10","arr":"2016-06-26","wk":80,"c":"BEL","ch":"Direct","h":1,"lead":77,"adr":112,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-04-11","arr":"2016-08-15","wk":87,"c":"FRA","ch":"TA/TO","h":1,"lead":126,"adr":126,"risk":0.178,"cx":0,"col":"low"},{"d":"2016-04-12","arr":"2016-10-28","wk":97,"c":"FRA","ch":"TA/TO","h":1,"lead":199,"adr":123,"risk":0.039,"cx":0,"col":"low"},{"d":"2016-04-13","arr":"2016-04-26","wk":71,"c":"DEU","ch":"TA/TO","h":1,"lead":13,"adr":73,"risk":0.026,"cx":0,"col":"low"},{"d":"2016-04-14","arr":"2016-09-20","wk":92,"c":"Other","ch":"TA/TO","h":0,"lead":159,"adr":78,"risk":0.081,"cx":0,"col":"low"},{"d":"2016-04-15","arr":"2016-09-24","wk":92,"c":"PRT","ch":"TA/TO","h":0,"lead":162,"adr":99,"risk":0.551,"cx":0,"col":"med"},{"d":"2016-04-16","arr":"2016-04-18","wk":70,"c":"PRT","ch":"TA/TO","h":1,"lead":2,"adr":89,"risk":0.2,"cx":0,"col":"low"},{"d":"2016-04-17","arr":"2017-05-31","wk":128,"c":"PRT","ch":"TA/TO","h":1,"lead":409,"adr":90,"risk":0.783,"cx":1,"col":"high"},{"d":"2016-04-17","arr":"2017-07-26","wk":136,"c":"GBR","ch":"TA/TO","h":1,"lead":465,"adr":113,"risk":0.021,"cx":0,"col":"low"},{"d":"2016-04-18","arr":"2016-06-20","wk":79,"c":"Other","ch":"TA/TO","h":1,"lead":63,"adr":100,"risk":0.048,"cx":0,"col":"low"},{"d":"2016-04-20","arr":"2016-04-26","wk":71,"c":"PRT","ch":"Direct","h":0,"lead":6,"adr":64,"risk":0.177,"cx":0,"col":"low"},{"d":"2016-04-20","arr":"2016-12-24","wk":105,"c":"FRA","ch":"TA/TO","h":1,"lead":248,"adr":67,"risk":0.152,"cx":0,"col":"low"},{"d":"2016-04-22","arr":"2016-05-07","wk":72,"c":"PRT","ch":"TA/TO","h":0,"lead":15,"adr":52,"risk":0.0,"cx":0,"col":"low"},{"d":"2016-04-23","arr":"2016-04-23","wk":70,"c":"DEU","ch":"TA/TO","h":1,"lead":0,"adr":123,"risk":0.0,"cx":0,"col":"low"},{"d":"2016-04-25","arr":"2016-05-13","wk":73,"c":"Other","ch":"TA/TO","h":1,"lead":18,"adr":135,"risk":0.224,"cx":1,"col":"low"},{"d":"2016-04-27","arr":"2016-08-28","wk":89,"c":"Other","ch":"TA/TO","h":0,"lead":123,"adr":190,"risk":0.198,"cx":1,"col":"low"},{"d":"2016-04-28","arr":"2016-05-19","wk":74,"c":"PRT","ch":"TA/TO","h":1,"lead":21,"adr":125,"risk":0.675,"cx":1,"col":"med"},{"d":"2016-04-30","arr":"2016-09-28","wk":93,"c":"Other","ch":"TA/TO","h":0,"lead":151,"adr":99,"risk":0.084,"cx":0,"col":"low"},{"d":"2016-05-02","arr":"2016-08-17","wk":87,"c":"ESP","ch":"TA/TO","h":1,"lead":107,"adr":150,"risk":0.278,"cx":1,"col":"low"},{"d":"2016-05-03","arr":"2016-06-02","wk":76,"c":"PRT","ch":"TA/TO","h":1,"lead":30,"adr":140,"risk":0.842,"cx":1,"col":"high"},{"d":"2016-05-05","arr":"2016-05-31","wk":76,"c":"IRL","ch":"TA/TO","h":0,"lead":26,"adr":162,"risk":0.09,"cx":0,"col":"low"},{"d":"2016-05-06","arr":"2016-05-15","wk":74,"c":"GBR","ch":"TA/TO","h":0,"lead":9,"adr":76,"risk":0.001,"cx":0,"col":"low"},{"d":"2016-05-08","arr":"2016-10-06","wk":94,"c":"GBR","ch":"TA/TO","h":1,"lead":151,"adr":91,"risk":0.048,"cx":0,"col":"low"},{"d":"2016-05-10","arr":"2016-10-16","wk":96,"c":"Other","ch":"Corporate","h":0,"lead":159,"adr":58,"risk":0.034,"cx":0,"col":"low"},{"d":"2016-05-11","arr":"2016-09-16","wk":91,"c":"GBR","ch":"Direct","h":1,"lead":128,"adr":112,"risk":0.115,"cx":0,"col":"low"},{"d":"2016-05-13","arr":"2016-05-15","wk":74,"c":"DEU","ch":"TA/TO","h":1,"lead":2,"adr":82,"risk":0.023,"cx":0,"col":"low"},{"d":"2016-05-15","arr":"2016-05-30","wk":76,"c":"FRA","ch":"TA/TO","h":1,"lead":15,"adr":101,"risk":0.074,"cx":0,"col":"low"}]</script>
+<script id="growthData" type="application/json">{"dummy": [[28, 0.387], [29, 0.387], [30, 0.387], [31, 0.387], [32, 0.387], [33, 0.387], [34, 0.387], [35, 0.387], [36, 0.387], [37, 0.387], [38, 0.387], [39, 0.387], [40, 0.387], [41, 0.387], [42, 0.387], [43, 0.387], [44, 0.387], [45, 0.387], [46, 0.387], [47, 0.387], [48, 0.387], [49, 0.387], [50, 0.387], [51, 0.387], [52, 0.387], [53, 0.387], [54, 0.387], [55, 0.387], [56, 0.387], [57, 0.387], [58, 0.387], [59, 0.387], [60, 0.387], [61, 0.387], [62, 0.387], [63, 0.387], [64, 0.387], [65, 0.387], [66, 0.387], [67, 0.387], [68, 0.387], [69, 0.387], [70, 0.387], [71, 0.387], [72, 0.387], [73, 0.387], [74, 0.387], [75, 0.387], [76, 0.387], [77, 0.387], [78, 0.387], [79, 0.387], [80, 0.387], [81, 0.387], [82, 0.387], [83, 0.387], [84, 0.387], [85, 0.387], [86, 0.387], [87, 0.387], [88, 0.387], [89, 0.387], [90, 0.387], [91, 0.387], [92, 0.387], [93, 0.387], [94, 0.387], [95, 0.387], [96, 0.387], [97, 0.387], [98, 0.387], [99, 0.387], [100, 0.387], [101, 0.387], [102, 0.387], [103, 0.387], [104, 0.387], [105, 0.387], [106, 0.387]], "lgbm": [[28, 0.3591], [29, 0.3827], [30, 0.5076], [31, 0.5345], [32, 0.5475], [33, 0.5552], [34, 0.55], [35, 0.5619], [36, 0.6043], [37, 0.6035], [38, 0.5868], [39, 0.6001], [40, 0.6173], [41, 0.6423], [42, 0.6568], [43, 0.6479], [44, 0.6429], [45, 0.6436], [46, 0.6489], [47, 0.6474], [48, 0.6558], [49, 0.6402], [50, 0.642], [51, 0.63], [52, 0.6397], [53, 0.6446], [54, 0.6702], [55, 0.6769], [56, 0.6641], [57, 0.6991], [58, 0.6923], [59, 0.7027], [60, 0.7181], [61, 0.7314], [62, 0.7115], [63, 0.7337], [64, 0.7308], [65, 0.7391], [66, 0.7431], [67, 0.7674], [68, 0.7707], [69, 0.7706], [70, 0.7516], [71, 0.7674], [72, 0.7828], [73, 0.7779], [74, 0.7761], [75, 0.7852], [76, 0.7847], [77, 0.7845], [78, 0.7967], [79, 0.7938], [80, 0.7934], [81, 0.7928], [82, 0.7935], [83, 0.7906], [84, 0.7992], [85, 0.801], [86, 0.8028], [87, 0.8058], [88, 0.8058], [89, 0.8059], [90, 0.8104], [91, 0.803], [92, 0.807], [93, 0.8097], [94, 0.8099], [95, 0.8117], [96, 0.8151], [97, 0.8174], [98, 0.8173], [99, 0.8189], [100, 0.8175], [101, 0.8179], [102, 0.8185], [103, 0.8183], [104, 0.8195], [105, 0.8195], [106, 0.82]], "lr": [[28, 0.4776], [29, 0.5039], [30, 0.4668], [31, 0.533], [32, 0.5256], [33, 0.5259], [34, 0.5415], [35, 0.6153], [36, 0.6492], [37, 0.6484], [38, 0.5816], [39, 0.587], [40, 0.5966], [41, 0.6392], [42, 0.6656], [43, 0.7005], [44, 0.7033], [45, 0.7019], [46, 0.699], [47, 0.6996], [48, 0.7017], [49, 0.7058], [50, 0.7071], [51, 0.7115], [52, 0.7116], [53, 0.7122], [54, 0.713], [55, 0.7169], [56, 0.7265], [57, 0.7329], [58, 0.7367], [59, 0.7403], [60, 0.7427], [61, 0.7467], [62, 0.7499], [63, 0.7474], [64, 0.7485], [65, 0.7517], [66, 0.7492], [67, 0.7586], [68, 0.7625], [69, 0.7638], [70, 0.7646], [71, 0.765], [72, 0.7689], [73, 0.7692], [74, 0.7708], [75, 0.771], [76, 0.7733], [77, 0.7728], [78, 0.7739], [79, 0.7762], [80, 0.7776], [81, 0.7785], [82, 0.7794], [83, 0.7805], [84, 0.781], [85, 0.7818], [86, 0.7821], [87, 0.7819], [88, 0.7821], [89, 0.7821], [90, 0.782], [91, 0.7823], [92, 0.7824], [93, 0.7819], [94, 0.7824], [95, 0.7808], [96, 0.7793], [97, 0.7796], [98, 0.7795], [99, 0.7803], [100, 0.7799], [101, 0.7801], [102, 0.7803], [103, 0.7809], [104, 0.7809], [105, 0.7816], [106, 0.7816]], "weeks_n": {"28": 844, "29": 1537, "30": 2307, "31": 2886, "32": 3738, "33": 4906, "34": 5676, "35": 6449, "36": 7480, "37": 8612, "38": 9983, "39": 11287, "40": 12315, "41": 13716, "42": 14938, "43": 15870, "44": 16736, "45": 17281, "46": 17702, "47": 18386, "48": 19000, "49": 19845, "50": 20452, "51": 20767, "52": 21257, "53": 21996, "54": 22223, "55": 22620, "56": 23069, "57": 23642, "58": 24211, "59": 24907, "60": 25856, "61": 26849, "62": 27845, "63": 28872, "64": 29771, "65": 30821, "66": 32162, "67": 33165, "68": 34435, "69": 35611, "70": 36950, "71": 38387, "72": 39516, "73": 40779, "74": 42231, "75": 43291, "76": 44608, "77": 45811, "78": 47279, "79": 48338, "80": 49464, "81": 50478, "82": 51479, "83": 52585, "84": 53615, "85": 54714, "86": 55899, "87": 57114, "88": 58201, "89": 59337, "90": 60434, "91": 61724, "92": 63001, "93": 64370, "94": 65668, "95": 67202, "96": 68622, "97": 70028, "98": 71424, "99": 72577, "100": 73578, "101": 74468, "102": 75405, "103": 76303, "104": 76921, "105": 77626, "106": 78703}}</script>
+<script>
+"use strict";
+/* ---------- data ---------- */
+const STREAM = JSON.parse(document.getElementById('streamData').textContent);
+const GROWTH = JSON.parse(document.getElementById('growthData').textContent);
+const N_TOTAL = 300;                 // we embed 300
+const WEEK_N  = GROWTH.weeks_n;      // wk -> n_train
+const WK_MIN = 28, WK_MAX = 106;
+const N_MIN = WEEK_N[WK_MIN], N_MAX = WEEK_N[WK_MAX];
+const FINAL_LG = 0.820, LR_PLATEAU = 0.781, DUMMY = 0.387;
+const EVO_WK = 84, EVO_N = 53615;    // marked model-evolution beat (durable LR->LGBM lead)
+
+/* color map */
+const RISKCOL = { low:'#3F7A52', med:'#B8862B', high:'#B23A2E' };
+const CHANNEL_Y = { 'Direct':0.22, 'Corporate':0.5, 'TA/TO':0.78 };
+
+/* ---------- canvas setup w/ DPR ---------- */
+function setupCanvas(c){
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+  const r = c.getBoundingClientRect();
+  c.width = Math.round(r.width*dpr); c.height = Math.round(r.height*dpr);
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  c._cw=r.width; c._ch=r.height; return ctx;
+}
+const hubC = document.getElementById('hubCanvas');
+const curC = document.getElementById('curveCanvas');
+let hub = setupCanvas(hubC), cur = setupCanvas(curC);
+
+/* ---------- scale-to-fit 16:9 ---------- */
+function fitStage(){
+  const wrap=document.getElementById('stageWrap'), st=document.getElementById('stage');
+  const s=Math.min(wrap.clientWidth/1280, wrap.clientHeight/720);
+  st.style.transform='scale('+s+')';
+}
+
+/* ---------- timeline / beats ---------- */
+// progress p in [0,1] over the whole demo. Each beat is a [start,end] window.
+const BEATS = [
+  { id:0, t0:0.00, t1:0.10, num:'BEAT 1 / 4',
+    txt:'중앙 허브가 가동된다. 아직 데이터는 <em>0건</em> — 모델은 분류할 근거가 없다.' },
+  { id:1, t0:0.10, t1:0.52, num:'BEAT 2 / 4',
+    txt:'예약이 채널을 타고 시간순으로 허브에 쌓인다. 점의 색은 위험도 — <em>brick=고위험</em> · ochre=중간 · <span class="lg">forest=안전</span>.' },
+  { id:2, t0:0.52, t1:0.86, num:'BEAT 3 / 4',
+    txt:'데이터가 <em>n&asymp;5.4만</em>을 넘자 곡선이 자란다. 이 지점에서 <span class="lg">LightGBM</span>이 Logistic을 추월 — <em>챔피언 교체</em>.' },
+  { id:3, t0:0.86, t1:1.00, num:'BEAT 4 / 4',
+    txt:'데이터 0 &rarr; 분류 시작 &rarr; 모델 진화 &rarr; <span class="lg">지금 PR-AUC 0.820</span>. 같은 데이터, 더 똑똑해진 시스템.' },
+];
+// capture-pause points: pause when crossing into these beats (auto-pause once each)
+const CAP_PAUSE = [0.085, 0.50, 0.84, 0.985];
+
+/* state */
+let p = 0;               // global progress 0..1
+let playing = true;
+let speed = 1;
+const BASE_DUR = 30000;  // ms for a full pass at 1x
+let last = performance.now();
+let pausedSet = new Set();   // capture points already auto-paused
+let curBeat = -1;
+
+/* ---------- helpers ---------- */
+function lerp(a,b,t){return a+(b-a)*t}
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function easeInOut(t){return t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+function fmtInt(n){return Math.round(n).toLocaleString('en-US')}
+
+// progress -> how many stream records have arrived (beats 1-2 drive intake; full by end of beat2)
+function recordsAt(p){
+  // intake spans p in [0.10, 0.86]; by 0.86 all 300 in. After, stays full.
+  const a=0.10, b=0.86;
+  if(p<=a) return 0;
+  if(p>=b) return N_TOTAL;
+  const f = easeInOut((p-a)/(b-a));
+  return Math.floor(f*N_TOTAL);
+}
+// progress -> current training-week index for the growth curve draw-on
+function weekAt(p){
+  // curve grows across p in [0.20, 0.95]
+  const a=0.20, b=0.95;
+  const f = clamp((p-a)/(b-a),0,1);
+  return WK_MIN + easeInOut(f)*(WK_MAX-WK_MIN);
+}
+// interpolate a model series at fractional week
+function seriesAt(arr, wkF){
+  if(wkF<=arr[0][0]) return arr[0][1];
+  if(wkF>=arr[arr.length-1][0]) return arr[arr.length-1][1];
+  for(let i=1;i<arr.length;i++){
+    if(arr[i][0]>=wkF){
+      const [w0,v0]=arr[i-1],[w1,v1]=arr[i];
+      return lerp(v0,v1,(wkF-w0)/(w1-w0));
+    }
+  }
+  return arr[arr.length-1][1];
+}
+function nAt(wkF){
+  const lo=Math.floor(wkF), hi=Math.ceil(wkF);
+  const nlo=WEEK_N[lo]||N_MIN, nhi=WEEK_N[hi]||N_MAX;
+  return lerp(nlo,nhi,wkF-lo);
+}
+
+/* ---------- HUB rendering ---------- */
+// fixed hub geometry in pane coords
+function drawHub(p){
+  const W=hubC._cw, H=hubC._ch, ctx=hub;
+  ctx.clearRect(0,0,W,H);
+  const cx=W*0.66, cy=H*0.5;          // hub a bit right-of-center (intentional asymmetry)
+  const hubR=Math.min(W,H)*0.115;
+
+  // faint channel lanes on the left feeding into hub
+  const laneX0 = W*0.04;
+  ctx.lineWidth=1;
+  const lanes=Object.entries(CHANNEL_Y);
+  for(const [name,fy] of lanes){
+    const ly=H*fy;
+    ctx.strokeStyle='rgba(27,58,143,0.10)';
+    ctx.beginPath(); ctx.moveTo(laneX0, ly); ctx.lineTo(cx-hubR, cy);
+    ctx.stroke();
+    ctx.fillStyle='rgba(58,63,74,0.55)';
+    ctx.font='600 10px "SFMono-Regular",monospace';
+    ctx.textBaseline='middle';
+    ctx.fillText(name, laneX0, ly-10);
+  }
+
+  const nRec = recordsAt(p);
+
+  // flowing dots: each record travels its lane->hub over a short window as it "arrives"
+  // arrival index i appears at intakeProgress; we animate the last ~14 in transit.
+  const intakeA=0.10, intakeB=0.86;
+  const fIntake = clamp((p-intakeA)/(intakeB-intakeA),0,1);
+  const fEased = easeInOut(fIntake);
+  const frontier = fEased*N_TOTAL;        // continuous
+  const TRANSIT = 16;                      // dots visibly in motion
+
+  // settled cluster ring count
+  let settled = Math.max(0, Math.floor(frontier)-TRANSIT);
+
+  // draw settled accumulation as a packed disc around hub (sample for perf/legibility)
+  for(let i=0;i<settled;i++){
+    const rec=STREAM[i];
+    // deterministic packing
+    const ang = i*2.399963;                // golden angle
+    const rr = hubR*0.30 + Math.sqrt(i)/Math.sqrt(N_TOTAL)*hubR*1.85;
+    const x=cx+Math.cos(ang)*rr, y=cy+Math.sin(ang)*rr;
+    ctx.fillStyle=RISKCOL[rec.col];
+    ctx.globalAlpha=0.72;
+    ctx.beginPath(); ctx.arc(x,y,2.0,0,7); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // in-transit dots
+  for(let k=0;k<TRANSIT;k++){
+    const idx=Math.floor(frontier)-k;
+    if(idx<0||idx>=N_TOTAL) continue;
+    const rec=STREAM[idx];
+    const local = (frontier-idx); // 0..TRANSIT, how far along (0=just spawned)
+    const tt = clamp(local/TRANSIT,0,1);
+    const fy = CHANNEL_Y[rec.ch] ?? 0.5;
+    const sx = laneX0, sy=H*fy;
+    const ex = cx + Math.cos((idx*2.399963))*hubR*0.5;
+    const ey = cy + Math.sin((idx*2.399963))*hubR*0.5;
+    const x=lerp(sx,ex,tt), y=lerp(sy,ey,tt);
+    const sz = lerp(3.4,2.2,tt);
+    // trail
+    ctx.globalAlpha=0.18*(1-tt);
+    ctx.strokeStyle=RISKCOL[rec.col]; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(lerp(sx,ex,clamp(tt-0.12,0,1)),lerp(sy,ey,clamp(tt-0.12,0,1))); ctx.lineTo(x,y); ctx.stroke();
+    ctx.globalAlpha=clamp(0.35+tt*0.65,0,1);
+    ctx.fillStyle=RISKCOL[rec.col];
+    ctx.beginPath(); ctx.arc(x,y,sz,0,7); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // hub core (drawn on top, sharp)
+  // outer ring
+  ctx.lineWidth=2;
+  ctx.strokeStyle='#13245A';
+  ctx.beginPath(); ctx.arc(cx,cy,hubR,0,7); ctx.stroke();
+  // inner fill
+  const grd=ctx.createLinearGradient(cx,cy-hubR,cx,cy+hubR);
+  grd.addColorStop(0,'#21407F'); grd.addColorStop(1,'#13245A');
+  ctx.fillStyle=grd;
+  ctx.beginPath(); ctx.arc(cx,cy,hubR*0.62,0,7); ctx.fill();
+  // hub label
+  ctx.fillStyle='#F4F1E8';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='800 12px "Helvetica Neue",Arial,sans-serif';
+  ctx.fillText('DSS', cx, cy-6);
+  ctx.font='700 9px "SFMono-Regular",monospace';
+  ctx.fillStyle='#BFD0F2';
+  ctx.fillText('HUB', cx, cy+8);
+  ctx.textAlign='left';
+
+  // count tick marks around hub showing fill (subtle)
+  return nRec;
+}
+
+/* ---------- CURVE rendering ---------- */
+function drawCurve(p){
+  const W=curC._cw, H=curC._ch, ctx=cur;
+  ctx.clearRect(0,0,W,H);
+  const padL=44, padR=18, padT=18, padB=30;
+  const x0=padL, x1=W-padR, y0=padT, y1=H-padB;
+  const yMin=0.33, yMax=0.85;
+  const X = n => x0 + (Math.log(n)-Math.log(N_MIN))/(Math.log(N_MAX)-Math.log(N_MIN))*(x1-x0);
+  const Y = v => y1 - (v-yMin)/(yMax-yMin)*(y1-y0);
+
+  // grid + axes (hairline)
+  ctx.strokeStyle='#E7E3D8'; ctx.lineWidth=1;
+  ctx.fillStyle='#7C7768'; ctx.font='600 9px "SFMono-Regular",monospace';
+  ctx.textBaseline='middle';
+  [0.4,0.5,0.6,0.7,0.8].forEach(v=>{
+    const y=Y(v);
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText(v.toFixed(1), x0-6, y);
+  });
+  // x ticks (n) at decades-ish
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  [1000,5000,20000,53615,N_MAX].forEach(n=>{
+    if(n<N_MIN||n>N_MAX) return;
+    const x=X(n);
+    ctx.strokeStyle='#EDEAE0'; ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke();
+    ctx.fillStyle='#7C7768';
+    const lab = n>=1000? (n/1000).toFixed(n>=10000?0:1).replace(/\.0$/,'')+'k' : ''+n;
+    ctx.fillText(lab, x, y1+5);
+  });
+  // axis baseline
+  ctx.strokeStyle='#15171C'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(x0,y1); ctx.lineTo(x1,y1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y1); ctx.stroke();
+
+  const wkF = weekAt(p);
+
+  // Dummy reference (flat dashed grey) - drawn fully (it never changes)
+  ctx.setLineDash([4,4]); ctx.strokeStyle='#9A958A'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(X(N_MIN),Y(DUMMY)); ctx.lineTo(X(N_MAX),Y(DUMMY)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  function drawSeries(arr,color,lw){
+    ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.lineJoin='round';
+    ctx.beginPath(); let started=false; let lastPt=null;
+    for(const [wk,v] of arr){
+      if(wk>wkF) break;
+      const x=X(WEEK_N[wk]), y=Y(v);
+      if(!started){ctx.moveTo(x,y);started=true;} else ctx.lineTo(x,y);
+      lastPt=[x,y];
+    }
+    // partial segment to fractional week
+    if(wkF<WK_MAX){
+      const v=seriesAt(arr,wkF), x=X(nAt(wkF)), y=Y(v);
+      if(started){ctx.lineTo(x,y);} lastPt=[x,y];
+    }
+    ctx.stroke();
+    return lastPt;
+  }
+
+  const lgPt = drawSeries(GROWTH.lgbm, '#3F7A52', 2.6);
+  const lrPt = drawSeries(GROWTH.lr,   '#1B3A8F', 2.2);
+
+  // crossover marker at EVO_N once the curve has grown past it (beat 3+)
+  const wkNow=wkF;
+  if(wkNow>=EVO_WK-6){
+    const ex=X(EVO_N), eyTop=Y(0.80), eyBot=y1;
+    // pulsing vertical guide
+    const pulse = 0.5+0.5*Math.sin(performance.now()/240);
+    ctx.strokeStyle='rgba(178,58,46,'+(0.30+pulse*0.35)+')';
+    ctx.lineWidth=1.4; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(ex,y0+6); ctx.lineTo(ex,y1); ctx.stroke();
+    ctx.setLineDash([]);
+    // crossover dot
+    const cy=Y(seriesAt(GROWTH.lgbm,EVO_WK));
+    ctx.fillStyle='#B23A2E';
+    ctx.beginPath(); ctx.arc(ex,cy,3.8+pulse*1.4,0,7); ctx.fill();
+    ctx.fillStyle='#B23A2E'; ctx.font='800 9px "Helvetica Neue",Arial';
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText('LR → LightGBM', ex, y0+14);
+    ctx.font='700 8px "SFMono-Regular",monospace';
+    ctx.fillStyle='#8A5A0F';
+    ctx.fillText('n≈53,615', ex, y0+24);
+  }
+
+  // endpoint dots + value tags
+  if(lgPt){ ctx.fillStyle='#3F7A52'; ctx.beginPath(); ctx.arc(lgPt[0],lgPt[1],3.2,0,7); ctx.fill(); }
+  if(lrPt){ ctx.fillStyle='#1B3A8F'; ctx.beginPath(); ctx.arc(lrPt[0],lrPt[1],3.0,0,7); ctx.fill(); }
+
+  // when at the end, big 0.820 callout
+  if(p>=0.985){
+    const x=lgPt[0], y=lgPt[1];
+    ctx.fillStyle='#15171C'; ctx.font='800 15px "SFMono-Regular",monospace';
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText('0.820', x-6, y-4);
+  }
+
+  return wkF;
+}
+
+/* ---------- HUD updates ---------- */
+function fmtDate(s){return s}
+function updateHUD(p,nRec,wkF){
+  // date/week from current frontier record
+  const idx=clamp(nRec-1,0,N_TOTAL-1);
+  const rec=STREAM[Math.max(0,idx)];
+  document.getElementById('mDate').textContent = nRec>0? rec.d : '2015-01-01';
+  // observed cumulative cancel rate over arrived records
+  let cx=0; for(let i=0;i<nRec;i++) if(STREAM[i].cx) cx++;
+  const cxr = nRec>0? (cx/nRec*100):0;
+  document.getElementById('mCount').textContent = fmtInt(nRec);
+  document.getElementById('mCxr').textContent = nRec>0? cxr.toFixed(1)+'%' : '—';
+
+  // training week / n / champion from curve progress
+  const showCurve = p>=0.20;
+  const lg=seriesAt(GROWTH.lgbm,wkF), lr=seriesAt(GROWTH.lr,wkF);
+  const nTrain=nAt(wkF);
+  document.getElementById('mWeek').textContent = showCurve? ('학습 n '+fmtInt(nTrain)) : '학습 wk —';
+  const champ = (!showCurve)? '—' : (lg>=lr? 'LightGBM':'Logistic');
+  document.getElementById('mModel').textContent = champ;
+  document.getElementById('mModel').style.color = champ==='LightGBM'?'#3F7A52':(champ==='Logistic'?'#1B3A8F':'#3A3F4A');
+  const champVal = champ==='LightGBM'?lg:champ==='Logistic'?lr:null;
+  document.getElementById('mPr').textContent = champVal!=null? ('PR-AUC '+champVal.toFixed(3)) : 'PR-AUC —';
+  // legend live values
+  document.getElementById('lgVal').textContent = showCurve? lg.toFixed(3):'—';
+  document.getElementById('lrVal').textContent = showCurve? lr.toFixed(3):'—';
+}
+
+/* ---------- beat caption ---------- */
+function updateBeat(p){
+  let b=BEATS[0];
+  for(const bb of BEATS){ if(p>=bb.t0) b=bb; }
+  if(b.id!==curBeat){
+    curBeat=b.id;
+    document.getElementById('beatNum').textContent=b.num;
+    document.getElementById('beatText').innerHTML=b.txt;
+    // sync chips
+    document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', +c.dataset.ch===b.id));
+  }
+}
+
+/* ---------- capture auto-pause ---------- */
+function maybeCapturePause(prev,now){
+  for(let i=0;i<CAP_PAUSE.length;i++){
+    const cp=CAP_PAUSE[i];
+    if(prev<cp && now>=cp && !pausedSet.has(i)){
+      pausedSet.add(i);
+      setPlaying(false);
+      flashCapture();
+      return cp; // snap to exact point
+    }
+  }
+  return null;
+}
+let capTimer=null;
+function flashCapture(){
+  const d=document.getElementById('capDot'); d.classList.add('show');
+  clearTimeout(capTimer); capTimer=setTimeout(()=>d.classList.remove('show'),2200);
+}
+
+/* ---------- main loop ---------- */
+function frame(now){
+  const dt=now-last; last=now;
+  if(playing){
+    const prev=p;
+    p += (dt/BASE_DUR)*speed;
+    if(p>=1){ p=1; setPlaying(false); }
+    const snap=maybeCapturePause(prev,p);
+    if(snap!=null) p=snap;
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+function render(){
+  const nRec=drawHub(p);
+  const wkF=drawCurve(p);
+  updateBeat(p);
+  updateHUD(p,nRec,wkF);
+}
+
+/* ---------- controls ---------- */
+function setPlaying(v){
+  playing=v;
+  document.getElementById('playIc').innerHTML = v? '&#9646;&#9646;' : '&#9654;';
+  document.getElementById('playLab').textContent = v? '일시정지':'재생';
+}
+document.getElementById('btnPlay').onclick=()=>{
+  if(p>=1){ // restart
+    p=0; pausedSet.clear(); curBeat=-1; setPlaying(true); return;
+  }
+  setPlaying(!playing);
+};
+document.getElementById('speed').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  speed=parseFloat(b.dataset.s);
+  document.querySelectorAll('#speed button').forEach(x=>x.classList.toggle('on',x===b));
+});
+document.getElementById('chips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b)return;
+  const ch=+b.dataset.ch;
+  // jump to start of beat, clear capture flags up to here, pause for clean capture
+  p=BEATS[ch].t0 + 0.001;
+  pausedSet.clear();
+  CAP_PAUSE.forEach((cp,i)=>{ if(cp<p) pausedSet.add(i); });
+  curBeat=-1;
+  setPlaying(false);
+  render();
+});
+// keyboard: space=play/pause, arrows=scrub
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();document.getElementById('btnPlay').click();}
+  else if(e.code==='ArrowRight'){p=clamp(p+0.02,0,1);render();}
+  else if(e.code==='ArrowLeft'){p=clamp(p-0.02,0,1);render();}
+});
+
+/* ---------- resize ---------- */
+function onResize(){ fitStage(); hub=setupCanvas(hubC); cur=setupCanvas(curC); render(); }
+window.addEventListener('resize',onResize);
+
+/* ---------- boot ---------- */
+fitStage();
+setPlaying(true);
+last=performance.now();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

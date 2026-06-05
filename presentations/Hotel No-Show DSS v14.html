@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel No-Show DSS — 데이터로 자라는 의사결정 인프라 (최종발표)</title>
+<style>
+  :root{
+    --bg:#0F1117; --bg2:#0a0c12; --card:#191b23; --card2:#13151c; --line:#2a2d3a; --line2:#363a49;
+    --txt:#EDEFF4; --mut:#9AA3B2; --dim:#6b7280;
+    --hi:#E74C3C; --med:#F39C12; --low:#2ECC71; --acc:#4D94FF; --vio:#8B5CF6;
+    --lr:#4D94FF; --lgb:#E74C3C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(1300px 900px at 72% -12%, #171c28 0%, var(--bg) 58%);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  .deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:6.5vh 8vw 7.5vh;opacity:0;transition:opacity .28s ease;
+  }
+  .slide.active{display:flex;opacity:1}
+
+  /* typography scale */
+  .act{font-size:.76rem;letter-spacing:.24em;text-transform:uppercase;color:var(--acc);font-weight:700;margin-bottom:1.1rem}
+  h1{font-size:3.35rem;line-height:1.12;font-weight:800;letter-spacing:-.025em}
+  h2{font-size:2.25rem;line-height:1.16;font-weight:800;letter-spacing:-.02em;margin-bottom:1.5rem}
+  h2 .accent{color:var(--acc)}
+  .lead{font-size:1.32rem;color:var(--mut);line-height:1.6;max-width:62ch}
+  .lead b{color:var(--txt);font-weight:700}
+  .mic{margin-top:auto;font-size:1rem;color:var(--dim);font-style:italic;border-left:3px solid var(--acc);padding-left:1rem;line-height:1.55;max-width:88ch}
+  .mic b{color:var(--mut);font-style:normal}
+
+  /* layout helpers */
+  .grid{display:grid;gap:1.1rem;margin-top:.4rem}
+  .g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+  .twocol{display:grid;grid-template-columns:1.05fr .95fr;gap:2.4rem;align-items:center}
+  .row{display:flex;gap:1.2rem;align-items:center}
+
+  /* cards */
+  .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:1.3rem 1.45rem}
+  .card h3{font-size:1.05rem;font-weight:700;margin-bottom:.45rem;letter-spacing:-.01em}
+  .card p{font-size:.95rem;color:var(--mut);line-height:1.55}
+  .card p b{color:var(--txt)}
+  .kpi{font-size:2.5rem;font-weight:800;letter-spacing:-.02em}
+  .kpi.sm{font-size:1.95rem}
+
+  .muted{color:var(--mut)} .dim{color:var(--dim)}
+  .hi{color:var(--hi)}.med{color:var(--med)}.low{color:var(--low)}.acc{color:var(--acc)}.vio{color:var(--vio)}
+
+  .pin{display:inline-block;font-size:.7rem;font-weight:700;color:var(--med);
+    border:1px solid #5a4420;background:#2a1f0d;border-radius:999px;padding:.2rem .65rem;margin-left:.55rem;vertical-align:middle;letter-spacing:.01em}
+  .chip{font-size:.82rem;color:var(--mut);background:#141720;border:1px solid var(--line);border-radius:999px;padding:.34rem .85rem}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;font-size:.98rem;margin-top:.5rem}
+  th,td{text-align:left;padding:.62rem .8rem;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+  td b{font-weight:700;color:var(--txt)}
+  tr:last-child td{border-bottom:none}
+
+  .big{font-weight:800;letter-spacing:-.03em;line-height:1}
+
+  /* clean bullet list */
+  ul.clean{list-style:none;margin-top:.4rem}
+  ul.clean li{padding:.46rem 0 .46rem 1.5rem;position:relative;color:var(--mut);font-size:1.04rem;line-height:1.55}
+  ul.clean li::before{content:"";position:absolute;left:0;top:.95rem;width:7px;height:7px;border-radius:2px;background:var(--acc)}
+  ul.clean li b{color:var(--txt)}
+
+  /* flow steps */
+  .flow{display:flex;align-items:stretch;gap:.55rem;margin-top:.5rem;flex-wrap:wrap}
+  .flow .step{flex:1;min-width:120px;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:12px;padding:.95rem .8rem;text-align:center}
+  .flow .step .n{font-size:.72rem;color:var(--dim);letter-spacing:.04em}
+  .flow .step .t{font-weight:700;margin-top:.25rem;font-size:.98rem}
+  .flow .arr{align-self:center;color:var(--dim);font-size:1.3rem}
+
+  /* chart frame */
+  .chartbox{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:.6rem .7rem .3rem;margin-top:.5rem}
+  .note{font-size:.82rem;color:var(--dim);margin-top:.55rem;line-height:1.5}
+  .legend{display:flex;gap:1.3rem;margin-top:.7rem;font-size:.86rem;color:var(--mut);flex-wrap:wrap}
+  .legend .k{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:.45rem;vertical-align:middle}
+  .legend .kd{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:.4rem;vertical-align:middle}
+
+  /* dots accumulate (slide 3) */
+  .dotwrap{position:relative;height:230px;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:.6rem}
+  .dot{position:absolute;width:9px;height:9px;border-radius:50%;opacity:.88}
+
+  /* chrome */
+  .bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--acc),var(--vio));transition:width .25s;z-index:20}
+  .count{position:fixed;bottom:1.1rem;right:1.4rem;font-size:.82rem;color:var(--dim);z-index:20}
+  .hint{position:fixed;bottom:1.1rem;left:1.4rem;font-size:.76rem;color:var(--dim);z-index:20}
+
+  /* speaker notes overlay */
+  .notes{position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:linear-gradient(180deg,rgba(10,12,18,.0),rgba(10,12,18,.97) 22%);
+    padding:2.6rem 8vw 1.7rem;transform:translateY(101%);transition:transform .28s ease;pointer-events:none}
+  .notes.show{transform:translateY(0)}
+  .notes .lbl{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--vio);font-weight:700;margin-bottom:.5rem}
+  .notes .body{font-size:1.05rem;color:var(--txt);line-height:1.6;max-width:92ch}
+  .notes .body b{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="count" id="count"></div>
+<div class="hint">← → 이동 · F 전체화면 · N 발표자 노트</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. TITLE -->
+  <section class="slide active"
+    data-notes="첫 문장은 강하게 — '우리가 호텔에 파는 건 모델 한 개가 아니라, 쓸수록 똑똑해지는 인프라입니다.' 한 박자 쉬고, 부제의 '오버부킹은 첫 도메인일 뿐'을 예고. 이번 발표 전체의 프레임(주인공=인프라)을 여기서 못 박는다.">
+    <div class="act">Hotel No-Show DSS · 최종발표 · 2026-06-10</div>
+    <h1>예측 모델이 아니라,<br><span class="acc">데이터로 자라는 의사결정 인프라</span>를 만들었습니다.</h1>
+    <p class="lead" style="margin-top:1.7rem">
+      호텔에 핏한 예약 데이터를 효과적으로 수집하고, 그 데이터로 자라는 ML 예측(오버부킹 · 그 외 도메인)을 통해
+      <b>수익과 경영 안정성을 극대화</b>하는 데이터 수집 인프라.
+    </p>
+    <div class="mic"><b>첫 문장:</b> "우리가 호텔에 파는 건 모델 한 개가 아니라, 쓸수록 똑똑해지는 인프라입니다."</div>
+  </section>
+
+  <!-- 2. REFRAME -->
+  <section class="slide"
+    data-notes="중간발표 대비 무엇이 바뀌었는지를 한 화면으로. 핵심은 '주인공이 모델→인프라로 바뀌었다'. 모델 PR-AUC는 여전히 자랑거리지만, 이제 그건 인프라의 첫 도메인 산출물일 뿐. 교수님 법률 지적은 회피가 아니라 '사전동의 우회로'로 정면 대응했다고 예고.">
+    <div class="act">0 · 무엇이 달라졌나</div>
+    <h2>주인공이 바뀌었습니다 — <span class="accent">모델 → 인프라</span></h2>
+    <table>
+      <tr><th></th><th>중간발표</th><th>최종발표</th></tr>
+      <tr><td class="dim">메시지</td><td class="muted">"왜 이걸 하는가" (동기 호소)</td><td><b>"무엇을 만들었나 + 작동 증거 + 법적으로 가능"</b></td></tr>
+      <tr><td class="dim">주인공</td><td class="muted">취소예측 모델 (PR-AUC 0.82)</td><td><b>데이터 수집 인프라</b></td></tr>
+      <tr><td class="dim">그 모델</td><td class="muted">결과물</td><td>오버부킹 = <b>인프라의 첫 도메인</b></td></tr>
+      <tr><td class="dim">법률</td><td class="muted">교수님께 지적받음</td><td><b>사전동의 우회로로 정면 대응</b></td></tr>
+    </table>
+    <div class="mic"><b>핵심:</b> "모델을 만들었다"가 아니라 "우리 호텔 데이터로 자라는 예측 인프라를 만들었고, 오버부킹은 그 첫 도메인일 뿐."</div>
+  </section>
+
+  <!-- 3. DATA COMES IN (수집구) -->
+  <section class="slide"
+    data-notes="여기서 점이 쌓이는 애니메이션을 보여준다. 메시지: 흩어진 플랫폼(Direct·OTA·Corporate·GDS)의 예약이 우리 PMS 한 곳으로 모인다. 각 점 하나가 lead_time·국적·요청수·채널·ADR 등 수십 개 피처를 가진 학습 데이터. '예약 하나하나가 곧 데이터'라는 한 문장을 또렷이.">
+    <div class="act">1 · 데이터가 들어온다</div>
+    <h2>여러 플랫폼의 예약이 모인다 — <span class="accent">각 예약은 수십 개 피처를 가진 한 점</span></h2>
+    <div class="row" style="gap:.55rem;flex-wrap:wrap">
+      <span class="chip">Direct</span><span class="chip">Online TA</span><span class="chip">Offline TA/TO</span><span class="chip">Corporate</span><span class="chip">GDS</span>
+      <span class="dim">→ 우리 PMS(예약 앱)가 한 곳으로 수집</span>
+    </div>
+    <div class="dotwrap" id="dotwrap"></div>
+    <div class="legend">
+      <span><span class="kd" style="background:var(--low)"></span>정상</span>
+      <span><span class="kd" style="background:var(--hi)"></span>취소</span>
+      <span class="dim">· 각 점 = lead_time · 국적 · 요청수 · 채널 · ADR … 수십 개 피처</span>
+    </div>
+    <div class="mic"><b>멘트:</b> "예약 하나하나가 곧 데이터입니다. 흩어진 플랫폼의 예약이 우리 인프라로 모입니다 — 이게 수집구입니다."</div>
+  </section>
+
+  <!-- 4. MODEL GROWS (growth curve) ★ -->
+  <section class="slide"
+    data-notes="이 발표의 정량 핵심 슬라이드. 실데이터(Kaggle, 우리 두 호텔 실제 2년 기록)로 누적 79주를 굴린 성장곡선. 읽는 법: ① 콜드스타트에선 단순한 LR이 우위 → 빠르게 올라 약 0.78에서 plateau. ② LightGBM은 낮게 시작하지만 데이터가 쌓이며 따라붙어, W≈5.4만 건(week 84)에서 CI가 분리되며 통계적으로 추월 → 끝까지 유지. ③ 그 사이 음영 구간은 CI가 겹쳐 '구분 불가(tie)' — 우리는 겹치면 '교차'라 부르지 않는다(robust 정의). 최종 full-data PR-AUC 0.820, Dummy 0.387의 2.1배. 국적 피처 윤리 이슈는 핀만 찍고 S11에서 정산.">
+    <div class="act">2 · 작동 증거 ① (정량 핵심)</div>
+    <h2>데이터가 쌓일수록 모델이 자란다 — <span class="accent">데이터가 모델을 고른다</span>
+      <span class="pin">국적 피처 윤리 → S11</span></h2>
+    <div class="twocol">
+      <div>
+        <div class="chartbox">
+          <svg viewBox="0 0 580 300" width="100%" height="300" font-family="inherit">
+            <!-- gridlines -->
+            <g stroke="#23262f" stroke-width="1">
+              <line x1="70" y1="53.1" x2="540" y2="53.1"/>
+              <line x1="70" y1="96.9" x2="540" y2="96.9"/>
+              <line x1="70" y1="140.6" x2="540" y2="140.6"/>
+              <line x1="70" y1="184.4" x2="540" y2="184.4"/>
+              <line x1="70" y1="228.1" x2="540" y2="228.1"/>
+            </g>
+            <!-- axes -->
+            <line x1="70" y1="250" x2="540" y2="250" stroke="#3a3d4a" stroke-width="1.2"/>
+            <line x1="70" y1="40" x2="70" y2="250" stroke="#3a3d4a" stroke-width="1.2"/>
+            <!-- y tick labels -->
+            <g fill="#6b7280" font-size="11" text-anchor="end">
+              <text x="63" y="57">0.80</text>
+              <text x="63" y="100.8">0.70</text>
+              <text x="63" y="144.5">0.60</text>
+              <text x="63" y="188.3">0.50</text>
+              <text x="63" y="232">0.40</text>
+            </g>
+            <!-- x tick labels (n_train) -->
+            <g fill="#6b7280" font-size="11" text-anchor="middle">
+              <text x="70" y="266">0.8천</text>
+              <text x="185.6" y="266">2만</text>
+              <text x="306.4" y="266">4만</text>
+              <text x="427.1" y="266">6만</text>
+              <text x="540" y="266">7.9만</text>
+            </g>
+            <text x="305" y="290" fill="#8a93a2" font-size="12.5" text-anchor="middle">누적 학습 데이터 건수 (주 단위 · point-in-time)</text>
+            <text x="20" y="145" fill="#8a93a2" font-size="12.5" text-anchor="middle" transform="rotate(-90 20 145)">PR-AUC</text>
+
+            <!-- Dummy baseline -->
+            <line x1="70" y1="233.8" x2="540" y2="233.8" stroke="#5a5f6e" stroke-width="1.4" stroke-dasharray="2 4"/>
+            <text x="536" y="229" fill="#6b7280" font-size="10.5" text-anchor="end">Dummy 0.387</text>
+
+            <!-- tie region (CI overlap, before W) -->
+            <rect x="265.1" y="40" width="123.5" height="210" fill="#ffffff" opacity="0.035"/>
+            <line x1="265.1" y1="40" x2="265.1" y2="250" stroke="#4a4f5e" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"/>
+            <text x="326" y="55" fill="#8a93a2" font-size="11" text-anchor="middle">구분 불가 (tie · CI 겹침)</text>
+
+            <!-- CI bands -->
+            <path d="M 70.0,190.8 L 94.5,169.4 L 125.2,144.9 L 160.7,93.1 L 179.6,92.9 L 197.7,88.2 L 211.1,77.7 L 239.2,73.2 L 272.8,66.4 L 311.1,63.7 L 350.3,61.4 L 382.3,58.8 L 416.2,57.9 L 453.5,58.0 L 496.1,59.3 L 525.5,58.6 L 540.0,58.3 L 540.0,64.0 L 525.5,64.5 L 496.1,65.0 L 453.5,63.7 L 416.2,63.8 L 382.3,64.6 L 350.3,67.5 L 311.1,69.5 L 272.8,72.4 L 239.2,79.2 L 211.1,84.1 L 197.7,94.6 L 179.6,99.6 L 160.7,100.0 L 125.2,152.2 L 94.5,176.5 L 70.0,197.5 Z"
+              fill="#4D94FF" opacity="0.13"/>
+            <path d="M 70.0,243.4 L 94.5,156.7 L 125.2,142.6 L 160.7,116.2 L 179.6,113.2 L 197.7,117.3 L 211.1,97.1 L 239.2,79.2 L 272.8,63.4 L 311.1,60.4 L 350.3,52.3 L 382.3,54.8 L 416.2,48.2 L 453.5,46.6 L 496.1,43.3 L 525.5,42.9 L 540.0,42.1 L 540.0,46.6 L 525.5,47.4 L 496.1,48.0 L 453.5,51.2 L 416.2,52.9 L 382.3,59.7 L 350.3,56.9 L 311.1,65.4 L 272.8,68.6 L 239.2,85.3 L 211.1,103.4 L 197.7,125.0 L 179.6,119.7 L 160.7,123.4 L 125.2,150.2 L 94.5,164.2 L 70.0,248.7 Z"
+              fill="#E74C3C" opacity="0.13"/>
+
+            <!-- LR curve: fast rise then plateau ~0.78 -->
+            <path d="M 70.0,191.9 L 94.5,163.3 L 125.2,135.1 L 160.7,104.7 L 179.6,95.7 L 197.7,91.2 L 211.1,81.2 L 239.2,75.5 L 272.8,70.7 L 311.1,66.7 L 350.3,64.2 L 382.3,61.8 L 416.2,61.0 L 453.5,61.0 L 496.1,62.0 L 525.5,61.5 L 540.0,61.3"
+              fill="none" stroke="#4D94FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- LightGBM curve: low start -> crosses at W -> highest -->
+            <path d="M 70.0,220.9 L 94.5,162.6 L 125.2,139.6 L 160.7,120.2 L 179.6,120.1 L 197.7,117.7 L 211.1,99.0 L 239.2,84.1 L 272.8,70.3 L 311.1,62.8 L 350.3,57.2 L 382.3,55.1 L 416.2,50.4 L 453.5,49.5 L 496.1,45.6 L 525.5,44.9 L 540.0,44.5"
+              fill="none" stroke="#E74C3C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- W transition line -->
+            <line x1="388.6" y1="40" x2="388.6" y2="250" stroke="#cbd5e1" stroke-width="1.4" stroke-dasharray="4 4" opacity="0.8"/>
+            <circle cx="388.6" cy="55.0" r="4" fill="#E74C3C" stroke="#0F1117" stroke-width="1.5"/>
+            <text x="394" y="51" fill="#dbe1ea" font-size="11.5" font-weight="700">W ≈ 5.4만 건</text>
+            <text x="394" y="64" fill="#9AA3B2" font-size="10">여기서 추월·유지</text>
+
+            <!-- end labels -->
+            <text x="536" y="68" fill="#4D94FF" font-size="12" font-weight="700" text-anchor="end">LR</text>
+            <text x="536" y="40" fill="#E74C3C" font-size="12" font-weight="700" text-anchor="end">LightGBM 0.820</text>
+          </svg>
+        </div>
+        <div class="note">실데이터(Kaggle · 우리 두 호텔의 실제 2년 기록) · 누적창 79주 · Bootstrap 95% CI · 하이쿠 미사용</div>
+      </div>
+      <div>
+        <ul class="clean">
+          <li>콜드스타트(데이터 거의 없음)에선 <b class="acc">단순모델(LR)</b>이 우위 — 빠르게 올라 plateau</li>
+          <li>약 <b>5.4만 건(W)</b>에서 <b class="hi">LightGBM</b>이 통계적으로 추월 → 끝까지 유지</li>
+          <li>그 사이 구간은 <b>구분 불가(tie)</b> — CI가 겹치면 "교차"라 부르지 않는다</li>
+          <li>full-data 최종 <b class="hi">PR-AUC 0.820</b> (Dummy 0.387 대비 <b>2.1배</b>)</li>
+        </ul>
+        <p class="lead" style="font-size:1.08rem;margin-top:1rem">"성장형 시스템은 모델을 고정하지 않는다 — <b>데이터량이 최적 모델을 정한다.</b>"</p>
+      </div>
+    </div>
+    <div class="mic"><b>멘트:</b> "정적 비교표가 아니라, 데이터가 쌓이며 승자가 바뀌는 동적 곡선입니다. 이게 인프라의 핵심 약속입니다."</div>
+  </section>
+
+  <!-- 5. ZOOM 10 bookings -->
+  <section class="slide"
+    data-notes="추상에서 구체로 줌인. 한 코호트(예약 10건)에서 누가 취소할지 위험도가 매겨진다. 10건 중 4건이 고위험. 반드시 정직 핀을 던질 것: '10건은 보여주는 장치이고, 증명은 전체 test셋 집계와 CI가 한다 — 체리피킹 아님.' 청중이 표본 크기로 의심하기 전에 먼저 무장해제.">
+    <div class="act">3 · 한 코호트에 줌인</div>
+    <h2>예약 10건에 집중 — <span class="accent">누가 시간이 지나 취소할 것인가</span></h2>
+    <div class="grid g4" style="gap:.8rem">
+      <div class="card" style="border-left:3px solid var(--hi)"><div class="dim">#R-7821 · PRT · TA/TO</div><div class="kpi sm hi">0.94</div></div>
+      <div class="card" style="border-left:3px solid var(--hi)"><div class="dim">#R-7842 · BRA · 선예약 150일</div><div class="kpi sm hi">0.88</div></div>
+      <div class="card" style="border-left:3px solid var(--med)"><div class="dim">#R-7855 · DEU · 컨퍼런스</div><div class="kpi sm med">0.61</div></div>
+      <div class="card" style="border-left:3px solid var(--low)"><div class="dim">#R-7860 · FRA · 가족 · 요청 3</div><div class="kpi sm low">0.19</div></div>
+    </div>
+    <p class="lead" style="margin-top:1.2rem">10건 중 <b class="hi">4건이 고위험</b>으로 분류 (운영 임계 0.65) → 호텔의 의사결정 입력값이 된다.</p>
+    <div class="mic"><b>정직(pin):</b> "10건은 <u>보여주는 장치</u>입니다. 증명은 전체 test셋 집계와 CI가 합니다 — 체리피킹이 아닙니다."</div>
+  </section>
+
+  <!-- 6. OVERBOOKING decision -->
+  <section class="slide"
+    data-notes="오버부킹 수준은 우리가 지어낸 게 아니라 교과서적 RM(Revenue Management) 결정법(한계비용=한계수익). 업계 관행 5~15%. 우리의 기여는 거기에 '위험도 예측'을 붙인 것 — risk-based가 RevPAR를 높인다는 연구 근거. 결정 권한은 항상 매니저(GDPR Art.22, 자동화 아님)를 분명히.">
+    <div class="act">3 · 의사결정</div>
+    <h2>위험도에 따라 <span class="accent">몇 개를 오버부킹할 것인가</span></h2>
+    <div class="g3 grid">
+      <div class="card"><h3>입력</h3><p>10건의 취소 위험도 분포 (고위험 <b>4건</b>)</p></div>
+      <div class="card"><h3>결정 원리</h3><p><b>한계비용 = 한계수익</b> 지점에서 최적 오버부킹 (호텔 RM 표준)</p></div>
+      <div class="card" style="border:1px solid #5a2420;background:linear-gradient(180deg,#211318,var(--card2))"><h3 class="hi">결정</h3><p>위험 기반으로 <b class="hi">4실 오버부킹</b> 가정</p></div>
+    </div>
+    <ul class="clean" style="margin-top:1.1rem">
+      <li>업계 관행: 객실의 <b>5~15%</b> (비즈니스 10–15% · 레저 5–10%)</li>
+      <li><b>risk-based 방식이 RevPAR가 더 높다</b>는 연구 — 우리 접근의 근거</li>
+      <li>결정 권한은 <b>매니저</b>가 보유 (자동화 아님 · GDPR Art.22)</li>
+    </ul>
+    <div class="mic"><b>멘트:</b> "오버부킹 수준은 우리가 지어낸 게 아니라 교과서적 RM 결정법입니다. 우리는 거기에 위험도 예측을 붙였습니다."</div>
+  </section>
+
+  <!-- 7. EXPECTED PROFIT graph -->
+  <section class="slide"
+    data-notes="오버부킹 K에 따른 기대 순이익 곡선. 정직 핀: 이건 가정이 아니라 우리 모델의 위험도로 계산한 기대값. K가 적으면 빈 방 손실(perishable, 회복 0), K가 많으면 walk 보상+평판 손실. 균형점이 최적 K. 중요한 보강: 비용비(빈방:walk)는 미지수라 범위 sweep으로 제시하고, reputation을 포함하면 walk가 빈방보다 비싸져 비용비가 거꾸로일 수 있다 → 그래서 '보수적 오버부킹'이 정답. 다음 슬라이드(보상 정박)가 이 근거를 잇는다.">
+    <div class="act">3 · 기대 효과</div>
+    <h2>오버부킹 K에 따른 <span class="accent">기대 이익 곡선</span>
+      <span class="pin">가정 아님 · 실데이터 기대값</span></h2>
+    <div class="twocol">
+      <div>
+        <div class="chartbox">
+          <svg viewBox="0 0 580 300" width="100%" height="300" font-family="inherit">
+            <g stroke="#23262f" stroke-width="1">
+              <line x1="70" y1="80" x2="540" y2="80"/>
+              <line x1="70" y1="140" x2="540" y2="140"/>
+              <line x1="70" y1="200" x2="540" y2="200"/>
+            </g>
+            <line x1="70" y1="250" x2="540" y2="250" stroke="#3a3d4a" stroke-width="1.2"/>
+            <line x1="70" y1="40" x2="70" y2="250" stroke="#3a3d4a" stroke-width="1.2"/>
+            <text x="305" y="285" fill="#8a93a2" font-size="12.5" text-anchor="middle">오버부킹 객실 수 K</text>
+            <text x="20" y="145" fill="#8a93a2" font-size="12.5" text-anchor="middle" transform="rotate(-90 20 145)">기대 순이익</text>
+            <!-- concave curve peaking near K=4 -->
+            <path d="M 80,225 C 150,150 230,98 280,95 C 330,92 400,128 480,212 C 505,238 525,246 540,250"
+              fill="none" stroke="#2ECC71" stroke-width="2.8" stroke-linecap="round"/>
+            <line x1="280" y1="40" x2="280" y2="250" stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="4 4" opacity="0.7"/>
+            <circle cx="280" cy="95" r="5" fill="#2ECC71" stroke="#0F1117" stroke-width="1.5"/>
+            <text x="288" y="86" fill="#dbe1ea" font-size="11.5" font-weight="700">최적 K ≈ 4</text>
+            <text x="150" y="240" fill="#6b7280" font-size="10.5" text-anchor="middle">K↓ 빈 방 손실</text>
+            <text x="470" y="232" fill="#E74C3C" font-size="10.5" text-anchor="end">K↑ walk 비용</text>
+          </svg>
+        </div>
+        <div class="note">E[순이익(K)] = 채운 방 수익 − E[walk 보상 · 평판 비용] · 모델 위험도 기반 기대값 (src/overbooking_ev.py 산출)</div>
+      </div>
+      <div>
+        <ul class="clean">
+          <li>K가 적으면 <b>빈 방 손실</b> (perishable · 회복 0)</li>
+          <li>K가 많으면 <b class="hi">walk 보상 + 평판 손실</b></li>
+          <li>두 비용의 균형점이 <b class="low">최적 오버부킹</b></li>
+        </ul>
+        <p class="note" style="margin-top:1.1rem;font-size:.92rem;color:var(--mut)">⚠️ 비용비(빈방:walk)는 미지수 → 범위 sweep으로 제시. <b style="color:var(--txt)">평판 포함 시 walk가 더 비싸</b> 비용비가 거꾸로일 수 있어 → <b style="color:var(--txt)">보수적 오버부킹</b>이 정답.</p>
+      </div>
+    </div>
+    <div class="mic"><b>정직(pin):</b> "이 곡선은 가정이 아니라 우리 모델의 위험도로 계산한 기대값입니다 — 근거는 바로 이어집니다."</div>
+  </section>
+
+  <!-- 8. PREDICTION WRONG → compensation -->
+  <section class="slide"
+    data-notes="예측은 틀릴 수 있다. 고위험으로 봤는데 실제로 체크인 → 오버부킹 충돌 → walk(다른 호텔 이전). 핵심: 호텔 walk 보상은 항공과 달리 규제 없음(선불 환불만 의무) — 업계 자율 표준. Hyatt·Marriott 예시로 자릿수 감각을 준다. 메시지: 예측이 틀렸을 때 마찰을 어떻게 최소화하느냐가 다음 도메인.">
+    <div class="act">3 · 예측이 틀렸다</div>
+    <h2>예측 하나가 빗나가 <span class="hi">보상이 필요한 상황</span></h2>
+    <p class="lead">고위험으로 분류된 손님이 실제로는 체크인 → 오버부킹 충돌 → 손님을 다른 호텔로 이전(walk).</p>
+    <table style="margin-top:1.1rem">
+      <tr><th>업계 walk 보상 표준</th><th>법적 지위</th></tr>
+      <tr><td><b>동급/상위 호텔 + 첫날 숙박비 + 교통비 + 굿윌(포인트·바우처)</b></td><td class="muted">규제 없음 — 선불 환불만 의무 (항공과 다름)</td></tr>
+    </table>
+    <p class="muted" style="margin-top:1rem">브랜드 예시 · <b style="color:var(--txt)">Hyatt</b>: 첫날 + 교통 + 전화 · <b style="color:var(--txt)">Marriott</b>: 상한 $200 + 14만 pts · <b style="color:var(--txt)">럭셔리</b>: $200 + 9만 pts</p>
+    <div class="mic"><b>멘트:</b> "예측은 틀릴 수 있습니다. 중요한 건 틀렸을 때 마찰을 어떻게 최소화하느냐 — 그게 다음 도메인입니다."</div>
+  </section>
+
+  <!-- 9. compensation by FEATURES not persona -->
+  <section class="slide"
+    data-notes="보상 가격대는 두 힘이 정한다: 하한=손님 만족(너무 낮으면 불만), 상한=평판 비용(별점 1 하락 = 매출 5~9% 감소, 부정리뷰 3건+ → 79%가 예약 안 함). 우리는 손님을 페르소나/캐릭터로 안 보고, 인원수·예약임박·등급/채널이라는 '피처'로 적정 가격대를 찾는다. 국적은 차등에서 배제(차별 방지). 1차 정량 증거: walk 협상 시뮬에서 D 아키타입 €46 ≈ ADR(약 €110)의 42% — 업계 보상과 같은 자릿수.">
+    <div class="act">3 · 보상 정책</div>
+    <h2>페르소나가 아니라 <span class="accent">체계화된 피처로 가격대를 찾는다</span></h2>
+    <div class="g2 grid">
+      <div class="card">
+        <h3>가격대를 정하는 두 힘</h3>
+        <ul class="clean">
+          <li><b>하한</b> — 손님 만족 (너무 낮으면 불만)</li>
+          <li><b>상한</b> — 평판 비용: 별점 1↓ = 매출 <b class="hi">5~9%↓</b>, 부정리뷰 3건+ → <b>79%가 예약 안 함</b></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>피처 → 보상 차등 (근거 있음)</h3>
+        <ul class="clean">
+          <li><b>인원수</b> 多 → 대체 숙소 확보 난이도↑</li>
+          <li><b>예약 임박</b> → 대안 부족 → 불만↑</li>
+          <li><b>등급/채널</b> → 로열티별 차등 (브랜드 실재)</li>
+          <li class="dim">※ 국적은 차등에서 <b class="hi">배제</b> (차별 방지)</li>
+        </ul>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:1.2rem;font-size:1.12rem">1차 증거: walk 협상 시뮬 <b class="acc">D 아키타입 €46</b> (≈ ADR 42%) — 업계 보상과 같은 자릿수.</p>
+    <div class="mic"><b>멘트:</b> "우리는 손님을 캐릭터로 안 봅니다. 인원·예약시점·세그먼트라는 <u>피처</u>로 적정 가격대를 찾습니다."</div>
+  </section>
+
+  <!-- 10. negotiation data collection (ML2) -->
+  <section class="slide"
+    data-notes="작동 증거 ②: 세상에 없는 데이터를 만드는 인프라. (위험도→오퍼→수락→취소) 튜플은 협상이 실제로 일어나야 생기는데, 현실엔 0건. 0건이라 시뮬로 부트스트랩해도 순환논리가 없다. LLM(하이쿠) 손님이 '생각하며' 예약·협상하고 그 튜플이 실시간 수집되는 라이브 시연. 기존 walk_sim 1,000+건(정량)을 대체가 아니라 보완. 강조: 이 데이터는 세상 어디에도 없고, 우리 인프라가 그걸 만들어 ML②를 키운다.">
+    <div class="act">2 · 작동 증거 ②</div>
+    <h2><span class="accent">세상에 없는 데이터</span>를 수집하는 인프라</h2>
+    <div class="flow">
+      <div class="step"><div class="n">Phase 1</div><div class="t">예약</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="n">Phase 2</div><div class="t">협상 (수락/거절)</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="n">Phase 3</div><div class="t">취소 여부</div></div>
+      <div class="arr">→</div>
+      <div class="step" style="border-color:#3a5a2a;background:linear-gradient(180deg,#16211a,var(--card2))"><div class="n">수집</div><div class="t low">(위험도→오퍼→수락→취소)</div></div>
+    </div>
+    <ul class="clean" style="margin-top:1.2rem">
+      <li>협상 데이터는 실제로 <b class="hi">0건</b> → 시뮬이 유일한 부트스트랩 (순환논리 없음)</li>
+      <li>LLM 손님이 "생각하며" 예약·협상 → 그 튜플이 실시간 수집되는 <b>라이브 시연</b></li>
+      <li>기존 walk_sim <b>1,000+건</b>(정량) 보완 — <b>대체 아님</b></li>
+    </ul>
+    <div class="mic"><b>멘트:</b> "이 (위험도→오퍼→수락→취소) 데이터는 세상 어디에도 없습니다. 우리 인프라가 그걸 만들어 ML②를 키웁니다."</div>
+  </section>
+
+  <!-- 11. WHY BELIEVE — concentrated doubt block -->
+  <section class="slide"
+    data-notes="결론 직전 '집중 정산 블록'. 앞에서 핀으로 찍어둔 의심 셋을 여기서 한 번에 답한다. ① 윤리(국적 차별): 국적이 위험도 1위지만 예측엔 쓰되 '행동 차등엔 배제', ablation으로 성능비용 측정 + is_domestic 대체 검토, 사전동의·매니저 승인 필수. 추가로 country는 누수 우려도 있음(top10이 전기간 결정) — 정직하게 인정. ② 법률(우회로): 한국 숙박업 오버부킹 규제 공백, 우리 Flexi는 '예약 시점 사전 동의' 구조라 '계약 불이행'이 성립 안 함. 강제 배정·자동 발효는 금지선. ③ 효과(시뮬≠현실): 정량 주장은 실데이터(성장곡선)가 책임지고, 협상 시뮬은 '수집 인프라 시연'이지 현실 증명이 아니다. 현실 검증은 실배포 로그의 몫. 한계를 먼저 드러내는 게 신뢰를 높인다.">
+    <div class="act">4 · 왜 믿을 수 있나</div>
+    <h2>의심에 정면으로 답한다 — <span class="accent">윤리 · 법률 · 효과</span></h2>
+    <div class="g3 grid">
+      <div class="card" style="border-top:2px solid var(--hi)">
+        <h3 class="hi">윤리 — 국적 차별</h3>
+        <p>국적이 위험도 1위 피처. → 예측엔 쓰되 <b>행동 차등엔 배제</b>. ablation으로 성능비용 측정 + <b>is_domestic</b> 검토. 사전동의·매니저 승인 필수.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--med)">
+        <h3 class="med">법률 — 우회로</h3>
+        <p>한국 숙박업은 오버부킹 규제 공백. 우리 Flexi는 <b>예약 시점 사전 동의</b> 구조 → '계약 불이행'이 성립 안 함. 강제 배정·자동 발효는 금지선.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--acc)">
+        <h3 class="acc">효과 — 시뮬 ≠ 현실</h3>
+        <p>정량 주장은 <b>실데이터</b>가 책임(성장곡선). 협상 시뮬은 "수집 인프라 시연"이지 현실 증명 아님. 현실 검증은 <b>실배포 로그</b>의 몫 — 정직하게.</p>
+      </div>
+    </div>
+    <div class="mic"><b>멘트:</b> "앞에서 핀으로 찍어둔 의심들을 여기서 정산합니다. 한계를 먼저 드러내는 게 신뢰를 높입니다."</div>
+  </section>
+
+  <!-- 12. EXTENSIBILITY -->
+  <section class="slide"
+    data-notes="비전: 오버부킹은 첫 도메인일 뿐. 같은 수집 인프라가 동적 가격(수요·취소 예측)·수요/인력(도착 예측→배치)·업셀/식음(요청 패턴→추천)으로 확장. 두 축의 성장: 데이터가 쌓일수록 모델이 자라고(성장곡선), 수집 영역이 넓어질수록 도메인이 늘어난다. 한 문장: 취소예측 앱이 아니라 한 번 깔면 여러 도메인으로 자라는 데이터 인프라.">
+    <div class="act">5 · 비전</div>
+    <h2>오버부킹은 <span class="accent">첫 도메인</span>일 뿐</h2>
+    <p class="lead">같은 수집 인프라가 여는 예측 도메인:</p>
+    <div class="grid g4" style="margin-top:1.1rem">
+      <div class="card" style="border-left:3px solid var(--low)"><h3>오버부킹</h3><p class="low">완료 (도메인 1)</p></div>
+      <div class="card"><h3>동적 가격</h3><p>수요·취소 예측 기반</p></div>
+      <div class="card"><h3>수요·인력</h3><p>도착 예측 → 인력 배치</p></div>
+      <div class="card"><h3>업셀·식음</h3><p>요청 패턴 → 추천</p></div>
+    </div>
+    <p class="lead" style="margin-top:1.3rem">데이터가 쌓일수록 모델이 자라고(성장곡선), 수집 영역이 넓어질수록 도메인이 늘어난다. <b>쓸수록 똑똑해지는 인프라.</b></p>
+    <div class="mic"><b>멘트:</b> "취소예측 앱이 아닙니다. 한 번 깔면 여러 도메인으로 자라는 데이터 인프라입니다."</div>
+  </section>
+
+  <!-- 13. CONCLUSION -->
+  <section class="slide"
+    data-notes="3줄로 닫는다. ① 수집 인프라 — 호텔에 핏한 데이터를 모아 ML 예측으로 수익·안정성을 키운다. ② 데이터가 모델을 고른다 — 실데이터 성장곡선, W≈5.4만 건에서 모델 전환, full PR-AUC 0.820. ③ 없던 데이터를 만든다 — 협상 (위험도→오퍼→수락→취소) 수집, 사전동의 구조로 법적 리스크 차단. 마무리 문장: '우리는 두뇌(예측 엔진)를 만들었고, 그 두뇌는 호텔 데이터로 계속 자랍니다. 감사합니다.'">
+    <div class="act">결론</div>
+    <h2>3줄 요약</h2>
+    <div class="grid" style="gap:1.1rem">
+      <div class="card"><div class="row"><div class="big acc" style="font-size:2.3rem">1</div><p style="font-size:1.16rem;color:var(--txt);line-height:1.5"><b>수집 인프라</b> — 호텔에 핏한 예약 데이터를 모아 ML 예측으로 수익·안정성을 키운다.</p></div></div>
+      <div class="card"><div class="row"><div class="big acc" style="font-size:2.3rem">2</div><p style="font-size:1.16rem;color:var(--txt);line-height:1.5"><b>데이터가 모델을 고른다</b> — 실데이터 성장곡선, W≈5.4만 건에서 모델 전환, full PR-AUC <b class="hi">0.820</b>.</p></div></div>
+      <div class="card"><div class="row"><div class="big acc" style="font-size:2.3rem">3</div><p style="font-size:1.16rem;color:var(--txt);line-height:1.5"><b>없던 데이터를 만든다</b> — 협상 (위험도→오퍼→수락→취소) 수집, 사전동의 구조로 법적 리스크 차단.</p></div></div>
+    </div>
+    <div class="mic"><b>마무리:</b> "우리는 두뇌(예측 엔진)를 만들었고, 그 두뇌는 호텔 데이터로 계속 자랍니다. 감사합니다."</div>
+  </section>
+
+</div>
+
+<!-- speaker notes overlay -->
+<div class="notes" id="notes">
+  <div class="lbl">발표자 노트 · N키로 닫기</div>
+  <div class="body" id="notesBody"></div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0, notesOn=false;
+  const bar=document.getElementById('bar'), count=document.getElementById('count');
+  const notes=document.getElementById('notes'), notesBody=document.getElementById('notesBody');
+  function renderNotes(){
+    notesBody.textContent = slides[i].dataset.notes || '(노트 없음)';
+  }
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    count.textContent=(i+1)+' / '+slides.length;
+    if(notesOn) renderNotes();
+    if(i===2) seedDots();
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+  function toggleNotes(){
+    notesOn=!notesOn;
+    notes.classList.toggle('show',notesOn);
+    if(notesOn) renderNotes();
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){next();e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){prev();e.preventDefault();}
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement)document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+    else if(e.key==='n'||e.key==='N'){ toggleNotes(); }
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(slides.length-1)}
+  });
+  document.getElementById('deck').addEventListener('click',e=>{
+    if(e.clientX < window.innerWidth*0.25) prev(); else next();
+  });
+  // accumulating dots on slide 3
+  let seeded=false;
+  function seedDots(){
+    if(seeded) return; seeded=true;
+    const w=document.getElementById('dotwrap'); if(!w) return;
+    const colors=['#2ECC71','#2ECC71','#2ECC71','#E74C3C','#E74C3C'];
+    let n=0; const total=120;
+    const iv=setInterval(()=>{
+      if(n++>=total){clearInterval(iv);return;}
+      const d=document.createElement('div'); d.className='dot';
+      d.style.left=(6+Math.random()*88)+'%'; d.style.top=(8+Math.random()*82)+'%';
+      d.style.background=colors[Math.floor(Math.random()*colors.length)];
+      d.style.transform='scale(0)'; d.style.transition='transform .3s';
+      w.appendChild(d); requestAnimationFrame(()=>d.style.transform='scale(1)');
+    },28);
+  }
+  show(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>방향 C — 키네틱 데이터플로우 · 성장곡선 (S4)</title>
+<style>
+/* =========================================================================
+   DIRECTION C — KINETIC DATAFLOW   (sample slide: S4 MODEL GROWS)
+   디자인 규율: near-black 위 단일 luminous 액센트(시안) + 데이터 입자 모티프.
+   모션은 정체성이되 절제 — 입자 흐름 하나만 일관되게.
+   외부 폰트 없음. 시스템 폴백만으로 자립.
+   ========================================================================= */
+:root{
+  /* --- 배경 / 표면 (near-black, 단일 톤 계단) --- */
+  --bg:        #060810;   /* 데크 바닥. 빔프로젝터에서도 검정 유지 */
+  --bg-2:      #0a0e1a;   /* 미세 비네팅 안쪽 */
+  --surface:   #0e1320;   /* 카드/차트 표면 */
+  --surface-2: #121a2b;   /* 표면 위 표면(중첩) */
+  --line-1:    #1b2536;   /* 경계선 약 */
+  --line-2:    #2a3a55;   /* 경계선 강 */
+
+  /* --- 텍스트 3단 --- */
+  --ink:       #EAF2FF;   /* 본문/제목 — 거의 흰색, 청빛 */
+  --ink-2:     #9FB2CE;   /* 보조 텍스트 */
+  --ink-3:     #7186A4;   /* 멘트/약한 본문 */
+  --ink-dim:   #5C708E;   /* 메타/캡션 */
+
+  /* --- 단일 시그니처 액센트 (luminous cyan) --- */
+  --acc:       #4FE3D0;   /* 데이터 흐름의 색. 덱 전체 단 하나의 주액센트 */
+  --acc-deep:  #1FB7C9;   /* 액센트 음영 */
+  --acc-glow:  rgba(79,227,208,.55);
+
+  /* --- 위험 3색: '위험도'에만 한정 사용. 장식 금지 --- */
+  --risk-hi:   #FF5C6C;   /* 고위험 */
+  --risk-mid:  #FFB13C;   /* 중위험 */
+  --risk-lo:   #46D6A0;   /* 저위험/정상 */
+
+  /* --- 모델 라인 색 (의미 고정) --- */
+  --lr:        #6E8BFF;   /* Logistic Regression — 차분한 청 */
+  --lgb:       var(--acc);/* LightGBM — 시그니처 시안(주인공) */
+
+  /* --- 그리드/간격 스케일 (4px base) --- */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 820px at 78% -10%, var(--bg-2) 0%, var(--bg) 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Pretendard","Inter","Segoe UI",Roboto,
+    "Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+.mono{
+  font-family:"JetBrains Mono","SF Mono",ui-monospace,"Cascadia Mono",
+    "Consolas","DejaVu Sans Mono",monospace;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.01em;
+}
+
+/* ============================ 입자 캔버스(시그니처 모티프) ================= */
+/* 슬라이드 뒤를 흐르는 데이터 입자. 수집(왼쪽)→성장(오른쪽)으로 흐른다.
+   매우 낮은 대비로 깔아 본문 가독성을 절대 해치지 않는다. */
+#flow{position:fixed;inset:0;z-index:0;opacity:.9;pointer-events:none}
+
+/* ============================ 슬라이드 셸 =============================== */
+.slide{
+  position:relative;z-index:1;
+  height:100vh;width:100vw;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  padding:5.2vh 6.4vw 4.6vh;
+  gap:var(--s5);
+}
+
+/* ---- 상단 바: eyebrow + 진행 ---- */
+.top{display:flex;align-items:center;justify-content:space-between}
+.eyebrow{
+  display:flex;align-items:center;gap:var(--s3);
+  font-size:.74rem;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--acc);font-weight:700;
+}
+.eyebrow .tick{width:26px;height:2px;background:var(--acc);box-shadow:0 0 10px var(--acc-glow)}
+.eyebrow .ghost{color:var(--ink-dim);letter-spacing:.22em}
+
+/* 진행 도트: 13슬라이드, 현재=S4 */
+.prog{display:flex;align-items:center;gap:7px}
+.prog i{width:6px;height:6px;border-radius:50%;background:var(--line-2);display:block}
+.prog i.done{background:var(--ink-3)}
+.prog i.now{
+  width:22px;border-radius:3px;background:var(--acc);
+  box-shadow:0 0 12px var(--acc-glow);
+}
+
+/* ---- 헤드라인 ---- */
+.head{max-width:30ch}
+.kicker{font-size:.86rem;color:var(--ink-2);font-weight:600;margin-bottom:var(--s3);letter-spacing:.01em}
+h1{
+  font-size:clamp(2.1rem,3.5vw,3.05rem);
+  line-height:1.1;font-weight:800;letter-spacing:-.025em;color:var(--ink);
+}
+h1 .flow-acc{
+  color:var(--acc);
+  /* 액센트 단어 아래 흐르는 밑줄 — 모티프의 미니 버전 */
+  background-image:linear-gradient(90deg,transparent,var(--acc-deep),var(--acc),transparent);
+  background-size:200% 2px;background-repeat:no-repeat;background-position:0 100%;
+  padding-bottom:.12em;
+}
+
+/* ============================ 본문 2단 그리드 ========================== */
+.body{
+  display:grid;grid-template-columns:1.32fr .68fr;gap:var(--s7);
+  align-items:stretch;min-height:0;
+}
+
+/* ---- 차트 패널 ---- */
+.chart{
+  position:relative;
+  background:linear-gradient(180deg,var(--surface),var(--surface-2));
+  border:1px solid var(--line-1);
+  border-radius:18px;
+  padding:var(--s5) var(--s6) var(--s4);
+  display:flex;flex-direction:column;min-height:0;
+  box-shadow:0 24px 60px -30px #000, inset 0 1px 0 rgba(255,255,255,.025);
+}
+.chart-cap{
+  display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--s3);
+}
+.chart-cap .t{font-size:.96rem;font-weight:700;color:var(--ink)}
+.chart-cap .src{font-size:.72rem;color:var(--ink-dim)}
+.svgwrap{flex:1;min-height:0;position:relative}
+svg.curve{width:100%;height:100%;display:block;overflow:visible}
+
+/* 범례 */
+.legend{display:flex;gap:var(--s6);margin-top:var(--s3);font-size:.84rem;color:var(--ink-2);flex-wrap:wrap}
+.legend .k{display:inline-flex;align-items:center;gap:var(--s2)}
+.legend .k .sw{width:18px;height:3px;border-radius:2px;display:inline-block}
+.legend .k.tie .sw{background:repeating-linear-gradient(90deg,var(--line-2) 0 3px,transparent 3px 6px);height:8px;border-radius:2px}
+
+/* ---- 우측 리드 + KPI ---- */
+.aside{display:flex;flex-direction:column;gap:var(--s4);min-height:0}
+.lead{font-size:1.06rem;line-height:1.62;color:var(--ink-2)}
+.lead b{color:var(--ink);font-weight:700}
+.lead .hot{color:var(--acc);font-weight:700}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.kpi{
+  background:var(--surface);border:1px solid var(--line-1);border-radius:14px;
+  padding:var(--s4) var(--s4) calc(var(--s4) - 2px);
+  position:relative;overflow:hidden;
+}
+/* KPI 좌측 흐름 마커 — 입자 모티프의 정지 프레임 */
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,transparent,var(--acc),transparent);opacity:.7}
+.kpi .v{font-size:1.95rem;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.kpi .v.acc{color:var(--acc)}
+.kpi .l{font-size:.74rem;color:var(--ink-dim);margin-top:var(--s2);letter-spacing:.02em;line-height:1.4}
+.kpi.span2{grid-column:1 / -1}
+
+/* 핀 배지 */
+.pin{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.72rem;font-weight:700;color:var(--risk-mid);
+  border:1px solid #4a3a18;background:rgba(255,177,60,.07);
+  border-radius:999px;padding:.28rem .7rem;letter-spacing:.01em;
+  align-self:flex-start;
+}
+.pin .dot{width:6px;height:6px;border-radius:50%;background:var(--risk-mid);box-shadow:0 0 8px rgba(255,177,60,.6)}
+
+/* ---- 하단: 발표자 멘트 ---- */
+.foot{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s6)}
+.mic{
+  border-left:2px solid var(--acc);padding-left:var(--s4);
+  font-size:.96rem;color:var(--ink-3);line-height:1.55;max-width:84ch;
+}
+.mic b{color:var(--ink-2);font-weight:600}
+.foot .num{font-size:.74rem;color:var(--ink-dim)}
+.foot .num b{color:var(--ink-2);font-weight:700}
+
+@media (max-width:1100px){
+  .body{grid-template-columns:1fr;gap:var(--s5)}
+  .aside{flex-direction:row;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- 시그니처 모티프: 흐르는 데이터 입자 (수집→성장) -->
+<canvas id="flow"></canvas>
+
+<section class="slide">
+
+  <!-- 상단: eyebrow + 진행 -->
+  <header class="top">
+    <div class="eyebrow">
+      <span class="tick"></span>
+      <span>Act 2 · 정량 증거 ①</span>
+      <span class="ghost">데이터가 모델을 고른다</span>
+    </div>
+    <nav class="prog" aria-label="13개 슬라이드 중 4번째">
+      <i class="done"></i><i class="done"></i><i class="done"></i>
+      <i class="now"></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </nav>
+  </header>
+
+  <!-- 본문 -->
+  <div class="body">
+
+    <!-- 좌: 헤드 + 차트 -->
+    <div style="display:flex;flex-direction:column;min-height:0;gap:var(--s5)">
+      <div class="head">
+        <div class="kicker">콜드스타트엔 단순 모델이, 데이터가 쌓이면 부스팅이 이긴다</div>
+        <h1>데이터가 쌓일수록<br><span class="flow-acc">모델이 자란다</span></h1>
+      </div>
+
+      <div class="chart">
+        <div class="chart-cap">
+          <span class="t">누적 학습량 → PR-AUC (실측 성장곡선)</span>
+          <span class="src mono">results/growth_curve_agg.csv · n=78,703 · 106주</span>
+        </div>
+
+        <div class="svgwrap">
+          <!-- viewBox 좌표계: 0..960 × 0..360.  Y: PR-AUC 0.35..0.85 매핑 -->
+          <svg class="curve" viewBox="0 0 960 360" preserveAspectRatio="none" role="img"
+               aria-label="LR은 0.78 근처에서 정체, LightGBM은 약 5.4만 건에서 추월해 0.820까지 상승">
+            <defs>
+              <linearGradient id="lgbFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="var(--acc)" stop-opacity=".22"/>
+                <stop offset="1" stop-color="var(--acc)" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="lgbStroke" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="var(--acc-deep)"/>
+                <stop offset="1" stop-color="var(--acc)"/>
+              </linearGradient>
+              <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3.2" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- 가로 그리드 + Y 눈금 (0.40 / 0.60 / 0.80) -->
+            <g class="mono" font-size="11" fill="var(--ink-dim)">
+              <!-- y=0.80 → 36 ; 0.60 → 180 ; 0.40 → 324  (선형 0.35..0.85 over 360..0) -->
+              <line x1="40" y1="36"  x2="930" y2="36"  stroke="var(--line-1)"/>
+              <text x="0" y="40">0.80</text>
+              <line x1="40" y1="180" x2="930" y2="180" stroke="var(--line-1)"/>
+              <text x="0" y="184">0.60</text>
+              <line x1="40" y1="324" x2="930" y2="324" stroke="var(--line-1)"/>
+              <text x="0" y="328">0.40</text>
+            </g>
+
+            <!-- Dummy baseline 0.387 → y≈333.4 -->
+            <line x1="40" y1="333" x2="930" y2="333" stroke="var(--ink-dim)"
+                  stroke-width="1" stroke-dasharray="2 5" opacity=".55"/>
+            <text x="930" y="349" text-anchor="end" class="mono" font-size="10.5"
+                  fill="var(--ink-dim)">Dummy 0.387</text>
+
+            <!-- ===== 전환 영역(W) 음영: 약 84주 = x≈690 ===== -->
+            <rect x="668" y="20" width="44" height="316" fill="var(--acc)" opacity=".05"/>
+            <line x1="690" y1="20" x2="690" y2="336" stroke="var(--acc)" stroke-width="1"
+                  stroke-dasharray="4 4" opacity=".5"/>
+
+            <!-- ===== LightGBM 면적 (시그니처) =====
+                 x: week28→40 ... week106→930. 실측 추세를 충실히 샘플.
+                 y = 360 - (pr-0.35)/0.50*360  근사. -->
+            <path d="M40,344 L52,353 L78,232 L120,212 L168,243 L220,191
+                     L272,168 L320,150 L372,170 L420,140 L470,120 L520,110
+                     L560,128 L600,72 L640,86 L690,64 L740,52 L800,40
+                     L860,40 L930,42
+                     L930,336 L40,336 Z"
+                  fill="url(#lgbFill)"/>
+            <!-- LightGBM 라인 -->
+            <path d="M40,344 L52,353 L78,232 L120,212 L168,243 L220,191
+                     L272,168 L320,150 L372,170 L420,140 L470,120 L520,110
+                     L560,128 L600,72 L640,86 L690,64 L740,52 L800,40
+                     L860,40 L930,42"
+                  fill="none" stroke="url(#lgbStroke)" stroke-width="3.4"
+                  stroke-linejoin="round" stroke-linecap="round" filter="url(#soft)"/>
+
+            <!-- ===== Logistic Regression 라인 (빠른 수렴 → 정체) =====
+                 0.48→0.71(week~52)→0.78 plateau. -->
+            <path d="M40,233 L52,196 L78,206 L120,182 L168,150 L220,93
+                     L272,80 L320,74 L372,70 L420,68 L470,72 L520,70
+                     L560,70 L600,71 L640,73 L690,76 L740,76 L800,79
+                     L860,79 L930,79"
+                  fill="none" stroke="var(--lr)" stroke-width="2.6"
+                  stroke-linejoin="round" stroke-linecap="round" opacity=".92"/>
+
+            <!-- 전환점 마커 + 라벨 -->
+            <circle cx="690" cy="64" r="5.5" fill="var(--acc)" stroke="var(--bg)" stroke-width="2"/>
+            <g transform="translate(560,28)">
+              <rect x="0" y="0" width="128" height="22" rx="6"
+                    fill="var(--surface-2)" stroke="var(--acc-deep)"/>
+              <text x="64" y="15" text-anchor="middle" class="mono" font-size="11.5"
+                    font-weight="700" fill="var(--acc)">W ≈ 5.4만 건</text>
+            </g>
+
+            <!-- 끝점 라벨 -->
+            <g class="mono" font-weight="700">
+              <circle cx="930" cy="42" r="4.5" fill="var(--acc)"/>
+              <text x="912" y="34" text-anchor="end" font-size="12.5" fill="var(--acc)">LightGBM 0.820</text>
+              <circle cx="930" cy="79" r="4" fill="var(--lr)"/>
+              <text x="912" y="96" text-anchor="end" font-size="12" fill="var(--lr)">LR ~0.78</text>
+            </g>
+
+            <!-- X축 라벨 -->
+            <g class="mono" font-size="10.5" fill="var(--ink-dim)" text-anchor="middle">
+              <text x="78"  y="358">800건</text>
+              <text x="320" y="358">1.5만</text>
+              <text x="600" y="358">3.5만</text>
+              <text x="690" y="358" fill="var(--acc)">5.4만</text>
+              <text x="900" y="358">7.9만</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="legend">
+          <span class="k"><span class="sw" style="background:var(--lgb)"></span>LightGBM (부스팅)</span>
+          <span class="k"><span class="sw" style="background:var(--lr)"></span>Logistic Regression</span>
+          <span class="k tie"><span class="sw"></span>전환 구간 W (CI 지속 우위 시작)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우: 리드 + KPI + 핀 -->
+    <aside class="aside">
+      <p class="lead">
+        정적 비교표가 아니라 데이터가 쌓이며 <b>승자가 바뀌는 동적 곡선</b>입니다.
+        데이터가 거의 없을 땐 단순한 <b>LR</b>이 이기고,
+        약 5.4만 건에서 <span class="hot">LightGBM</span>이 통계적으로 추월해 끝까지 앞섭니다.
+      </p>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="v acc">0.820</div>
+          <div class="l">full-data PR-AUC<br>(n=78,703)</div>
+        </div>
+        <div class="kpi">
+          <div class="v">2.1<span style="font-size:1.1rem">배</span></div>
+          <div class="l">Dummy 0.387<br>대비</div>
+        </div>
+        <div class="kpi span2">
+          <div class="v" style="font-size:1.6rem">84<span style="font-size:1rem;color:var(--ink-dim)">주차</span> · <span class="acc">5.4만 건</span></div>
+          <div class="l">전환점 W — LightGBM CI 하한 &gt; LR CI 상한이 끝까지 지속되는 첫 주차 (robust)</div>
+        </div>
+      </div>
+
+      <span class="pin"><span class="dot"></span>국적 피처 윤리 → S11에서 정산</span>
+
+      <p class="lead" style="font-size:.98rem;margin-top:auto;color:var(--ink-3)">
+        "성장형 시스템은 모델을 고정하지 않는다 —
+        <b style="color:var(--acc)">데이터량이 최적 모델을 정한다.</b>"
+      </p>
+    </aside>
+  </div>
+
+  <!-- 하단: 발표자 멘트 -->
+  <footer class="foot">
+    <p class="mic">
+      <b>🎤</b> "우리는 모델을 고르지 않습니다 — <b>데이터가 모델을 고르게 합니다.</b>
+      이게 인프라의 핵심 약속입니다."
+      <span style="color:var(--ink-dim)"> · 정직 각주: 전환주차 W는 여름 편중 test셋에 의존합니다.</span>
+    </p>
+    <div class="num mono"><b>S4</b> / 13</div>
+  </footer>
+
+</section>
+
+<script>
+/* =========================================================================
+   시그니처 모티프 — 흐르는 데이터 입자 (절제된 단일 모션)
+   왼쪽(수집)에서 생성 → 오른쪽(성장)으로 흐르며 서서히 밝아진다.
+   매우 낮은 대비. 본문 가독성 우선. prefers-reduced-motion 존중.
+   ========================================================================= */
+(function(){
+  const c = document.getElementById('flow');
+  const ctx = c.getContext('2d');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W,H,DPR,parts=[];
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = c.width  = Math.floor(innerWidth  * DPR);
+    H = c.height = Math.floor(innerHeight * DPR);
+    c.style.width = innerWidth+'px'; c.style.height = innerHeight+'px';
+  }
+  resize(); addEventListener('resize', resize);
+
+  const N = reduce ? 26 : 64;
+  function spawn(x){
+    return {
+      x: x===undefined ? Math.random()*W : x,
+      y: Math.random()*H,
+      v: (0.25 + Math.random()*0.75) * DPR,   // 오른쪽으로 흐름
+      r: (0.7 + Math.random()*1.6) * DPR,
+      a: 0.04 + Math.random()*0.14,
+      sway: Math.random()*Math.PI*2
+    };
+  }
+  for(let i=0;i<N;i++) parts.push(spawn());
+
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){
+      p.x += p.v;
+      p.sway += 0.008;
+      p.y += Math.sin(p.sway)*0.15*DPR;
+      // 오른쪽으로 갈수록(성장) 살짝 밝아짐
+      const grow = Math.min(1, p.x / W);
+      const alpha = p.a * (0.5 + grow*0.9);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(79,227,208,'+alpha.toFixed(3)+')';
+      ctx.fill();
+      if(p.x > W + 8){ Object.assign(p, spawn(-8)); }
+    }
+    if(!reduce) requestAnimationFrame(tick);
+  }
+  tick();
+})();
+</script>
+</body>
+</html>

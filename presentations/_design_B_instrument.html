@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design B · Instrument — S4 성장곡선 (계기판/과학 정밀)</title>
+<style>
+/* ============================================================
+   DESIGN DIRECTION B — INSTRUMENT / SCIENTIFIC PRECISION
+   Bloomberg terminal × scientific paper.
+   Clinical off-white surface, monospace tabular numerals,
+   1px hairline grid, real axes, single restrained accent.
+   "우리는 모든 걸 정직하게 측정했다" 를 디자인으로.
+   ============================================================ */
+:root{
+  /* ---- clinical off-white surface (논문/계기판) ---- */
+  --paper:#F4F2EC;        /* base off-white, warm clinical */
+  --paper2:#FBFAF6;       /* raised surface / chart field */
+  --ink:#14171C;          /* near-black ink — primary text */
+  --ink2:#3D434C;         /* secondary ink */
+  --ink3:#6E7682;         /* tertiary / captions */
+  --faint:#9AA1AB;        /* axis sub-labels, units */
+
+  /* ---- hairline rules (1px instrument grid) ---- */
+  --rule:#D6D2C7;         /* primary hairline */
+  --rule2:#E5E1D7;        /* secondary / minor grid */
+  --rule3:#CFC9BB;        /* heavier divider */
+
+  /* ---- single restrained accent: signal amber ---- */
+  --amber:#C8821E;        /* signal amber — the ONE accent */
+  --amber-ink:#8A5A0F;    /* amber text on light */
+  --amber-wash:rgba(200,130,30,.08);
+
+  /* ---- series ink (data only — desaturated, instrument-like) ---- */
+  --lr:#3E6B8C;           /* LR — slate blue (simple model) */
+  --lr-band:rgba(62,107,140,.13);
+  --lgb:#A23A2E;          /* LightGBM — oxide red (winner) */
+  --lgb-band:rgba(162,58,46,.12);
+  --dummy:#9AA1AB;        /* baseline — neutral grey */
+
+  /* ---- risk triband: MEANING-LOCKED, used nowhere else ---- */
+  --risk-hi:#A23A2E;      /* high cancel risk */
+  --risk-med:#C8821E;     /* medium */
+  --risk-low:#3E6B5A;     /* low */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    /* faint engineering paper grid — barely-there, instrument tone */
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(120,110,90,.025) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(120,110,90,.025) 31px 32px),
+    var(--paper);
+  color:var(--ink);
+  font-family:"Inter","Pretendard","Apple SD Gothic Neo","Malgun Gothic",
+    -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  overflow:hidden; letter-spacing:-0.003em;
+}
+/* monospace tabular numerals — the signature of "measured" */
+.mono{
+  font-family:"JetBrains Mono","SF Mono","Roboto Mono",ui-monospace,"Consolas",monospace;
+  font-feature-settings:"tnum" 1,"zero" 1,"cv01" 1;
+  letter-spacing:-0.02em;
+}
+
+.slide{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  padding:4.6vh 5.2vw 3.8vh;
+}
+
+/* ============ FRAME: instrument bezel ============ */
+/* corner registration ticks — like a measuring frame */
+.reg{position:fixed;width:14px;height:14px;pointer-events:none;opacity:.55}
+.reg::before,.reg::after{content:"";position:absolute;background:var(--rule3)}
+.reg::before{width:14px;height:1px;top:0;left:0}
+.reg::after{width:1px;height:14px;top:0;left:0}
+.reg.tl{top:2.0vh;left:2.0vw}
+.reg.tr{top:2.0vh;right:2.0vw;transform:scaleX(-1)}
+.reg.bl{bottom:2.0vh;left:2.0vw;transform:scaleY(-1)}
+.reg.br{bottom:2.0vh;right:2.0vw;transform:scale(-1)}
+
+/* ============ EYEBROW: instrument header row ============ */
+.eyebrow{
+  display:flex;align-items:baseline;gap:0;
+  border-bottom:1px solid var(--rule);
+  padding-bottom:.55rem;margin-bottom:1.5rem;
+}
+.eyebrow .idx{
+  font-size:11px;font-weight:700;color:var(--amber-ink);
+  letter-spacing:.02em;padding-right:.9rem;margin-right:.9rem;
+  border-right:1px solid var(--rule);
+}
+.eyebrow .lbl{
+  font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--ink2);font-weight:650;
+}
+.eyebrow .spacer{flex:1}
+.eyebrow .meta{font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+.eyebrow .meta b{color:var(--ink3);font-weight:600}
+
+/* ============ HEAD ============ */
+.head{margin-bottom:1.1rem}
+h2{
+  font-size:1.74rem;line-height:1.16;font-weight:680;
+  letter-spacing:-0.025em;color:var(--ink);max-width:32ch;
+}
+h2 .amber{color:var(--amber-ink)}
+.dek{
+  margin-top:.55rem;font-size:.92rem;line-height:1.55;
+  color:var(--ink2);max-width:62ch;font-weight:420;
+}
+.dek b{color:var(--ink);font-weight:640}
+
+/* ============ MAIN GRID: chart | readout rail ============ */
+.body{flex:1;display:grid;grid-template-columns:1fr 280px;gap:0;min-height:0}
+.chartwrap{
+  position:relative;
+  border:1px solid var(--rule);
+  background:var(--paper2);
+  padding:0;
+}
+/* chart caption strip (top of plate) */
+.plate-cap{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.5rem .9rem;border-bottom:1px solid var(--rule2);
+}
+.plate-cap .t{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);font-weight:650}
+.plate-cap .legend{display:flex;gap:1.1rem;align-items:center}
+.lg{display:flex;align-items:center;gap:.42rem;font-size:11px;color:var(--ink2);font-weight:500}
+.lg .swatch{width:16px;height:2.5px;border-radius:1px}
+.lg.lr .swatch{background:var(--lr)}
+.lg.lgb .swatch{background:var(--lgb)}
+.lg.dm .swatch{height:0;border-top:1.5px dashed var(--dummy);width:16px}
+
+svg.chart{display:block;width:100%;height:auto}
+
+/* ============ READOUT RAIL (right) — KPI registers ============ */
+.rail{
+  border:1px solid var(--rule);border-left:none;
+  background:var(--paper2);
+  display:flex;flex-direction:column;
+}
+.rail-h{
+  padding:.5rem .9rem;border-bottom:1px solid var(--rule2);
+  font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink3);font-weight:650;
+}
+.kpi{
+  padding:.85rem .95rem;border-bottom:1px solid var(--rule2);
+}
+.kpi:last-child{border-bottom:none;flex:1;display:flex;flex-direction:column;justify-content:center}
+.kpi .k{font-size:10.5px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase;font-weight:600;margin-bottom:.3rem}
+.kpi .v{font-size:1.92rem;line-height:1;color:var(--ink);font-weight:600}
+.kpi .v .u{font-size:.86rem;color:var(--faint);font-weight:500;margin-left:.18rem}
+.kpi .sub{font-size:10.5px;color:var(--ink3);margin-top:.34rem;line-height:1.4}
+.kpi.accent .v{color:var(--amber-ink)}
+.kpi.accent{background:var(--amber-wash)}
+.kpi .delta{color:var(--lgb);font-weight:600}
+
+/* ============ MIC LINE ============ */
+.mic{
+  margin-top:1.05rem;padding-top:.7rem;border-top:1px solid var(--rule);
+  display:flex;gap:.9rem;align-items:flex-start;
+}
+.mic .tag{
+  flex:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--amber-ink);font-weight:700;border:1px solid var(--rule3);
+  padding:.18rem .42rem;margin-top:.05rem;
+}
+.mic .txt{font-size:.84rem;color:var(--ink2);line-height:1.5;max-width:96ch;font-style:italic}
+.mic .txt b{color:var(--ink);font-style:normal;font-weight:640}
+
+/* ============ PIN (인라인 핀) ============ */
+.pin{
+  display:inline-flex;align-items:center;gap:.34rem;
+  font-size:10px;font-weight:600;color:var(--amber-ink);
+  border:1px solid var(--amber);background:var(--amber-wash);
+  padding:.16rem .44rem;letter-spacing:.01em;
+}
+.pin .dot{width:5px;height:5px;background:var(--amber);border-radius:50%}
+
+/* footnote (정직 각주) */
+.foot{font-size:10px;color:var(--faint);margin-top:.5rem;letter-spacing:.01em;line-height:1.4;padding-left:.1rem}
+.foot .mono{color:var(--ink3)}
+</style>
+</head>
+<body>
+
+<span class="reg tl"></span><span class="reg tr"></span>
+<span class="reg bl"></span><span class="reg br"></span>
+
+<section class="slide">
+
+  <!-- ============ EYEBROW ============ -->
+  <div class="eyebrow">
+    <span class="idx mono">S04 / 13</span>
+    <span class="lbl">Act 2 · 정량 심장</span>
+    <span class="spacer"></span>
+    <span class="meta">source <b class="mono">growth_curve_agg.csv</b> · cumulative window · bootstrap 95% CI</span>
+  </div>
+
+  <!-- ============ HEAD ============ -->
+  <div class="head">
+    <h2>데이터가 쌓일수록 <span class="amber">모델이 자란다</span><br>— 우리는 모델을 고르지 않는다, 데이터가 고른다</h2>
+    <p class="dek">콜드스타트엔 단순한 LR이 이긴다. 약 <b>5.4만 건(W≈84주)</b>에서 LightGBM이 <b>통계적으로</b> 추월해 끝까지 앞선다. 성장형 시스템은 모델을 고정하지 않는다 — <b>데이터량이 최적 모델을 정한다.</b></p>
+  </div>
+
+  <!-- ============ BODY: chart + readout rail ============ -->
+  <div class="body">
+
+    <!-- ===== CHART PLATE ===== -->
+    <div class="chartwrap">
+      <div class="plate-cap">
+        <span class="t">PR-AUC × 누적 학습량 (주차 / 건)</span>
+        <span class="legend">
+          <span class="lg lr"><span class="swatch"></span>Logistic Regression</span>
+          <span class="lg lgb"><span class="swatch"></span>LightGBM</span>
+          <span class="lg dm"><span class="swatch"></span>Dummy 0.387</span>
+        </span>
+      </div>
+
+      <!-- viewBox: 1180 wide × 360 tall. plot box x[92..1108] y[70(top)..300(bottom)]
+           y maps PR-AUC 0.34(bottom=300) .. 0.84(top=70) -->
+      <svg class="chart" viewBox="0 0 1180 360" preserveAspectRatio="xMidYMid meet" role="img"
+           aria-label="LR과 LightGBM의 PR-AUC 성장곡선. 약 84주차 5.4만 건에서 LightGBM이 LR을 통계적으로 추월한다.">
+        <defs>
+          <clipPath id="plot"><rect x="92" y="60" width="1016" height="250"/></clipPath>
+        </defs>
+
+        <!-- ---- horizontal gridlines (minor) + Y ticks/labels ---- -->
+        <g class="mono" font-size="11" fill="var(--faint)" text-anchor="end">
+          <!-- 0.40 -->
+          <line x1="92" y1="272.4" x2="1108" y2="272.4" stroke="var(--rule2)" stroke-width="1"/>
+          <text x="84" y="276">0.40</text>
+          <!-- 0.50 -->
+          <line x1="92" y1="226.4" x2="1108" y2="226.4" stroke="var(--rule2)" stroke-width="1"/>
+          <text x="84" y="230">0.50</text>
+          <!-- 0.60 -->
+          <line x1="92" y1="180.4" x2="1108" y2="180.4" stroke="var(--rule2)" stroke-width="1"/>
+          <text x="84" y="184">0.60</text>
+          <!-- 0.70 -->
+          <line x1="92" y1="134.4" x2="1108" y2="134.4" stroke="var(--rule2)" stroke-width="1"/>
+          <text x="84" y="138">0.70</text>
+          <!-- 0.80 -->
+          <line x1="92" y1="88.4" x2="1108" y2="88.4" stroke="var(--rule2)" stroke-width="1"/>
+          <text x="84" y="92">0.80</text>
+        </g>
+
+        <!-- ---- axis frame (heavier hairlines) ---- -->
+        <line x1="92" y1="60" x2="92" y2="300" stroke="var(--rule3)" stroke-width="1.2"/>
+        <line x1="92" y1="300" x2="1108" y2="300" stroke="var(--rule3)" stroke-width="1.2"/>
+        <!-- tiny axis ticks on X -->
+        <g stroke="var(--rule3)" stroke-width="1">
+          <line x1="92"   y1="300" x2="92"   y2="305"/>
+          <line x1="300.4" y1="300" x2="300.4" y2="305"/>
+          <line x1="508.8" y1="300" x2="508.8" y2="305"/>
+          <line x1="717.2" y1="300" x2="717.2" y2="305"/>
+          <line x1="925.6" y1="300" x2="925.6" y2="305"/>
+          <line x1="1108" y1="300" x2="1108" y2="305"/>
+        </g>
+        <!-- X tick labels: week / cumulative n -->
+        <g class="mono" font-size="10.5" fill="var(--faint)" text-anchor="middle">
+          <text x="92"    y="318">28주</text>
+          <text x="300.4" y="318">44주</text>
+          <text x="508.8" y="318">60주</text>
+          <text x="717.2" y="318">76주</text>
+          <text x="925.6" y="318">92주</text>
+          <text x="1108"  y="318">106주</text>
+        </g>
+        <g class="mono" font-size="9" fill="#B7BCC4" text-anchor="middle">
+          <text x="92"    y="330">0.8k</text>
+          <text x="300.4" y="330">3.7k</text>
+          <text x="508.8" y="330">21k</text>
+          <text x="717.2" y="330">45k</text>
+          <text x="925.6" y="330">63k</text>
+          <text x="1108"  y="330">79k</text>
+        </g>
+
+        <!-- ---- Dummy baseline (dashed neutral) ---- -->
+        <line x1="92" y1="278.4" x2="1108" y2="278.4" stroke="var(--dummy)" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text x="100" y="290" class="mono" font-size="10" fill="var(--dummy)">Dummy 0.387</text>
+
+        <g clip-path="url(#plot)">
+          <!-- CI bands (filled, low opacity) -->
+          <path fill="var(--lr-band)" stroke="none" d="M 92.0 233.1 L 105.0 221.1 L 118.1 237.7 L 131.1 207.6 L 144.1 210.7 L 157.1 210.7 L 170.2 203.5 L 183.2 169.2 L 196.2 153.9 L 209.2 154.2 L 222.3 184.9 L 235.3 182.3 L 248.3 178.0 L 261.3 158.5 L 274.4 146.7 L 287.4 130.4 L 300.4 129.2 L 313.4 130.1 L 326.5 131.3 L 339.5 131.1 L 352.5 130.2 L 365.5 128.0 L 378.6 127.5 L 391.6 125.8 L 404.6 125.6 L 417.6 125.2 L 430.7 125.1 L 443.7 123.2 L 456.7 118.9 L 469.7 115.9 L 482.8 114.3 L 495.8 112.4 L 508.8 111.6 L 521.8 109.7 L 534.9 108.3 L 547.9 109.5 L 560.9 108.9 L 573.9 107.4 L 587.0 108.4 L 600.0 103.9 L 613.0 102.4 L 626.1 102.0 L 639.1 101.4 L 652.1 101.3 L 665.1 99.6 L 678.2 99.5 L 691.2 98.8 L 704.2 98.5 L 717.2 97.6 L 730.3 97.6 L 743.3 97.1 L 756.3 96.3 L 769.3 95.6 L 782.4 95.4 L 795.4 94.8 L 808.4 94.4 L 821.4 94.3 L 834.5 93.8 L 847.5 93.7 L 860.5 93.9 L 873.5 93.4 L 886.6 94.0 L 899.6 93.6 L 912.6 93.4 L 925.6 93.5 L 938.7 93.5 L 951.7 93.1 L 964.7 93.8 L 977.7 94.6 L 990.8 94.8 L 1003.8 94.9 L 1016.8 94.6 L 1029.8 94.7 L 1042.9 94.5 L 1055.9 94.4 L 1068.9 94.2 L 1081.9 93.9 L 1095.0 93.8 L 1108.0 93.8 L 1108.0 99.9 L 1095.0 99.9 L 1081.9 100.3 L 1068.9 100.3 L 1055.9 100.6 L 1042.9 100.6 L 1029.8 100.8 L 1016.8 100.6 L 1003.8 100.9 L 990.8 100.6 L 977.7 101.1 L 964.7 100.3 L 951.7 99.5 L 938.7 99.6 L 925.6 99.5 L 912.6 99.5 L 899.6 100.0 L 886.6 99.5 L 873.5 99.7 L 860.5 100.0 L 847.5 99.4 L 834.5 99.9 L 821.4 100.4 L 808.4 100.4 L 795.4 100.7 L 782.4 101.6 L 769.3 101.7 L 756.3 102.3 L 743.3 103.6 L 730.3 103.8 L 717.2 103.8 L 704.2 104.7 L 691.2 105.2 L 678.2 105.6 L 665.1 105.9 L 652.1 107.7 L 639.1 107.7 L 626.1 108.2 L 613.0 108.7 L 600.0 111.0 L 587.0 115.0 L 573.9 113.7 L 560.9 115.4 L 547.9 115.8 L 534.9 114.6 L 521.8 115.9 L 508.8 118.0 L 495.8 119.1 L 482.8 120.9 L 469.7 122.5 L 456.7 125.7 L 443.7 130.0 L 430.7 131.9 L 417.6 132.0 L 404.6 132.6 L 391.6 132.4 L 378.6 134.7 L 365.5 135.3 L 352.5 137.3 L 339.5 138.2 L 326.5 138.5 L 313.4 137.0 L 300.4 136.3 L 287.4 137.7 L 274.4 153.8 L 261.3 166.4 L 248.3 185.4 L 235.3 189.8 L 222.3 192.6 L 209.2 162.0 L 196.2 161.4 L 183.2 177.3 L 170.2 210.9 L 157.1 218.1 L 144.1 218.4 L 131.1 214.6 L 118.1 245.1 L 105.0 228.3 L 92.0 240.2 Z"/>
+          <path fill="var(--lgb-band)" stroke="none" d="M 92.0 288.4 L 105.0 277.4 L 118.1 219.1 L 131.1 206.7 L 144.1 200.8 L 157.1 197.3 L 170.2 199.5 L 183.2 194.0 L 196.2 174.7 L 209.2 175.0 L 222.3 182.4 L 235.3 176.5 L 248.3 168.6 L 261.3 157.3 L 274.4 150.5 L 287.4 154.8 L 300.4 156.9 L 313.4 156.7 L 326.5 154.3 L 339.5 154.9 L 352.5 151.6 L 365.5 158.2 L 378.6 157.4 L 391.6 163.0 L 404.6 158.4 L 417.6 155.9 L 430.7 144.8 L 443.7 141.4 L 456.7 147.2 L 469.7 131.3 L 482.8 134.6 L 495.8 129.7 L 508.8 122.5 L 521.8 116.7 L 534.9 126.0 L 547.9 115.9 L 560.9 117.3 L 573.9 113.2 L 587.0 111.7 L 600.0 100.6 L 613.0 99.2 L 626.1 99.3 L 639.1 107.7 L 652.1 100.7 L 665.1 93.6 L 678.2 96.0 L 691.2 96.6 L 704.2 92.5 L 717.2 92.9 L 730.3 92.9 L 743.3 87.5 L 756.3 88.8 L 769.3 88.9 L 782.4 89.1 L 795.4 88.7 L 808.4 90.1 L 821.4 86.4 L 834.5 85.5 L 847.5 84.5 L 860.5 83.4 L 873.5 83.3 L 886.6 83.3 L 899.6 81.0 L 912.6 84.6 L 925.6 82.8 L 938.7 81.5 L 951.7 81.5 L 964.7 80.6 L 977.7 78.8 L 990.8 78.0 L 1003.8 78.1 L 1016.8 77.4 L 1029.8 78.0 L 1042.9 77.8 L 1055.9 77.6 L 1068.9 77.6 L 1081.9 76.9 L 1095.0 76.9 L 1108.0 76.8 L 1108.0 81.6 L 1095.0 81.8 L 1081.9 81.7 L 1068.9 82.4 L 1055.9 82.3 L 1042.9 82.8 L 1029.8 82.9 L 1016.8 82.2 L 1003.8 83.0 L 990.8 82.9 L 977.7 83.7 L 964.7 85.4 L 951.7 86.3 L 938.7 86.3 L 925.6 87.7 L 912.6 89.8 L 899.6 86.1 L 886.6 88.1 L 873.5 88.2 L 860.5 88.1 L 847.5 89.6 L 834.5 90.6 L 821.4 91.4 L 808.4 95.3 L 795.4 94.0 L 782.4 94.3 L 769.3 93.9 L 756.3 94.0 L 743.3 92.4 L 730.3 98.2 L 717.2 98.0 L 704.2 97.8 L 691.2 101.9 L 678.2 101.4 L 665.1 98.9 L 652.1 106.3 L 639.1 113.4 L 626.1 104.8 L 613.0 104.7 L 600.0 106.3 L 587.0 117.6 L 573.9 119.4 L 560.9 123.2 L 547.9 122.2 L 534.9 132.7 L 521.8 122.8 L 508.8 129.4 L 495.8 136.7 L 482.8 141.2 L 469.7 138.3 L 456.7 154.2 L 443.7 148.4 L 430.7 151.7 L 417.6 163.9 L 404.6 166.0 L 391.6 170.4 L 378.6 164.9 L 365.5 165.4 L 352.5 158.4 L 339.5 162.4 L 326.5 161.2 L 313.4 164.1 L 300.4 164.6 L 287.4 162.3 L 274.4 157.9 L 261.3 164.6 L 248.3 176.5 L 235.3 184.0 L 222.3 190.5 L 209.2 182.8 L 196.2 182.2 L 183.2 202.0 L 170.2 207.3 L 157.1 205.1 L 144.1 208.3 L 131.1 214.1 L 118.1 226.3 L 105.0 283.3 L 92.0 294.0 Z"/>
+
+          <!-- LR line -->
+          <path fill="none" stroke="var(--lr)" stroke-width="2" stroke-linejoin="round" d="M 92.0 236.7 L 105.0 224.6 L 118.1 241.7 L 131.1 211.2 L 144.1 214.6 L 157.1 214.5 L 170.2 207.3 L 183.2 173.4 L 196.2 157.7 L 209.2 158.2 L 222.3 188.9 L 235.3 186.4 L 248.3 182.0 L 261.3 162.4 L 274.4 150.2 L 287.4 134.2 L 300.4 132.9 L 313.4 133.5 L 326.5 134.8 L 339.5 134.6 L 352.5 133.6 L 365.5 131.7 L 378.6 131.1 L 391.6 129.1 L 404.6 129.1 L 417.6 128.8 L 430.7 128.4 L 443.7 126.6 L 456.7 122.2 L 469.7 119.3 L 482.8 117.5 L 495.8 115.8 L 508.8 114.8 L 521.8 112.9 L 534.9 111.4 L 547.9 112.6 L 560.9 112.1 L 573.9 110.6 L 587.0 111.8 L 600.0 107.5 L 613.0 105.6 L 626.1 105.0 L 639.1 104.7 L 652.1 104.5 L 665.1 102.7 L 678.2 102.6 L 691.2 101.8 L 704.2 101.8 L 717.2 100.7 L 730.3 100.9 L 743.3 100.4 L 756.3 99.3 L 769.3 98.7 L 782.4 98.3 L 795.4 97.9 L 808.4 97.4 L 821.4 97.1 L 834.5 96.8 L 847.5 96.6 L 860.5 96.7 L 873.5 96.6 L 886.6 96.7 L 899.6 96.7 L 912.6 96.6 L 925.6 96.5 L 938.7 96.7 L 951.7 96.5 L 964.7 97.2 L 977.7 97.9 L 990.8 97.8 L 1003.8 97.8 L 1016.8 97.5 L 1029.8 97.7 L 1042.9 97.5 L 1055.9 97.5 L 1068.9 97.2 L 1081.9 97.2 L 1095.0 96.9 L 1108.0 96.9"/>
+          <!-- LightGBM line -->
+          <path fill="none" stroke="var(--lgb)" stroke-width="2.4" stroke-linejoin="round" d="M 92.0 291.2 L 105.0 280.4 L 118.1 222.9 L 131.1 210.5 L 144.1 204.6 L 157.1 201.0 L 170.2 203.4 L 183.2 197.9 L 196.2 178.4 L 209.2 178.8 L 222.3 186.5 L 235.3 180.3 L 248.3 172.5 L 261.3 160.9 L 274.4 154.3 L 287.4 158.4 L 300.4 160.7 L 313.4 160.3 L 326.5 157.9 L 339.5 158.6 L 352.5 154.7 L 365.5 161.9 L 378.6 161.1 L 391.6 166.6 L 404.6 162.1 L 417.6 159.9 L 430.7 148.1 L 443.7 145.0 L 456.7 150.9 L 469.7 134.8 L 482.8 137.9 L 495.8 133.2 L 508.8 126.1 L 521.8 120.0 L 534.9 129.1 L 547.9 118.9 L 560.9 120.2 L 573.9 116.4 L 587.0 114.6 L 600.0 103.4 L 613.0 101.9 L 626.1 101.9 L 639.1 110.7 L 652.1 103.4 L 665.1 96.3 L 678.2 98.6 L 691.2 99.4 L 704.2 95.2 L 717.2 95.4 L 730.3 95.5 L 743.3 89.9 L 756.3 91.3 L 769.3 91.4 L 782.4 91.7 L 795.4 91.4 L 808.4 92.7 L 821.4 88.8 L 834.5 87.9 L 847.5 87.1 L 860.5 85.7 L 873.5 85.7 L 886.6 85.7 L 899.6 83.6 L 912.6 87.0 L 925.6 85.2 L 938.7 83.9 L 951.7 83.9 L 964.7 83.0 L 977.7 81.4 L 990.8 80.4 L 1003.8 80.4 L 1016.8 79.7 L 1029.8 80.3 L 1042.9 80.2 L 1055.9 79.9 L 1068.9 80.0 L 1081.9 79.4 L 1095.0 79.4 L 1108.0 79.2"/>
+        </g>
+
+        <!-- ---- W marker: transition week 84 / 53,615 ---- -->
+        <line x1="821.4" y1="60" x2="821.4" y2="300" stroke="var(--amber)" stroke-width="1" stroke-dasharray="3 3" opacity=".85"/>
+        <circle cx="821.4" cy="88.8" r="3.6" fill="var(--paper2)" stroke="var(--lgb)" stroke-width="2"/>
+        <circle cx="821.4" cy="97.1" r="3.2" fill="var(--paper2)" stroke="var(--lr)" stroke-width="1.6"/>
+        <!-- W callout box -->
+        <g transform="translate(700,46)">
+          <rect x="0" y="0" width="170" height="22" fill="var(--amber-wash)" stroke="var(--amber)" stroke-width="1"/>
+          <text x="8" y="15" font-size="10.5" font-weight="700" fill="var(--amber-ink)">W · 전환점</text>
+          <text x="76" y="15" class="mono" font-size="10.5" font-weight="600" fill="var(--amber-ink)">84주 · 53,615건</text>
+        </g>
+
+        <!-- ---- endpoint value labels (tabular, right-aligned to plot edge) ---- -->
+        <g class="mono" font-size="12" font-weight="600">
+          <text x="1112" y="83" fill="var(--lgb)">0.820</text>
+          <text x="1112" y="100" fill="var(--lr)">0.782</text>
+        </g>
+
+        <!-- ---- Y axis unit label (rotated) ---- -->
+        <text x="22" y="185" font-size="10.5" fill="var(--ink3)" font-weight="650"
+              letter-spacing="0.12em" transform="rotate(-90 22 185)" text-anchor="middle">PR-AUC</text>
+        <!-- X axis unit label -->
+        <text x="600" y="350" font-size="10.5" fill="var(--ink3)" font-weight="650"
+              letter-spacing="0.12em" text-anchor="middle">누적 학습량 (주차 · 건)</text>
+      </svg>
+    </div>
+
+    <!-- ===== READOUT RAIL ===== -->
+    <aside class="rail">
+      <div class="rail-h">측정 결과 · readout</div>
+
+      <div class="kpi accent">
+        <div class="k">full-data LightGBM</div>
+        <div class="v mono">0.820</div>
+        <div class="sub">PR-AUC · 106주 · n=78,703 · <span class="delta">+2.1×</span> vs Dummy</div>
+      </div>
+
+      <div class="kpi">
+        <div class="k">전환점 W (robust)</div>
+        <div class="v mono">84<span class="u">주</span></div>
+        <div class="sub mono">n=53,615 · CI 하한&gt;상한 지속</div>
+      </div>
+
+      <div class="kpi">
+        <div class="k">LR plateau</div>
+        <div class="v mono">~0.78</div>
+        <div class="sub">빠른 수렴 후 정체 · 피크 0.782@94주</div>
+      </div>
+
+      <div class="kpi">
+        <div class="pin"><span class="dot"></span>국적 피처 윤리 → S11에서 정산</div>
+        <div class="foot">국적이 위험도 1위 피처. 예측엔 쓰되 <b>행동 차등엔 배제</b> — 정산은 집중블록(S11).</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============ MIC + FOOTNOTE ============ -->
+  <div class="mic">
+    <span class="tag">발표자</span>
+    <span class="txt">이건 정적 비교표가 아니라, 데이터가 쌓이며 <b>승자가 바뀌는 동적 곡선</b>입니다. 데이터가 거의 없을 땐 단순한 LR이 이기고, 약 5.4만 건에서 LightGBM이 통계적으로 추월해 끝까지 앞섭니다. <b>우리는 모델을 고르지 않습니다 — 데이터가 모델을 고르게 합니다.</b></span>
+  </div>
+  <p class="foot">정직 각주 · 전환주차 W는 <span class="mono">여름 편중 test셋</span>에 의존하는 값. 우리 test가 성수기라 고위험 패턴이 과대표집돼 있음 (design_18 §4). 구간별 경량 재튜닝 · point-in-time 라벨로 look-ahead 차단.</p>
+
+</section>
+</body>
+</html>

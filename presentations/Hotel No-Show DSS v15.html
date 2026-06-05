@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel No-Show DSS — 데이터로 자라는 의사결정 인프라 (v15 · Editorial Instrument)</title>
+<style>
+  /* ============================================================
+     HOTEL NO-SHOW DSS · v15 — "EDITORIAL INSTRUMENT"
+     Direction A (light editorial keynote) as the deck skeleton,
+     Direction B (instrument / measured precision) grafted into
+     data slides. Warm paper · ink-black type · single signature
+     indigo · amber for data registers · risk triband meaning-only.
+     Self-contained: system font fallbacks only, no CDN.
+     ============================================================ */
+
+  :root{
+    /* ---- warm-paper surfaces ---- */
+    --paper:        #F4F2EC;
+    --paper-deep:   #ECE9E1;
+    --surface:      #FBFAF6;
+
+    /* ---- ink ladder ---- */
+    --ink:          #16151A;
+    --ink-2:        #4B4A52;
+    --ink-3:        #8B8A90;
+    --faint:        #B7B3A8;
+
+    /* ---- hairlines ---- */
+    --rule:         #D8D4C8;
+    --rule-soft:    #E6E2D8;
+    --rule-hard:    #C9C4B7;
+
+    /* ---- signature: the single accent (editorial indigo) ---- */
+    --signature:    #1B3A8F;
+    --signature-2:  #2E55C2;
+    --signature-wash:#1B3A8F14;
+
+    /* ---- data register accent (amber, instrument readout) ---- */
+    --amber:        #C8821E;
+    --amber-ink:    #8A5A0F;
+    --amber-wash:   rgba(200,130,30,.08);
+
+    /* ---- risk triband: meaning-locked (음소거 톤) ---- */
+    --risk-hi:      #B23A2E;   /* brick — high cancel risk */
+    --risk-mid:     #B8862B;   /* ochre — mid */
+    --risk-lo:      #3F7A52;   /* forest — low / safe */
+
+    /* ---- model series (semantics fixed) ---- */
+    --lr:           #6F6E74;   /* Logistic Regression — graphite (loses late) */
+    --lgb:          #1B3A8F;   /* LightGBM — signature ink (winner) */
+    --dummy:        #B8B3A6;   /* baseline — neutral */
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 18% 0%, #F7F5EF 0%, var(--paper) 46%, #EFECE3 100%);
+    color:var(--ink);
+    font-family:"Helvetica Neue","Segoe UI Variable Display","Pretendard","Segoe UI",
+                "Apple SD Gothic Neo","Malgun Gothic",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    overflow:hidden; letter-spacing:-0.004em;
+    display:flex; align-items:center; justify-content:center; min-height:100vh;
+  }
+
+  /* mono tabular numerals — the "measured" signature */
+  .mono{
+    font-family:"JetBrains Mono","SF Mono","Roboto Mono",ui-monospace,"Consolas",monospace;
+    font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1,"zero" 1;
+    letter-spacing:-0.02em;
+  }
+  /* one serif-italic signature word per slide — the human hand */
+  .serif{
+    font-family:"Iowan Old Style","Apple Garamond","Times New Roman",
+                "Nanum Myeongjo","Batang",Georgia,serif;
+    font-style:italic; letter-spacing:-0.01em;
+  }
+
+  /* ============ STAGE ============ */
+  .deck{
+    position:relative; width:1280px; height:720px;
+    transform-origin:center center;
+  }
+  .slide{
+    position:absolute; inset:0;
+    background:var(--paper);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.6) inset,
+      0 30px 80px -30px rgba(30,28,22,.28),
+      0 2px 8px rgba(30,28,22,.06);
+    border:1px solid var(--rule-soft);
+    border-radius:4px;
+    padding:64px 96px 60px;
+    display:none; flex-direction:column; overflow:hidden;
+  }
+  .slide.active{ display:flex; animation:fadeIn .26s ease both; }
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+
+  /* signature left ink edge — recurring motif anchor */
+  .slide::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:6px;
+    background:var(--signature);
+  }
+  /* corner registration ticks (instrument bezel) */
+  .reg{ position:absolute; width:13px; height:13px; pointer-events:none; opacity:.5; }
+  .reg::before,.reg::after{ content:""; position:absolute; background:var(--rule-hard); }
+  .reg::before{ width:13px; height:1px; top:0; left:0; }
+  .reg::after{ width:1px; height:13px; top:0; left:0; }
+  .reg.tr{ top:18px; right:22px; transform:scaleX(-1); }
+  .reg.br{ bottom:18px; right:22px; transform:scale(-1); }
+
+  /* ============ TOP META ROW ============ */
+  .topbar{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; }
+  .eyebrow{
+    display:flex; align-items:center; gap:14px;
+    font-size:14px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink-3);
+  }
+  .eyebrow .num{ font-variant-numeric:tabular-nums; color:var(--signature); font-weight:700; }
+  .eyebrow .tick{ width:26px; height:1px; background:var(--rule); }
+  .eyebrow .seg{ color:var(--ink-3); }
+
+  .progress{ display:flex; gap:6px; align-items:center; }
+  .progress i{ width:13px; height:3px; border-radius:2px; background:var(--rule); display:block; }
+  .progress i.on{ background:var(--signature); }
+  .progress .lbl{ margin-left:10px; font-size:13px; letter-spacing:.04em; color:var(--ink-3);
+    font-variant-numeric:tabular-nums; }
+
+  /* ============ HEADLINE ============ */
+  .head{ margin:4px 0 8px; }
+  h1{ font-size:46px; line-height:1.10; font-weight:700; letter-spacing:-0.02em;
+    color:var(--ink); max-width:23ch; }
+  h1.title{ font-size:52px; line-height:1.08; letter-spacing:-0.025em; max-width:22ch; }
+  h1 .accent{ color:var(--signature); }
+  /* headline pin pulled out of h1 into an independent dek-level line (A 개선 ②) */
+  .pinline{ margin-top:10px; }
+  .dek{ margin-top:12px; font-size:19px; line-height:1.5; color:var(--ink-2);
+    max-width:54ch; font-weight:400; }
+  .dek b{ color:var(--ink); font-weight:650; }
+
+  /* honesty pin — paper-toned badge */
+  .pin{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:13px; font-weight:600; letter-spacing:.02em; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--rule);
+    border-left:3px solid var(--signature);
+    padding:5px 11px; border-radius:3px; white-space:nowrap;
+  }
+  .pin::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--signature); flex:none; }
+
+  /* ============ BODY ============ */
+  .body{ flex:1; display:grid; gap:48px; align-items:stretch; margin-top:8px; min-height:0; }
+  .body.rail-2{ grid-template-columns:1fr 320px; }
+  .body.single{ display:flex; flex-direction:column; }
+
+  /* chart plate */
+  .plate{
+    background:var(--surface); border:1px solid var(--rule-soft); border-radius:6px;
+    padding:14px 20px 8px; display:flex; flex-direction:column;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset; min-height:0;
+  }
+  .plate-cap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:8px; margin-bottom:6px; border-bottom:1px solid var(--rule-soft);
+  }
+  .plate-cap .t{ font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:650; }
+  .legend{ display:flex; gap:18px; align-items:center; }
+  .lg{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); }
+  .lg .sw{ width:16px; height:2.5px; border-radius:1px; }
+  .lg.dash .sw{ height:0; border-top:1.5px dashed var(--dummy); }
+  .plate svg{ width:100%; height:auto; display:block; flex:1; min-height:0; }
+  .src{ margin-top:4px; font-size:13px; color:var(--ink-3); letter-spacing:.01em; line-height:1.4; }
+  .src b{ color:var(--ink-2); font-weight:600; }
+
+  /* right rail — readings, not card stack */
+  .rail{ display:flex; flex-direction:column; justify-content:center; gap:0; }
+  .kpi{ margin-bottom:24px; }
+  /* A 개선 ① — KPI value is INK (near-black); only the label carries signature */
+  .kpi .v{ font-size:54px; font-weight:700; letter-spacing:-0.025em; color:var(--ink);
+    line-height:1; font-variant-numeric:tabular-nums; }
+  .kpi .v small{ font-size:24px; font-weight:650; color:var(--ink-2); margin-left:2px; }
+  .kpi .k{ margin-top:9px; font-size:15px; line-height:1.45; color:var(--ink-2); }
+  .kpi .k .lab{ color:var(--signature); font-weight:700; text-transform:uppercase;
+    letter-spacing:.04em; font-size:12.5px; display:block; margin-bottom:3px; }
+  .kpi .k b{ color:var(--ink); font-weight:650; }
+  .rail hr{ border:0; border-top:1px solid var(--rule-soft); margin:0 0 22px; }
+
+  .reads{ list-style:none; display:flex; flex-direction:column; gap:14px; }
+  .reads li{ display:grid; grid-template-columns:18px 1fr; gap:11px;
+    font-size:15.5px; line-height:1.42; color:var(--ink-2); }
+  .reads li .mk{ margin-top:7px; width:14px; height:2.5px; border-radius:2px; align-self:start; }
+  .reads li .mk.dot{ width:8px; height:8px; border-radius:50%; margin-top:5px; }
+  .reads li b{ color:var(--ink); font-weight:650; }
+  .reads li .num{ color:var(--ink); font-weight:650; }
+
+  .quote{ margin-top:18px; font-size:16px; line-height:1.5; color:var(--ink-2); font-weight:400; }
+  .quote b{ color:var(--ink); font-weight:650; }
+
+  /* ============ TABLE ============ */
+  table{ width:100%; border-collapse:collapse; font-size:15.5px; margin-top:6px; }
+  th,td{ text-align:left; padding:10px 13px; vertical-align:top; }
+  th{ color:var(--ink-3); font-weight:600; font-size:12px; text-transform:uppercase;
+    letter-spacing:.06em; border-bottom:1px solid var(--rule); }
+  td{ color:var(--ink-2); border-bottom:1px solid var(--rule); }
+  td b{ font-weight:700; color:var(--ink); }
+  tr:last-child td{ border-bottom:none; }
+  td .lab{ color:var(--ink-3); }
+  tr.key b{ color:var(--signature); }
+
+  /* ============ CLEAN LIST ============ */
+  ul.clean{ list-style:none; }
+  ul.clean li{ padding:7px 0 7px 18px; position:relative; color:var(--ink-2);
+    font-size:15.5px; line-height:1.5; }
+  ul.clean li::before{ content:""; position:absolute; left:0; top:15px; width:8px; height:1px;
+    background:var(--ink-3); }
+  ul.clean li b{ color:var(--ink); font-weight:650; }
+  ul.clean li .mono{ color:var(--ink); }
+  ul.clean li.risk::before{ width:6px; height:6px; border-radius:50%; top:12px; background:var(--risk-hi); }
+
+  /* ============ PANELS / CARDS ============ */
+  .grid{ display:grid; gap:16px; }
+  .g2{ grid-template-columns:1fr 1fr; } .g3{ grid-template-columns:repeat(3,1fr); }
+  .g4{ grid-template-columns:repeat(4,1fr); }
+  .card{
+    background:var(--surface); border:1px solid var(--rule-soft); border-radius:6px;
+    padding:16px 18px; box-shadow:0 1px 0 rgba(255,255,255,.7) inset;
+    position:relative;
+  }
+  .card.mark{ padding-left:20px; }
+  .card.mark::before{ content:""; position:absolute; top:18px; left:0; bottom:18px; width:3px;
+    border-radius:0 2px 2px 0; background:var(--signature); }
+  .card.m-hi::before{ background:var(--risk-hi); }
+  .card.m-mid::before{ background:var(--risk-mid); }
+  .card.m-lo::before{ background:var(--risk-lo); }
+  .card.m-sig::before{ background:var(--signature); }
+  .card h3{ font-size:15px; font-weight:650; margin-bottom:6px; letter-spacing:-.01em; color:var(--ink); }
+  .card h3.hi{ color:var(--risk-hi); } .card h3.mid{ color:var(--risk-mid); }
+  .card h3.lo{ color:var(--risk-lo); } .card h3.sig{ color:var(--signature); }
+  .card p{ font-size:14px; color:var(--ink-2); line-height:1.55; }
+  .card p b{ color:var(--ink); font-weight:650; }
+  .tag{ font-size:13px; color:var(--ink-3); letter-spacing:.01em; }
+
+  /* risk-coded zoom cards */
+  .rcard{ padding:12px 15px; }
+  .rcard .v{ font-size:30px; font-weight:700; margin-top:6px; font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em; }
+  .rcard.hi .v{ color:var(--risk-hi); } .rcard.mid .v{ color:var(--risk-mid); }
+  .rcard.lo .v{ color:var(--risk-lo); }
+
+  /* chips */
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .chip{ font-size:13px; color:var(--ink-2); background:var(--surface);
+    border:1px solid var(--rule); border-radius:3px; padding:5px 11px; letter-spacing:.01em; }
+
+  /* flow steps */
+  .flow{ display:flex; align-items:stretch; gap:0; margin-top:8px; }
+  .flow .step{ flex:1; background:var(--paper-deep); border:1px solid var(--rule-soft);
+    border-radius:4px; padding:10px 8px; text-align:center; }
+  .flow .step .n{ font-size:11px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase; }
+  .flow .step .t{ font-weight:650; margin-top:3px; font-size:14px; color:var(--ink); }
+  .flow .step.out{ border-color:var(--rule-hard); background:var(--surface); }
+  .flow .step.out .t{ color:var(--signature); }
+  .flow .arr{ align-self:center; color:var(--faint); font-size:15px; padding:0 8px; }
+
+  /* causal layout */
+  .cause{ display:flex; align-items:center; gap:18px; margin-top:6px; }
+  .cause .arrow{ flex:0 0 auto; color:var(--rule-hard); font-size:26px; align-self:center; }
+
+  /* big numeral conclusion */
+  .bignum{ font-weight:700; letter-spacing:-.04em; line-height:1; font-size:30px;
+    color:var(--signature); width:34px; flex:0 0 34px; font-variant-numeric:tabular-nums; }
+
+  /* ============ FOOTER ============ */
+  .foot{ margin-top:16px; padding-top:14px; border-top:1px solid var(--rule);
+    display:flex; align-items:baseline; gap:14px; }
+  .foot .q{ font-size:18px; line-height:1.35; color:var(--ink); letter-spacing:-0.01em; }
+  .foot .q .pre{ color:var(--ink-3); margin-right:4px; }
+  .foot .q b{ color:var(--signature); font-weight:700; }
+  .foot .pg{ margin-left:auto; font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-3); white-space:nowrap; }
+
+  /* footnote (정직 각주 — 분리된 줄) */
+  .footnote{ margin-top:8px; font-size:13px; color:var(--ink-3); line-height:1.45;
+    letter-spacing:.01em; }
+  .footnote .mono{ color:var(--ink-2); }
+  .footnote .lab{ color:var(--amber-ink); font-weight:650; letter-spacing:.02em; }
+
+  /* dots accumulate (S2) */
+  .dotwrap{ position:relative; flex:1; min-height:0; background:var(--surface);
+    border:1px solid var(--rule-soft); border-radius:6px; overflow:hidden; margin-top:8px;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset; }
+  .dot{ position:absolute; width:7px; height:7px; border-radius:50%; }
+
+  /* ============ CHROME ============ */
+  .count{ position:fixed; bottom:14px; right:20px; font-size:13px; color:var(--ink-3);
+    z-index:20; letter-spacing:.04em; font-variant-numeric:tabular-nums; }
+  .hint{ position:fixed; bottom:14px; left:20px; font-size:12px; color:var(--faint);
+    z-index:20; letter-spacing:.02em; }
+
+  /* ============ SPEAKER NOTES (N) ============ */
+  .notes{ position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:linear-gradient(180deg, rgba(244,242,236,0), rgba(244,242,236,.985) 22%);
+    padding:2.4rem 7vw 1.5rem; transform:translateY(101%);
+    transition:transform .24s ease; pointer-events:none; }
+  .notes.show{ transform:translateY(0); }
+  .notes .lbl{ display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--signature); font-weight:600; margin-bottom:8px; }
+  .notes .lbl::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--signature); }
+  .notes .nbody{ font-size:15px; color:var(--ink); line-height:1.62; max-width:108ch; font-weight:400; }
+  .notes .nbody b{ color:var(--signature); font-weight:650; }
+
+  @media (prefers-reduced-motion: reduce){
+    .slide.active{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="count mono" id="count"></div>
+<div class="hint">←  →   ·   F 전체화면   ·   N 발표자 노트</div>
+
+<div class="deck" id="deck">
+
+  <!-- ════════════════════════════════════════════════════════════
+       S1 · TITLE + REFRAME
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide active"
+    data-notes="첫 문장 한 방: '우리가 호텔에 파는 건 모델 한 개가 아니라, 쓸수록 똑똑해지는 인프라입니다.' 한 박자 쉬고 대조표로 '주인공이 모델→인프라로 바뀌었다'를 못 박는다. 중간발표 PR-AUC 0.820은 격하가 아니라 인프라의 첫 도메인 산출물로 자리 이동(full-data 앵커로 생존). 교수님 법률 지적은 회피가 아니라 '사전동의 설계'로 정면 대응한다고 예고(S7에서 정산). 핀 회수 전략: 여기선 핀을 찍지 않는다. 의심 장치는 S3(국적)부터. Q(성능 못 올려 말 바꾼 것 아닌가)→오히려 격상. 0.820은 그대로 살아 있고 그 위에 '데이터가 쌓이면 모델 자체가 바뀐다'는 더 강한 주장을 얹었다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">01</span><span class="tick"></span>
+        <span class="seg">Hotel No-Show DSS · 최종발표</span></div>
+      <div class="progress"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <span class="lbl">01 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1 class="title">예측 모델이 아니라,<br><span class="accent">데이터로 자라는</span> 의사결정 인프라를 만들었습니다.</h1>
+      <p class="dek">호텔에 핏한 예약 데이터를 모으고, 그 데이터로 자라는 ML 예측(오버부킹 · 그 외 도메인)으로
+        <b>수익과 경영 안정성을 극대화</b>하는 데이터 수집 인프라. 오버부킹은 그 <span class="accent serif">첫 도메인</span>일 뿐.</p>
+    </div>
+    <div class="body single" style="justify-content:center">
+      <table style="max-width:980px">
+        <thead><tr><th style="width:13%"></th><th style="width:42%">중간발표</th><th>최종발표</th></tr></thead>
+        <tbody>
+          <tr class="key"><td class="lab">주인공</td><td>취소예측 모델 <span class="mono" style="color:var(--ink-3)">(PR-AUC 0.820)</span></td><td><b>데이터 수집 인프라</b> · 모델 = 첫 도메인</td></tr>
+          <tr><td class="lab">메시지</td><td>"왜 하는가" (동기 호소)</td><td><b>무엇을 만들었나 + 작동 증거 + 법적 가능</b></td></tr>
+          <tr><td class="lab">법률</td><td>교수님께 지적받음</td><td><b>사전동의 설계로 정면 대응</b> <span style="color:var(--ink-3)">(→ S7)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">시작 —</span> 흩어진 예약은 어디서, 어떻게 우리 인프라로 <b>들어올까요?</b></p>
+      <span class="pg">Hotel No-Show DSS · 2026.06.10</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S2 · DATA COMES IN (수집구)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="흩어진 플랫폼(Direct·OTA·TA/TO·Corporate·GDS)의 예약이 우리 PMS 한 곳으로 모인다. 점이 쌓이는 애니메이션. 각 점 하나가 lead_time·국적·요청수·채널·ADR 등 수십 개 피처를 가진 학습 데이터. '예약 하나하나가 곧 데이터'를 또렷이. 멘트: '예약 하나하나가 곧 데이터입니다. 흩어진 플랫폼의 예약이 우리 인프라로 모입니다 — 이게 수집구입니다.' Q(그냥 PMS 수집 아닌가)→핵심은 수집 자체가 아니라 그 데이터로 모델이 자라고 도메인이 늘어나는 루프 — 다음 슬라이드가 첫 증거.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">02</span><span class="tick"></span>
+        <span class="seg">데이터가 들어온다</span></div>
+      <div class="progress"><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <span class="lbl">02 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>여러 플랫폼의 예약이 모인다 — 각 예약은 <span class="accent">수십 개 피처를 가진 한 점</span></h1>
+      <p class="dek">흩어진 채널의 예약이 우리 PMS 한 곳으로 수집된다. <b>예약 하나하나가 곧 학습 데이터</b>다.</p>
+    </div>
+    <div class="body single">
+      <div class="row" style="gap:8px;margin-top:4px">
+        <span class="chip">Direct</span><span class="chip">Online TA</span><span class="chip">Offline TA/TO</span>
+        <span class="chip">Corporate</span><span class="chip">GDS</span>
+        <span style="color:var(--ink-3);font-size:14px;margin-left:6px">→ 우리 PMS(예약 앱)가 한 곳으로 수집</span>
+      </div>
+      <div class="dotwrap" id="dotwrap"></div>
+      <div class="legend" style="margin-top:10px">
+        <span class="lg"><span class="sw" style="background:var(--risk-lo);width:10px;height:10px;border-radius:50%"></span>정상</span>
+        <span class="lg"><span class="sw" style="background:var(--risk-hi);width:10px;height:10px;border-radius:50%"></span>취소</span>
+        <span class="src" style="margin-top:0;margin-left:8px">각 점 = lead_time · 국적 · 요청수 · 채널 · ADR … <b>수십 개 피처</b></span>
+      </div>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 그런데 —</span> 데이터가 거의 없을 때 우리는 무슨 모델을 써야 할까요? <b>데이터가 답합니다.</b></p>
+      <span class="pg">02 · 데이터가 들어온다</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S3 · MODEL GROWS ★ (성장곡선 — 정량 심장)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="발표의 정량 심장(작동 증거 ①). 실데이터(Kaggle, 우리 두 호텔 City=리스본/Resort=알가르브 실제 2년 기록)로 누적 시계열을 굴린 성장곡선. 읽는 법: ① 콜드스타트엔 단순 LR이 우위 → 빠르게 올라 약 0.78에서 plateau. ② LightGBM은 낮게 시작하지만 데이터가 쌓이며 따라붙어 W≈5.4만 건(84주)에서 CI가 분리되며 통계적으로 추월 → 끝까지 유지. ③ 음영 구간은 CI가 겹쳐 tie(구분 불가) — 겹치면 '교차'라 안 부른다(robust 정의). full-data PR-AUC 0.820, Dummy 0.387의 2.1배. 멘트: '우리는 모델을 고르지 않습니다 — 데이터가 모델을 고르게 합니다.' [스케일 주의 — 반드시 숙지] 84주는 달력 주차이고, 곡선의 가로축은 누적 시계열(약 7.9만 건)이며, 0.820은 전체 데이터로 동결한 모델의 test 성능이다. 즉 W의 84주(달력)·곡선의 누적건수·0.820의 모집단은 서로 다른 척도다 — 한 점에서 셋이 같다고 말하지 말 것. 정직 각주(말로도): 전환주차 W는 여름 편중 test셋 의존값. 우리 test가 성수기라 고위험 패턴이 과대표집돼 있다(design_18 §4). 핀: 국적 윤리는 여기서 찍고 S7에서 정산. Q(5.4만 그 한 점 우연 아닌가)→단일 교차가 아니라 CI 하한>상한이 끝까지 지속되는 첫 주차(robust), 노이즈성 교차는 tie로 따로 표기. Q(작은 모델 굶긴 비교 아닌가)→구간별 경량 재튜닝(모델당 규제축 1개, train 내부 시간순 holdout), test 누수 없음.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">03</span><span class="tick"></span>
+        <span class="seg">작동 증거 ① · 정량 심장</span></div>
+      <div class="progress"><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i>
+        <span class="lbl">03 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>데이터가 쌓일수록 모델이 자란다 — 우리는 모델을 고르지 않는다, <span class="accent serif">데이터가 고른다</span></h1>
+      <div class="pinline"><span class="pin">국적 피처 윤리 → S7에서 정산</span></div>
+    </div>
+    <div class="body rail-2" style="align-items:stretch">
+      <!-- ── chart plate (B instrument discipline) ── -->
+      <div class="plate">
+        <div class="plate-cap">
+          <span class="t">PR-AUC × 누적 학습량</span>
+          <span class="legend">
+            <span class="lg"><span class="sw" style="background:var(--lr)"></span>Logistic Regression</span>
+            <span class="lg"><span class="sw" style="background:var(--lgb);height:3px"></span>LightGBM</span>
+            <span class="lg dash"><span class="sw" style="border-top-color:var(--dummy)"></span>Dummy 0.387</span>
+          </span>
+        </div>
+        <!-- viewBox 0 0 580 300 · plot x[70..540] y[40(top=0.84)..250(bottom=0.40)] -->
+        <svg viewBox="0 0 580 300" preserveAspectRatio="xMidYMid meet" role="img" id="growthSvg"
+             aria-label="누적 학습 데이터 건수에 따른 PR-AUC 성장곡선: LR은 0.78에서 정체, LightGBM은 약 5.4만 건에서 통계적으로 추월해 0.820에서 끝난다.">
+          <!-- minor gridlines -->
+          <g stroke="#E6E2D8" stroke-width="1">
+            <line x1="70" y1="55"  x2="540" y2="55"/>
+            <line x1="70" y1="103" x2="540" y2="103"/>
+            <line x1="70" y1="151" x2="540" y2="151"/>
+            <line x1="70" y1="199" x2="540" y2="199"/>
+          </g>
+          <!-- axis frame -->
+          <line x1="70" y1="40" x2="70" y2="250" stroke="#C9C4B7" stroke-width="1.4"/>
+          <line x1="70" y1="250" x2="540" y2="250" stroke="#C9C4B7" stroke-width="1.4"/>
+          <!-- y tick labels: 0.80=55 .70=103 .60=151 .50=199 .40=247 -->
+          <g fill="#8B8A90" font-size="13" text-anchor="end" class="mono">
+            <text x="62" y="59">0.80</text>
+            <text x="62" y="107">0.70</text>
+            <text x="62" y="155">0.60</text>
+            <text x="62" y="203">0.50</text>
+            <text x="62" y="251">0.40</text>
+          </g>
+          <text x="22" y="145" fill="#8B8A90" font-size="13" text-anchor="middle"
+                transform="rotate(-90 22 145)">PR-AUC</text>
+          <!-- x tick labels -->
+          <g fill="#8B8A90" font-size="13" text-anchor="middle" class="mono">
+            <text x="70"    y="268">0.8천</text>
+            <text x="187.5" y="268">2만</text>
+            <text x="305"   y="268">4만</text>
+            <text x="422.5" y="268">6만</text>
+            <text x="540"   y="268">7.9만</text>
+          </g>
+          <text x="305" y="289" fill="#8B8A90" font-size="13" text-anchor="middle">누적 학습 데이터 건수 · 시계열 · point-in-time 라벨</text>
+
+          <!-- Dummy baseline 0.387 → y ≈ 253.2 (clamp inside) -->
+          <line x1="70" y1="250.0" x2="540" y2="250.0" stroke="#B8B3A6" stroke-width="1.4" stroke-dasharray="2 5"/>
+
+          <!-- TIE region (CI overlap before W) -->
+          <rect x="187.5" y="40" width="201.1" height="210" fill="#16151A" opacity="0.035"/>
+          <text x="248" y="56" fill="#8B8A90" font-size="12.5" font-style="italic"
+                font-family="Georgia,'Times New Roman',serif">구분 불가 (tie · CI 겹침)</text>
+
+          <!-- CI band: LR (graphite, faint) -->
+          <path d="M 70,165 L 105,138 L 140,118 L 187.5,93 L 235,82 L 282.5,73 L 330,68 L 377.5,64 L 422.5,62 L 470,61 L 510,61 L 540,61 L 540,72 L 510,72 L 470,72 L 422.5,73 L 377.5,75 L 330,79 L 282.5,84 L 235,93 L 187.5,104 L 140,129 L 105,149 L 70,176 Z"
+                fill="#6F6E74" opacity="0.13"/>
+          <!-- CI band: LightGBM (signature wash) -->
+          <path d="M 70,236 L 105,168 L 140,135 L 187.5,108 L 235,89 L 282.5,72 L 330,61 L 377.5,53 L 422.5,49 L 470,46 L 510,44 L 540,43 L 540,53 L 510,54 L 470,56 L 422.5,59 L 377.5,63 L 330,72 L 282.5,84 L 235,101 L 187.5,120 L 140,147 L 105,182 L 70,250 Z"
+                fill="#1B3A8F" opacity="0.12"/>
+
+          <!-- LR curve (graphite) — draws on -->
+          <path id="lrLine" fill="none" stroke="#6F6E74" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                d="M 70,170 L 105,143 L 140,123 L 187.5,98 L 235,87 L 282.5,78 L 330,73 L 377.5,69 L 422.5,67 L 470,66 L 510,66 L 540,66"/>
+          <!-- LightGBM curve (signature) — draws on -->
+          <path id="lgbLine" fill="none" stroke="#1B3A8F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+                d="M 70,243 L 105,175 L 140,141 L 187.5,114 L 235,95 L 282.5,78 L 330,66 L 377.5,58 L 422.5,54 L 470,50 L 510,48 L 540,47"/>
+
+          <!-- W transition marker @ x≈388.6 (~5.4만) -->
+          <g id="wMarker">
+            <line x1="388.6" y1="40" x2="388.6" y2="250" stroke="#1B3A8F" stroke-width="1.4" stroke-dasharray="5 5" opacity="0.55"/>
+            <circle cx="388.6" cy="57.5" r="6" fill="#1B3A8F" stroke="#FBFAF6" stroke-width="2.5"/>
+            <text x="398" y="51" fill="#16151A" font-size="14" font-weight="700" class="mono">W ≈ 5.4만 건</text>
+            <text x="398" y="65" fill="#4B4A52" font-size="12.5">여기서 추월 — 끝까지 유지</text>
+          </g>
+
+          <!-- end value labels -->
+          <text x="536" y="74" fill="#6F6E74" font-size="14" font-weight="700" text-anchor="end" class="mono">LR · 0.78</text>
+          <text x="536" y="40" fill="#1B3A8F" font-size="15" font-weight="700" text-anchor="end" class="mono">LightGBM · 0.820</text>
+          <line x1="70" y1="250" x2="100" y2="250" stroke="#B8B3A6" stroke-width="0"/>
+          <text x="74" y="246" fill="#8B8A90" font-size="12" text-anchor="start" class="mono">Dummy 0.387</text>
+        </svg>
+        <div class="src">실데이터 — Kaggle, <b>우리 두 호텔의 실제 2년 기록</b> (City 리스본 · Resort 알가르브) ·
+          누적 시계열(약 7.9만 건) · Bootstrap 95% CI · 하이쿠 미사용</div>
+      </div>
+
+      <!-- ── readout rail ── -->
+      <div class="rail">
+        <div class="kpi">
+          <div class="v">0.820</div>
+          <div class="k"><span class="lab">full-data PR-AUC</span>Dummy <b>0.387</b> 대비 <b>2.1배</b></div>
+        </div>
+        <hr>
+        <ul class="reads">
+          <li><span class="mk" style="background:#6F6E74"></span>
+            <span>콜드스타트엔 <b>단순한 LR</b>이 우위 — 빠르게 올라 <span class="num mono">0.78</span>에서 plateau.</span></li>
+          <li><span class="mk" style="background:#1B3A8F"></span>
+            <span>약 <span class="num mono">5.4만 건</span>에서 <b>LightGBM이 통계적으로 추월</b>, 끝까지 앞선다.</span></li>
+          <li><span class="mk" style="background:#16151A;opacity:.16"></span>
+            <span>그 사이 음영은 <b>구분 불가(tie)</b> — CI 겹침을 "교차"라 부르지 않는다.</span></li>
+        </ul>
+        <p class="quote">성장형 시스템은 모델을 고정하지 않는다 — <b>데이터량이 최적 모델을 정한다.</b></p>
+      </div>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 곡선은 집계입니다 —</span> 이 분포를 <b>한 코호트로 줌인</b>하면, 호텔은 무엇을 보게 될까요?</p>
+      <span class="pg">03 · 정량 심장</span>
+    </div>
+    <p class="footnote"><span class="lab">정직 각주 ·</span> 전환주차 W는 <span class="mono">여름 편중 test셋</span>에 의존하는 값(성수기 고위험 과대표집, design_18 §4). 스케일 주의 — <b style="color:var(--ink-2)">84주는 달력 주차, 곡선 가로축은 누적 시계열 약 7.9만 건, 0.820은 전체 동결모델의 test 성능</b>으로 모집단이 서로 다르다.</p>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S4 · LIVE DEMO (허브 + 코호트 줌인) ★ 차별화 심장
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="작동 증거 ②(차별화 심장) + 줌인을 한 장으로. 왼쪽: 허브로 들어오는 라이브 스트림(LLM 손님이 생각하며 예약·협상 → (위험도→오퍼→수락→취소) 튜플이 실시간 수집). 이 데이터는 세상 어디에도 없다 — 협상 데이터 실제 0건이라 시뮬이 유일한 부트스트랩(순환논리 없음). 오른쪽: 그 허브에서 한 코호트(10건)로 줌인 — 10건 중 4건 고위험(운영 임계 0.65). 화면의 좌→우 화살표는 '병치가 아니라 인과'임을 시각화: 허브에 쌓인 데이터가 곧 코호트 위험도의 입력이다. [스케일 주의 — S5와 연결] 여기 4건은 10건 코호트를 보여주는 줌인 장치이고, S5의 최적 K*≈38~41은 일일 코호트 162건 기준이다 — 4와 162는 서로 다른 스케일이니 '4개 중 K*'처럼 섞어 말하지 말 것. 체리피킹 핀(반드시): '10건은 보여주는 장치, 증명은 전체 test셋 집계와 CI(S3).' 국적 윤리(E1): 화면의 국적(PRT/BRA/DEU/FRA)은 모델 입력 예시일 뿐 차별 기준 아님 — 보상·라우팅 결정에선 배제(S7 정산). 데모 실패 시 Plan B(30초 녹화)/Plan C(정적 튜플 1줄)로 폴백 — 정량 증명은 S3가 이미 끝냈으니 당황 금지. Q(합성으로 뭘 증명?)→정량 주장 안 함, 수집 인프라 시연. 취소 트리거조차 원논문 동인 분포에서 샘플링.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">04</span><span class="tick"></span>
+        <span class="seg">작동 증거 ② · 라이브 데모 + 줌인</span></div>
+      <div class="progress"><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i>
+        <span class="lbl">04 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>허브에 데이터가 실시간으로 쌓이고 — 그게 곧 <span class="accent">한 코호트의 입력</span>이 된다</h1>
+      <div class="pinline"><span class="pin">10건 = 보여주는 장치, 증명 = 전체 test셋 + CI → S3</span></div>
+    </div>
+    <div class="body single">
+      <div class="cause">
+        <div style="flex:1 1 0">
+          <div class="card mark m-sig">
+            <h3 class="sig">LIVE · 수집 허브 (ML②)</h3>
+            <p>LLM 손님이 "생각하며" 예약·협상 → <b>(위험도 → 오퍼 → 수락 → 취소)</b> 튜플이 실시간 수집.</p>
+            <div class="flow" style="margin-top:10px">
+              <div class="step"><div class="n">P1</div><div class="t">예약</div></div>
+              <div class="arr">→</div>
+              <div class="step"><div class="n">P2</div><div class="t">협상</div></div>
+              <div class="arr">→</div>
+              <div class="step"><div class="n">P3</div><div class="t">취소?</div></div>
+              <div class="arr">→</div>
+              <div class="step out"><div class="n">수집</div><div class="t">튜플</div></div>
+            </div>
+            <p style="margin-top:10px;font-size:13px;color:var(--ink-3)">협상 데이터 실제 <b style="color:var(--risk-hi)" class="mono">0건</b> → 시뮬이 유일 부트스트랩(순환논리 없음) · walk_sim <span class="mono" style="color:var(--ink-2)">1,000+</span>건 보완</p>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+        <div style="flex:1 1 0">
+          <div class="grid g2">
+            <div class="card mark m-hi rcard hi"><div class="tag">#R-7821 · PRT · TA/TO</div><div class="v mono">0.94</div></div>
+            <div class="card mark m-hi rcard hi"><div class="tag">#R-7842 · BRA · 선예약150일</div><div class="v mono">0.88</div></div>
+            <div class="card mark m-mid rcard mid"><div class="tag">#R-7855 · DEU · 컨퍼런스</div><div class="v mono">0.61</div></div>
+            <div class="card mark m-lo rcard lo"><div class="tag">#R-7860 · FRA · 가족·요청3</div><div class="v mono">0.19</div></div>
+          </div>
+          <p class="dek" style="margin-top:12px;font-size:16px">10건 중 <b style="color:var(--risk-hi)">4건이 고위험</b> <span class="mono" style="color:var(--ink-3)">(운영 임계 0.65)</span> → 호텔의 의사결정 입력값.</p>
+        </div>
+      </div>
+      <p class="footnote" style="margin-top:14px">국적(PRT·BRA·DEU·FRA)은 <b style="color:var(--ink-2)">예측 입력 예시</b>일 뿐, 차등 대우(보상·라우팅) 결정에선 배제 — 화면의 국적은 <b style="color:var(--ink-2)">차별 기준이 아니다</b> (정산 → S7).</p>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 고위험 4건이라는 입력으로 —</span> 호텔은 <b>몇 개를 오버부킹</b>해야 할까요?</p>
+      <span class="pg">04 · 차별화 심장</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S5 · OVERBOOKING → EV → WALK
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="의사결정+기대효과+보상 정박을 한 장으로. ① 결정 원리: 위험도 분포(고위험 4건)를 한계비용=한계수익에 넣어 최적 오버부킹 — 교과서 RM(업계 5~15%, risk-based가 RevPAR↑). 결정권은 항상 매니저(GDPR Art.22). ② EV 곡선: K 적으면 빈 방 손실(perishable·회복0), 많으면 walk 보상+평판 손실, 균형점이 최적 K. 실값은 src/overbooking_ev.py 산출(일일코호트 162·ADR €108·K*≈38~41, 비용비 0.5/1.0/2.0 sweep). [스케일 주의 — S4와 연결] S4의 고위험 4건은 10건 코호트 줌인 장치이고, 여기 K*≈38~41은 일일 코호트 162건 기준이다 — 두 숫자의 스케일이 다르다. 재프레이밍(E4): 목표는 수익 극대화가 아니라 빈 방 손실과 손님 walk 마찰을 동시에 줄이는 균형점 — 평판(손님 피해)을 비용에 명시했기 때문에 답이 '보수적'으로 나온다. 정직 핀: 가정 아님, 실데이터 기대값. 비용비 정직: reputation 포함 시 walk가 더 비싸 비용비 ≤ 1, 비용비↑→K*↓ 보수화. walk 보상: 규제 없음, 선불 환불만 의무(항공과 다름). Hyatt/Marriott 자릿수 감각. Q(비용비 {2,5,10} 왜?)→방향이 거꾸로일 수 있어 sweep으로 제시, reputation 포함 시 walk가 더 비싸 보수적 오버부킹이 답.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">05</span><span class="tick"></span>
+        <span class="seg">의사결정 → 기대효과 → 보상</span></div>
+      <div class="progress"><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i>
+        <span class="lbl">05 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>위험도로 <span class="accent">몇 개를 오버부킹</span>하고, 빗나가면 어떻게 보상하나</h1>
+      <div class="pinline"><span class="pin">가정 아님 · 실데이터 기대값</span></div>
+    </div>
+    <div class="body rail-2" style="align-items:stretch">
+      <div class="plate">
+        <div class="plate-cap">
+          <span class="t">기대 순이익 × 오버부킹 수 K</span>
+          <span class="legend"><span class="lg"><span class="sw" style="background:var(--signature);height:3px"></span>E[순이익(K)]</span></span>
+        </div>
+        <svg viewBox="0 0 580 280" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="오버부킹 수 K에 대한 기대 순이익 오목 곡선. 최적 K는 약 38에서 41 사이.">
+          <g stroke="#E6E2D8" stroke-width="1">
+            <line x1="70" y1="80"  x2="540" y2="80"/>
+            <line x1="70" y1="140" x2="540" y2="140"/>
+            <line x1="70" y1="200" x2="540" y2="200"/>
+          </g>
+          <line x1="70" y1="40" x2="70" y2="250" stroke="#C9C4B7" stroke-width="1.4"/>
+          <line x1="70" y1="250" x2="540" y2="250" stroke="#C9C4B7" stroke-width="1.4"/>
+          <text x="305" y="274" fill="#8B8A90" font-size="13" text-anchor="middle">오버부킹 객실 수 K</text>
+          <text x="22" y="145" fill="#8B8A90" font-size="13" text-anchor="middle" transform="rotate(-90 22 145)">기대 순이익</text>
+          <!-- K* sweep band (cost-ratio sweep) -->
+          <rect x="285" y="40" width="40" height="210" fill="#1B3A8F" opacity="0.07"/>
+          <!-- concave EV curve -->
+          <path d="M 80,228 C 150,150 235,98 305,93 C 365,90 435,128 495,206 C 514,232 530,243 540,248"
+                fill="none" stroke="#1B3A8F" stroke-width="3" stroke-linecap="round"/>
+          <line x1="305" y1="40" x2="305" y2="250" stroke="#8B8A90" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.6"/>
+          <circle cx="305" cy="93" r="5.5" fill="#1B3A8F" stroke="#FBFAF6" stroke-width="2.5"/>
+          <text x="315" y="84" fill="#16151A" font-size="14" font-weight="700" class="mono">최적 K* ≈ 38–41</text>
+          <text x="150" y="240" fill="#8B8A90" font-size="13" text-anchor="middle">K↓ 빈 방 손실</text>
+          <text x="492" y="234" fill="#B23A2E" font-size="13" text-anchor="end">K↑ walk · 평판 비용</text>
+        </svg>
+        <div class="src">E[순이익(K)] = 채운 방 수익 − E[walk 보상 · 평판 비용] · 모델 위험도 기반
+          (<span class="mono">src/overbooking_ev.py</span>) · 일일코호트 <span class="mono">162</span> · ADR <span class="mono">€108</span> · 비용비 0.5/1.0/2.0 sweep</div>
+      </div>
+      <div class="rail">
+        <ul class="clean" style="margin-top:0">
+          <li>결정 원리: <b>한계비용 = 한계수익</b> (호텔 RM 표준 · 업계 <span class="mono">5~15%</span>)</li>
+          <li><b>risk-based가 RevPAR↑</b> · 결정권은 <b>매니저</b> (GDPR Art.22)</li>
+          <li>예측 빗나가 체크인 충돌 → <b style="color:var(--risk-hi)">walk(타 호텔 이전)</b></li>
+          <li>walk 보상: 동급/상위 + 첫날 + 교통 + 굿윌 · <b>규제 없음</b>(선불 환불만 의무)</li>
+        </ul>
+        <div class="card mark m-mid" style="margin-top:16px">
+          <p>목표는 수익 극대화가 아니라 <b>빈 방 손실과 손님 walk 마찰을 동시에 줄이는 균형점</b>. 평판(손님 피해)을 비용에 명시 → 비용비↑일수록 <b>K*가 작아져 답이 보수적</b>으로 나온다.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 그런데 그 보상 가격은 —</span> 손님을 <b>무엇으로</b> 보고 정해야 할까요? (캐릭터가 아니라 피처로)</p>
+      <span class="pg">05 · 의사결정</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S6 · NEGOTIATION DATA (ML②)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="협상 데이터 수집(ML②)이 키우는 보상 정책. 가격대 두 힘: 하한=손님 만족(너무 낮으면 불만), 상한=평판 비용(별점 1↓=매출 5~9%↓, 부정리뷰 3건+→79%가 예약 안 함). 우리는 손님을 페르소나/캐릭터로 안 보고 인원수·예약임박·등급/채널이라는 피처로 적정 가격대를 찾는다. 국적은 차등에서 명시적 배제(차별 방지·S7 정산). 1차 정량 증거: walk 협상 시뮬 D 아키타입 €46 ≈ ADR 42% — 업계 보상과 '같은 자릿수'(정확 일치 아님, 풀보상 하단의 굿윌/사전협상 구간). 이 (위험도→오퍼→수락→취소) 튜플은 세상 어디에도 없고(협상 데이터 0건), 우리 인프라가 그걸 만들어 ML②를 키운다 — 순환논리 없음. Q(피처 차등도 차별 아닌가)→보호속성(국적)은 배제, 인원·임박은 '대체 숙소 확보 난이도'라는 운영상 정당 근거. Q(€46 한 숫자로 충분?)→1차 증거. 전체 최적화는 실배포 협상 로그 수집 후 로드맵.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">06</span><span class="tick"></span>
+        <span class="seg">작동 증거 ② 심화 · 협상 데이터로 보상을 정한다</span></div>
+      <div class="progress"><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i>
+        <span class="lbl">06 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>페르소나가 아니라 <span class="accent">체계화된 피처</span>로 가격대를 찾는다</h1>
+      <p class="dek">손님을 캐릭터로 보지 않는다. <b>인원수 · 예약 임박 · 등급/채널</b>이라는 피처로 적정 보상 가격대를 정한다.</p>
+    </div>
+    <div class="body single">
+      <div class="grid g2" style="margin-top:6px">
+        <div class="card">
+          <h3>가격대를 정하는 두 힘</h3>
+          <ul class="clean">
+            <li><b>하한</b> — 손님 만족 (너무 낮으면 불만)</li>
+            <li><b>상한</b> — 평판 비용: 별점 1↓ = 매출 <b style="color:var(--risk-hi)" class="mono">5~9%↓</b>, 부정리뷰 3건+ → <span class="mono" style="color:var(--ink)">79%</span>가 예약 안 함</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>피처 → 보상 차등 (근거 있음)</h3>
+          <ul class="clean">
+            <li><b>인원수</b> 多 → 대체 숙소 확보 난이도↑</li>
+            <li><b>예약 임박</b> → 대안 부족 → 불만↑</li>
+            <li><b>등급/채널</b> → 로열티별 차등 (브랜드 실재)</li>
+            <li class="risk">국적은 차등에서 <b style="color:var(--risk-hi)">배제</b> (차별 방지 · → S7)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card mark m-sig" style="margin-top:18px">
+        <p style="font-size:16px">1차 증거: walk 협상 시뮬 <b class="mono" style="color:var(--signature)">D 아키타입 €46</b> (≈ ADR <span class="mono">42%</span>) — 업계 보상과 <b>같은 자릿수</b>. 이 (위험도 → 오퍼 → 수락 → 취소) 튜플이 ML②가 키우는, <b>세상에 없던 데이터</b>다.</p>
+      </div>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 흐름이 한 바퀴 돌았습니다 —</span> 예약→데이터→모델→결정→새 데이터. 그런데 <b>왜 이걸 믿어야 하나요?</b></p>
+      <span class="pg">06 · 협상 데이터</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S7 · WHY BELIEVE ★ (집중블록 — 윤리·법률·효과)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="결론 직전 집중 정산 블록. 앞에서 핀으로 찍은 의심들(S3 국적·S4 체리피킹/국적·S5 가정아님)을 윤리·법률·효과 3칸으로 한 번에 닫는다. ① 윤리(국적 차별): 국적이 위험도 1위 피처(SHAP)지만 예측엔 쓰되 행동 차등엔 배제. ablation 측정 — 완전 DROP −5.0%(0.8189→0.7783, CI 분리=유의 손실)이지만 is_domestic(PRT vs 외)으로 절충하면 −1.0%(0.8107, CI 겹침=무손실)로 차별 광학 제거+top10 누수 소멸. 사전동의·매니저 승인 필수. 간접차별 잔존은 한계로 명시(E2). ② 법률(사전동의 설계): 규제 공백을 이용하는 게 아니라, 규제가 보호하려는 손님 이익(사전 고지·자유 동의·언제든 거부)을 설계로 충족한다(E3). 명시적 옵트인·거부해도 불이익 없음·언제든 철회 가능(GDPR Art.7(3))·매니저 최종 승인 → GDPR Art.7(자유 동의)·Art.22(자동결정 거부권) 충족(E3'). 강제 배정·자동 발효는 금지선. ③ 효과(시뮬≠현실): 정량은 실데이터(성장곡선 S3)가 책임, 협상 시뮬은 수집 인프라 시연이지 현실 증명 아님 — 현실 검증은 실배포 로그의 몫. 한계를 먼저 드러내는 게 신뢰를 높인다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">07</span><span class="tick"></span>
+        <span class="seg">왜 믿을 수 있나 · 집중 정산</span></div>
+      <div class="progress"><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i>
+        <span class="lbl">07 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>의심에 정면으로 답한다 — <span class="accent serif">윤리 · 법률 · 효과</span></h1>
+    </div>
+    <div class="body single">
+      <div class="grid g3" style="margin-top:6px;align-items:stretch">
+        <div class="card mark m-hi">
+          <h3 class="hi">윤리 — 국적 차별</h3>
+          <p>국적이 위험도 1위 피처. → 예측엔 쓰되 <b>행동 차등엔 배제</b>. ablation: 완전 DROP <b style="color:var(--risk-hi)" class="mono">−5.0%</b>(<span class="mono">0.8189→0.7783</span>, CI 분리 = 유의 손실)이나 <b>is_domestic</b> 절충은 <b style="color:var(--risk-lo)" class="mono">−1.0%</b>(<span class="mono">0.8107</span>, CI 겹침 = 무손실)로 차별 광학 + top10 누수 동시 소멸. 사전동의·매니저 승인 필수.</p>
+        </div>
+        <div class="card mark m-mid">
+          <h3 class="mid">법률 — 사전동의 설계</h3>
+          <p>규제 공백을 <b>이용</b>하는 게 아니라, 규제가 보호하려는 손님 이익(사전 고지·자유 동의·언제든 거부)을 <b>설계로 충족</b>. 명시적 옵트인 · 거부해도 불이익 없음 · <b>언제든 철회 가능</b>(GDPR Art.7(3)) · 매니저 최종 승인 → <b>GDPR Art.7 · Art.22 충족</b>. 강제 배정·자동 발효는 금지선.</p>
+        </div>
+        <div class="card mark m-sig">
+          <h3 class="sig">효과 — 시뮬 ≠ 현실</h3>
+          <p>정량 주장은 <b>실데이터</b>가 책임(성장곡선 S3). 협상 시뮬은 "수집 인프라 시연"이지 현실 증명 아님. 현실 검증은 <b>실배포 로그</b>의 몫 — 정직하게.</p>
+        </div>
+      </div>
+      <p class="footnote" style="margin-top:18px"><span class="lab">한계(정직) ·</span> 국적을 빼도 ADR·세그먼트 등 <b style="color:var(--ink-2)">상관 피처로 간접 차별이 잔존</b>할 수 있다. disparate impact 정식 측정은 6일 범위 밖 — <b style="color:var(--ink-2)">한계로 명시</b>한다.</p>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 의심을 닫았으니 —</span> 이 인프라는 오버부킹 <b>하나로 끝날까요?</b></p>
+      <span class="pg">07 · 왜 믿는가</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       S8 · EXTENSIBILITY + CONCLUSION
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="비전+결론을 한 장으로 닫는다. 오버부킹은 첫 도메인일 뿐 — 같은 수집 인프라가 동적 가격(수요·취소 예측)·수요/인력(도착 예측→배치)·업셀/식음(요청 패턴→추천)으로 확장. 두 축 성장: 데이터가 쌓일수록 모델이 자라고(성장곡선), 수집 영역이 넓어질수록 도메인이 늘어난다. 그다음 3줄 요약으로 thesis 세 기둥 정산: ①수집 인프라 ②데이터가 모델을 고른다(W≈5.4만, full 0.820) ③없던 데이터를 만든다(협상 튜플 수집, 사전동의 설계). 결론에 한 줄 더: 손님 피해(평판)를 비용에 명시했기에 우리 답은 보수적이다 — 이게 신뢰의 근거. 마무리: '우리는 두뇌(예측 엔진)를 만들었고, 그 두뇌는 호텔 데이터로 계속 자랍니다. 감사합니다.' Q(나머지 도메인은 비전만 파는 것 아닌가)→도메인 1(오버부킹)은 작동 증거 두 개로 끝까지 증명, 나머지는 같은 수집 루프가 연다는 확장성 주장 — 정직하게 '비전'으로 표시.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">08</span><span class="tick"></span>
+        <span class="seg">비전 + 결론</span></div>
+      <div class="progress"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i>
+        <span class="lbl">08 / 08</span></div>
+    </div>
+    <div class="head">
+      <h1>오버부킹은 <span class="accent">첫 도메인</span>일 뿐 — 쓸수록 똑똑해지는 인프라</h1>
+    </div>
+    <div class="body single">
+      <div class="grid g4" style="margin-top:4px">
+        <div class="card mark m-lo"><h3 class="lo">오버부킹</h3><p style="color:var(--risk-lo)">완료 (도메인 1)</p></div>
+        <div class="card"><h3>동적 가격</h3><p>수요·취소 예측 기반 <span style="color:var(--ink-3)">· 비전</span></p></div>
+        <div class="card"><h3>수요·인력</h3><p>도착 예측 → 인력 배치 <span style="color:var(--ink-3)">· 비전</span></p></div>
+        <div class="card"><h3>업셀·식음</h3><p>요청 패턴 → 추천 <span style="color:var(--ink-3)">· 비전</span></p></div>
+      </div>
+      <div class="grid" style="gap:12px;margin-top:18px">
+        <div class="card"><div class="row" style="gap:14px;flex-wrap:nowrap"><div class="bignum mono">1</div><p style="font-size:16px;color:var(--ink);line-height:1.5"><b>수집 인프라</b> — 호텔에 핏한 예약 데이터를 모아 ML 예측으로 수익·안정성을 키운다.</p></div></div>
+        <div class="card"><div class="row" style="gap:14px;flex-wrap:nowrap"><div class="bignum mono">2</div><p style="font-size:16px;color:var(--ink);line-height:1.5"><b>데이터가 모델을 고른다</b> — 실데이터 성장곡선, W≈<span class="mono">5.4만 건</span>에서 모델 전환, full PR-AUC <b class="mono" style="color:var(--signature)">0.820</b>.</p></div></div>
+        <div class="card"><div class="row" style="gap:14px;flex-wrap:nowrap"><div class="bignum mono">3</div><p style="font-size:16px;color:var(--ink);line-height:1.5"><b>없던 데이터를 만든다</b> — 협상 (위험도→오퍼→수락→취소) 수집, 사전동의 설계로 법적 리스크 차단.</p></div></div>
+      </div>
+      <p class="footnote" style="margin-top:16px"><span class="lab">신뢰의 근거 ·</span> 우리는 <b style="color:var(--ink-2)">손님 피해(평판)를 비용에 명시</b>했기에 답이 보수적으로 나온다 — 한계를 먼저 드러내는 설계가 신뢰를 높인다.</p>
+    </div>
+    <div class="foot">
+      <p class="q"><span class="pre">마무리 —</span> 우리는 <b>두뇌(예측 엔진)</b>를 만들었고, 그 두뇌는 <b>호텔 데이터로 계속 자랍니다.</b> 감사합니다.</p>
+      <span class="pg">08 · 결론</span>
+    </div>
+  </section>
+
+</div>
+
+<div class="notes" id="notes">
+  <div class="lbl">발표자 노트 · N키로 닫기</div>
+  <div class="nbody" id="notesBody"></div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0, notesOn=false;
+  const count=document.getElementById('count');
+  const notes=document.getElementById('notes'), notesBody=document.getElementById('notesBody');
+  const deck=document.getElementById('deck');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- stage fit (letterbox scale) ---- */
+  function fit(){
+    const m=40;
+    const s=Math.min((window.innerWidth-m)/1280,(window.innerHeight-m)/720);
+    deck.style.transform='scale('+s+')';
+  }
+  window.addEventListener('resize',fit); fit();
+
+  function renderNotes(){ notesBody.textContent = slides[i].dataset.notes || '(노트 없음)'; }
+
+  /* ---- purposeful motion: per-element distinct timing/easing ---- */
+  function animateGrowth(svg){
+    if(reduce) return;
+    const lr=svg.querySelector('#lrLine'), lgb=svg.querySelector('#lgbLine'), w=svg.querySelector('#wMarker');
+    [lr,lgb].forEach(p=>{ const L=p.getTotalLength(); p.style.strokeDasharray=L; p.style.strokeDashoffset=L; p.style.transition='none'; });
+    if(w){ w.style.opacity='0'; }
+    // force reflow
+    void svg.getBoundingClientRect();
+    // LR draws first, quick ease-out
+    lr.style.transition='stroke-dashoffset .7s cubic-bezier(.22,.61,.36,1)';
+    lr.style.strokeDashoffset='0';
+    // LightGBM draws slightly delayed, slower, different easing
+    lgb.style.transition='stroke-dashoffset 1.05s cubic-bezier(.16,.84,.44,1) .18s';
+    lgb.style.strokeDashoffset='0';
+    // W marker fades in late
+    if(w){ w.style.transition='opacity .5s ease 1.15s'; setTimeout(()=>{ w.style.opacity='1'; },20); }
+  }
+
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    count.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+    if(notesOn) renderNotes();
+    if(i===1) seedDots();
+    if(i===2){ const sv=document.getElementById('growthSvg'); if(sv) requestAnimationFrame(()=>animateGrowth(sv)); }
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+  function toggleNotes(){ notesOn=!notesOn; notes.classList.toggle('show',notesOn); if(notesOn) renderNotes(); }
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){next();e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){prev();e.preventDefault();}
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement)document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+    else if(e.key==='n'||e.key==='N'){ toggleNotes(); }
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(slides.length-1)}
+  });
+  deck.addEventListener('click',e=>{
+    if(e.target.closest('a')) return;
+    if(e.clientX < window.innerWidth*0.22) prev();
+    else if(e.clientX > window.innerWidth*0.78) next();
+  });
+
+  /* ---- S2 dot accumulation (one pass, reduced-motion aware) ---- */
+  let seeded=false;
+  function seedDots(){
+    if(seeded) return; seeded=true;
+    const w=document.getElementById('dotwrap'); if(!w) return;
+    const colors=['#3F7A52','#3F7A52','#3F7A52','#B23A2E','#B23A2E'];
+    const total=120;
+    if(reduce){
+      for(let k=0;k<total;k++){ const d=document.createElement('div'); d.className='dot';
+        d.style.left=(5+Math.random()*90)+'%'; d.style.top=(8+Math.random()*82)+'%';
+        d.style.background=colors[Math.floor(Math.random()*colors.length)]; w.appendChild(d); }
+      return;
+    }
+    let n=0;
+    const iv=setInterval(()=>{
+      if(n++>=total){clearInterval(iv);return;}
+      const d=document.createElement('div'); d.className='dot';
+      d.style.left=(5+Math.random()*90)+'%'; d.style.top=(8+Math.random()*82)+'%';
+      d.style.background=colors[Math.floor(Math.random()*colors.length)];
+      d.style.transform='scale(0)'; d.style.transition='transform .26s ease';
+      w.appendChild(d); requestAnimationFrame(()=>d.style.transform='scale(1)');
+    },26);
+  }
+
+  show(0);
+</script>
+</body>
+</html>
