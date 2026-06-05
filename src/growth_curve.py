@@ -13,14 +13,22 @@ src/growth_curve.py
   - KPI 3층   : PR-AUC + Bootstrap 95% CI (선정) / Brier (배포 준비도) / expected cost (보조·비용비 sweep)
   - 핵심 산출물: 전환 주차 W = LightGBM CI하한 > LR CI상한이 되는 첫 누적 주차
 
+평가 방식 (--eval):
+  fixed       : (기본) 고정된 마지막 6개월(test split)을 매 cutoff에서 예측. 통제 벤치마크.
+  walkforward : 매 cutoff t에서 '다음 H주(arrival_week ∈ (t, t+H])'만 예측. 배포 현실(월간 재학습→다음달).
+                → 고정-test의 'train↔test 간격 축소(recency) confound'를 제거. 단 평가창이 움직여 더 노이즈.
+                fixed 산출물과 분리: results/growth_curve_wf_*.{csv,png} (기존 덮어쓰지 않음).
+
 실행:
-  python src/growth_curve.py             # full (학교서버/백그라운드 권장, 1~2h)
-  python src/growth_curve.py --quick     # 스모크 (구간 5개, 시드 1, boot 100) — 정상동작 확인용
+  python src/growth_curve.py                              # fixed full (학교서버/백그라운드 권장)
+  python src/growth_curve.py --quick                      # fixed 스모크
+  python src/growth_curve.py --eval walkforward --horizon 4          # walk-forward full
+  python src/growth_curve.py --eval walkforward --horizon 4 --quick  # walk-forward 스모크
+  python src/growth_curve.py --eval walkforward --strict             # 평가창을 'booking_week<=t'로 제한(현실)
 
 산출물:
-  results/growth_curve_raw.csv   - (window, cutoff_week, n_train, model, seed) 별 PR-AUC/Brier/cost
-  results/growth_curve_agg.csv   - 시드 평균 + Bootstrap CI(LR·LGB) + 전환주차
-  results/growth_curve.png       - 5곡선 + CI 밴드(누적) + 슬라이딩 오버레이
+  results/growth_curve_raw.csv / _agg.csv / .png         - fixed
+  results/growth_curve_wf_raw.csv / _wf_agg.csv / _wf.png - walkforward
 """
 import sys, io, time, argparse
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
@@ -58,6 +66,7 @@ CAT_COLS = ["hotel", "meal", "market_segment", "distribution_channel",
 SEEDS_DEFAULT = [42, 7, 123]
 SLIDE_WEEKS   = 26          # 슬라이딩창 폭(주)
 MIN_N         = 400         # 구간 최소 학습 표본(콜드스타트 노이즈 컷오프)
+MIN_TEST      = 100         # walk-forward 평가창 최소 표본
 THRESH        = 0.65        # 운영 임계값(현 DSS 기본) — expected cost용
 COST_RATIOS   = [2, 5, 10]  # c_fn / c_fp (빈방손실 / 오버부킹보상) sweep
 CI_MODELS     = ["Logistic Regression", "LightGBM"]  # 전환주차 판정 핵심쌍만 Bootstrap
@@ -130,6 +139,45 @@ def bootstrap_ci(y_true, proba, n_boot, rng):
     return float(np.percentile(aps, 2.5)), float(np.percentile(aps, 97.5))
 
 
+# ── 한 cutoff 평가 블록 (walk-forward 전용 재사용 함수) ────────────────────────
+def eval_cutoff(sub, test_feat, y_te, seeds, n_boot, rng, win_label, t, do_ci):
+    """sub(학습셋) → test_feat/y_te(평가셋) 에 대해 5모델 평가. (rows, ci_rows) 반환.
+    test_feat 은 이미 get_dummies/ is_canceled 제거된 상태(컬럼은 Xtr 기준으로 reindex됨)."""
+    sub_e = pd.get_dummies(sub, columns=CAT_COLS)
+    ytr   = sub_e["is_canceled"]
+    Xtr   = sub_e.drop(["is_canceled", "_wk"], axis=1, errors="ignore")
+    wk_tr = sub["_wk"].reset_index(drop=True)
+    Xtr   = Xtr.reset_index(drop=True); ytr = ytr.reset_index(drop=True)
+    Xte   = test_feat.reindex(columns=Xtr.columns, fill_value=0)
+
+    scaler = StandardScaler()
+    Xtr_s  = pd.DataFrame(scaler.fit_transform(Xtr), columns=Xtr.columns)
+    Xte_s  = pd.DataFrame(scaler.transform(Xte),    columns=Xtr.columns)
+
+    rows, ci_rows, proba_for_ci = [], [], {}
+    for seed in seeds:
+        grid = model_grid(seed)
+        for name, cands in grid.items():
+            X_tr_use = Xtr_s if name in NEEDS_SCALE else Xtr
+            X_te_use = Xte_s if name in NEEDS_SCALE else Xte
+            mdl, hp = fit_select(name, cands, X_tr_use, ytr, wk_tr)
+            proba = mdl.predict_proba(X_te_use)[:, 1]
+            rec = {"window": win_label, "cutoff_week": int(t), "n_train": int(len(sub)),
+                   "n_test": int(len(y_te)), "model": name, "seed": seed, "hp": hp,
+                   "pr_auc": average_precision_score(y_te, proba),
+                   "brier":  brier_score_loss(y_te, proba)}
+            rec.update(expected_costs(y_te, proba))
+            rows.append(rec)
+            if seed == seeds[0]:
+                proba_for_ci[name] = proba
+    if do_ci:
+        for name in CI_MODELS:
+            if name in proba_for_ci:
+                lo, hi = bootstrap_ci(y_te, proba_for_ci[name], n_boot, rng)
+                ci_rows.append({"cutoff_week": int(t), "model": name, "ci_low": lo, "ci_high": hi})
+    return rows, ci_rows
+
+
 PALETTE = {"Dummy": "gray", "Logistic Regression": "steelblue",
            "Random Forest": "darkorange", "XGBoost": "seagreen", "LightGBM": "crimson"}
 
@@ -160,10 +208,11 @@ def compute_robust_W(agg):
     return None
 
 
-def finalize(agg, t_start=None):
-    """W 계산 + 곡선 플롯 + 저장. 학습 결과(agg)와 --replot(csv 로드) 양쪽에서 재사용."""
+def finalize(agg, t_start=None, mode="fixed", horizon=None):
+    """W 계산 + 곡선 플롯 + 저장. fixed / walkforward 양쪽 + --replot 에서 재사용."""
+    wf = (mode == "walkforward")
     W = compute_robust_W(agg)
-    print(f"\n★ robust 전환주차 W = {W}  (LGB CI하한 > LR CI상한이 끝까지 지속되는 첫 누적주차)")
+    print(f"\n★ [{mode}] robust 전환주차 W = {W}  (LGB CI하한 > LR CI상한이 끝까지 지속되는 첫 누적주차)")
 
     fig, axA = plt.subplots(figsize=(10, 6))
     cum = agg[agg["window"] == "cumulative"]
@@ -182,14 +231,77 @@ def finalize(agg, t_start=None):
         axA.axvline(W, color="black", ls=":", alpha=0.7)
         axA.text(W, axA.get_ylim()[0], f" W={W} (robust)", fontsize=10)
     axA.set_xlabel("cumulative week (arrival, point-in-time)")
-    axA.set_ylabel("PR-AUC (fixed summer test)")
-    axA.set_title("Growth curve — solid=cumulative(+95% CI), dashed=sliding robustness")
+    ylab = f"PR-AUC (walk-forward, next {horizon}w)" if wf else "PR-AUC (fixed summer test)"
+    axA.set_ylabel(ylab)
+    title = (f"Growth curve [walk-forward, horizon={horizon}w] — solid=cumulative(+95% CI)"
+             if wf else "Growth curve [fixed test] — solid=cumulative(+95% CI), dashed=sliding robustness")
+    axA.set_title(title)
     axA.legend(fontsize=8, ncol=2); axA.grid(alpha=0.3)
     plt.tight_layout()
-    fig.savefig(RESULTS / "growth_curve.png", dpi=120)
-    print(f"\n[산출물]\n  results/growth_curve_raw.csv\n  results/growth_curve_agg.csv\n  results/growth_curve.png")
+    png = "growth_curve_wf.png" if wf else "growth_curve.png"
+    raw_name = "growth_curve_wf_raw.csv" if wf else "growth_curve_raw.csv"
+    agg_name = "growth_curve_wf_agg.csv" if wf else "growth_curve_agg.csv"
+    fig.savefig(RESULTS / png, dpi=120)
+    print(f"\n[산출물]\n  results/{raw_name}\n  results/{agg_name}\n  results/{png}")
     if t_start is not None:
         print(f"[완료] {time.time()-t_start:.0f}s")
+
+
+# ── walk-forward 평가 (다음 H주 예측) ─────────────────────────────────────────
+def run_walkforward(train, test, seeds, n_boot, horizon, strict, quick, stride, t_start):
+    # 전체 타임라인(train+test) 합쳐 abs_week 재계산 (평가창이 test 구간까지 전진)
+    full = pd.concat([train.drop(columns=["_wk"], errors="ignore"), test], ignore_index=True)
+    full["_wk"] = abs_week(full)
+    bwk = full["_wk"] - (full["lead_time"] / 7.0) if strict else None  # 근사 예약주차(컬럼 미추가→누수 방지)
+
+    weeks  = sorted(full["_wk"].unique())
+    max_wk = max(weeks)
+    cutoffs = []
+    for t in weeks:
+        if t + horizon > max_wk:        # 평가창(다음 H주) 확보 못하면 종료
+            break
+        if (full["_wk"] <= t).sum() >= MIN_N:
+            cutoffs.append(t)
+    if quick:
+        cutoffs = cutoffs[:: max(1, len(cutoffs) // 5)][:5]
+    elif stride > 1:
+        cutoffs = cutoffs[::stride]
+    print(f"[walk-forward] horizon={horizon}주{' strict' if strict else ''} | "
+          f"전체 {full.shape} | 컷오프 {len(cutoffs)}개: {cutoffs[0]}~{cutoffs[-1]}")
+
+    rng = np.random.default_rng(0)
+    rows, ci_rows = [], []
+    for t in cutoffs:
+        sub = full[full["_wk"] <= t]
+        mask = (full["_wk"] > t) & (full["_wk"] <= t + horizon)
+        if strict:
+            mask = mask & (bwk <= t)
+        test_win = full[mask]
+        if len(sub) < MIN_N or sub["is_canceled"].nunique() < 2:
+            continue
+        if len(test_win) < MIN_TEST or test_win["is_canceled"].nunique() < 2:
+            print(f"  [wf] week {t:>3}  skip (n_test={len(test_win)})")
+            continue
+
+        twe = pd.get_dummies(test_win, columns=CAT_COLS)
+        y_te = twe["is_canceled"].reset_index(drop=True)
+        test_feat = twe.drop(["is_canceled", "_wk"], axis=1, errors="ignore").reset_index(drop=True)
+
+        r, c = eval_cutoff(sub, test_feat, y_te, seeds, n_boot, rng, "cumulative", t, do_ci=True)
+        rows += r; ci_rows += c
+        print(f"  [wf] week {t:>3}  n_train={len(sub):>6} n_test={len(test_win):>5}  done  ({time.time()-t_start:.0f}s)")
+
+    raw = pd.DataFrame(rows)
+    raw.to_csv(RESULTS / "growth_curve_wf_raw.csv", index=False)
+    agg = (raw.groupby(["window", "cutoff_week", "n_train", "model"])
+              .agg(pr_auc=("pr_auc", "mean"), pr_auc_sd=("pr_auc", "std"),
+                   brier=("brier", "mean"), n_test=("n_test", "first"))
+              .reset_index())
+    ci = pd.DataFrame(ci_rows)
+    if not ci.empty:
+        agg = agg.merge(ci, on=["cutoff_week", "model"], how="left")
+    agg.to_csv(RESULTS / "growth_curve_wf_agg.csv", index=False)
+    finalize(agg, t_start, mode="walkforward", horizon=horizon)
 
 
 def main():
@@ -200,11 +312,18 @@ def main():
     ap.add_argument("--windows", choices=["cumulative", "sliding", "both"], default="both")
     ap.add_argument("--stride", type=int, default=1, help="누적 컷오프 N개마다 1개만 (곡선 점 수 축소·속도↑)")
     ap.add_argument("--replot", action="store_true", help="학습 생략, 기존 agg.csv로 곡선·W만 재생성")
+    ap.add_argument("--eval", choices=["fixed", "walkforward"], default="fixed",
+                    help="fixed(기본): 고정 마지막6개월 / walkforward: 다음 H주 예측")
+    ap.add_argument("--horizon", type=int, default=4, help="walk-forward 평가창 폭(주). 업데이트 주기. 기본 4주(≈1달)")
+    ap.add_argument("--strict", action="store_true",
+                    help="walk-forward 평가창을 booking_week<=t 로 제한(지금 장부에 있는 다음달 예약만)")
     args = ap.parse_args()
 
     if args.replot:
-        print("[replot] 기존 results/growth_curve_agg.csv 로 곡선·W 재생성 (학습 생략)")
-        finalize(pd.read_csv(RESULTS / "growth_curve_agg.csv"))
+        wf = (args.eval == "walkforward")
+        src = "growth_curve_wf_agg.csv" if wf else "growth_curve_agg.csv"
+        print(f"[replot] 기존 results/{src} 로 곡선·W 재생성 (학습 생략)")
+        finalize(pd.read_csv(RESULTS / src), mode=args.eval, horizon=args.horizon)
         return
 
     seeds = SEEDS_DEFAULT[:args.seeds]
@@ -212,7 +331,8 @@ def main():
     if args.quick:
         seeds, n_boot = [42], 100
 
-    print(f"[설정] quick={args.quick} seeds={seeds} boot={n_boot} windows={args.windows}")
+    print(f"[설정] eval={args.eval} quick={args.quick} seeds={seeds} boot={n_boot} "
+          f"windows={args.windows} horizon={args.horizon}")
     t_start = time.time()
 
     tr_path, te_path = DATA / "train_processed.csv", DATA / "test_processed.csv"
@@ -224,6 +344,13 @@ def main():
     train["_wk"] = abs_week(train)
     print(f"[로드] train {train.shape} test {test.shape} | 주차 {train['_wk'].min()}~{train['_wk'].max()}")
 
+    # ── walk-forward 분기 (fixed 경로는 아래로 그대로) ───────────────────────
+    if args.eval == "walkforward":
+        run_walkforward(train, test, seeds, n_boot, args.horizon, args.strict,
+                        args.quick, args.stride, t_start)
+        return
+
+    # ── fixed (기존 동작 — 변경 없음) ────────────────────────────────────────
     # 고정 평가셋 인코딩(전 구간 공통 기준 컬럼은 각 구간 train_sub에 맞춰 reindex)
     test_e = pd.get_dummies(test, columns=CAT_COLS)
     y_te   = test_e["is_canceled"]
