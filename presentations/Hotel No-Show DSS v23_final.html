@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel No-Show DSS v23 (final)</title>
+<!-- Pretendard (CDN, 폴백 보장) -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+  onerror="this.media='none'">
+<style>
+  /* ============================================================
+     HOTEL NO-SHOW DSS · v18 FINAL — "EDITORIAL INSTRUMENT · 비전문가 평이판"
+     v17(14슬)의 구조·차트·디자인을 그대로 계승하되, 화면 언어를
+     호텔/ML 비전문가용으로 전면 평이화. 전문용어는 첫 등장 시 괄호 풀이.
+     각 슬라이드 하단에 "쉽게 말하면" 한 줄 결론(시그니처 강조) 추가.
+     발표자 노트(N키)는 입으로 할 말 위주의 쉬운 한국어로 재작성.
+     필요 슬라이드를 추가해 16슬로 분할(어려운 개념을 쉽게 풀어주는 비트).
+     design_24 §1 arc · design_23 tokens.
+     warm paper · ink-black · single signature indigo ·
+     amber data register · risk triband meaning-only.
+     anti-AI: no gradient fills, no dark dashboard, no emoji,
+     tabular numerals, hairlines. 진행표시는 JS가 슬라이드 수에 맞춰 동적 생성.
+     ============================================================ */
+
+  :root{
+    --paper:        #F4F2EC;
+    --paper-deep:   #ECE9E1;
+    --surface:      #FBFAF6;
+    --ink:          #16151A;
+    --ink-2:        #4B4A52;
+    --ink-3:        #8B8A90;
+    --faint:        #B7B3A8;
+    --rule:         #D8D4C8;
+    --rule-soft:    #E6E2D8;
+    --rule-hard:    #C9C4B7;
+    --signature:    #1B3A8F;
+    --signature-2:  #2E55C2;
+    --signature-wash:#1B3A8F14;
+    --amber:        #C8821E;
+    --amber-ink:    #8A5A0F;
+    --amber-wash:   rgba(200,130,30,.08);
+    --risk-hi:      #B23A2E;   /* brick — high cancel risk */
+    --risk-mid:     #B8862B;   /* ochre — mid */
+    --risk-lo:      #3F7A52;   /* forest — low / safe */
+    --lr:           #6F6E74;
+    --lgb:          #1B3A8F;
+    --dummy:        #B8B3A6;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 18% 0%, #F7F5EF 0%, var(--paper) 46%, #EFECE3 100%);
+    color:var(--ink);
+    font-family:"Pretendard","Helvetica Neue","Segoe UI Variable Display","Segoe UI",
+                "Apple SD Gothic Neo","Malgun Gothic",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    overflow:hidden; letter-spacing:-0.004em;
+    display:flex; align-items:center; justify-content:center; min-height:100vh;
+  }
+
+  .mono{
+    font-family:"JetBrains Mono","SF Mono","Roboto Mono",ui-monospace,"Consolas",monospace;
+    font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1,"zero" 1;
+    letter-spacing:-0.02em;
+  }
+  .serif{
+    font-family:"Iowan Old Style","Apple Garamond","Times New Roman",
+                "Nanum Myeongjo","Batang",Georgia,serif;
+    font-style:italic; letter-spacing:-0.01em;
+  }
+
+  /* ============ STAGE ============ */
+  .deck{ position:relative; width:1280px; height:720px; transform-origin:center center; }
+  .slide{
+    position:absolute; inset:0;
+    background:var(--paper);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.6) inset,
+      0 30px 80px -30px rgba(30,28,22,.28),
+      0 2px 8px rgba(30,28,22,.06);
+    border:1px solid var(--rule-soft);
+    border-radius:4px;
+    padding:54px 88px 52px;
+    display:none; flex-direction:column; overflow:hidden;
+  }
+  .slide.active{ display:flex; animation:fadeIn .26s ease both; }
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+
+  .slide::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:6px;
+    background:var(--signature);
+  }
+  .reg{ position:absolute; width:13px; height:13px; pointer-events:none; opacity:.5; }
+  .reg::before,.reg::after{ content:""; position:absolute; background:var(--rule-hard); }
+  .reg::before{ width:13px; height:1px; top:0; left:0; }
+  .reg::after{ width:1px; height:13px; top:0; left:0; }
+  .reg.tr{ top:18px; right:22px; transform:scaleX(-1); }
+  .reg.br{ bottom:18px; right:22px; transform:scale(-1); }
+
+  /* ============ TOP META ROW ============ */
+  .topbar{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .eyebrow{
+    display:flex; align-items:center; gap:14px;
+    font-size:14px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink-3);
+  }
+  .eyebrow .num{ font-variant-numeric:tabular-nums; color:var(--signature); font-weight:700; }
+  .eyebrow .tick{ width:26px; height:1px; background:var(--rule); }
+  .eyebrow .seg{ color:var(--ink-3); }
+
+  .progress{ display:flex; gap:6px; align-items:center; }
+  .progress i{ width:13px; height:3px; border-radius:2px; background:var(--rule); display:block; }
+  .progress i.on{ background:var(--signature); }
+  .progress .lbl{ margin-left:10px; font-size:13px; letter-spacing:.04em; color:var(--ink-3);
+    font-variant-numeric:tabular-nums; }
+
+  /* ============ HEADLINE ============ */
+  .head{ margin:2px 0 6px; }
+  h1{ font-size:42px; line-height:1.11; font-weight:700; letter-spacing:-0.02em;
+    color:var(--ink); max-width:25ch; }
+  h1.title{ font-size:50px; line-height:1.09; letter-spacing:-0.025em; max-width:23ch; }
+  h1 .accent{ color:var(--signature); }
+  .pinline{ margin-top:9px; }
+  .dek{ margin-top:10px; font-size:18.5px; line-height:1.5; color:var(--ink-2);
+    max-width:60ch; font-weight:400; }
+  .dek b{ color:var(--ink); font-weight:650; }
+
+  .pin{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:13px; font-weight:600; letter-spacing:.02em; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--rule);
+    border-left:3px solid var(--signature);
+    padding:5px 11px; border-radius:3px; white-space:nowrap;
+  }
+  .pin::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--signature); flex:none; }
+
+  /* ============ BODY ============ */
+  .body{ flex:1; display:grid; gap:38px; align-items:stretch; margin-top:6px; min-height:0; }
+  .body.rail-2{ grid-template-columns:1fr 312px; }
+  .body.single{ display:flex; flex-direction:column; }
+  .body.center{ justify-content:center; }
+
+  /* ── chart image plate ── */
+  .imgplate{
+    background:var(--surface); border:1px solid var(--rule-soft); border-radius:6px;
+    padding:14px 16px 10px; display:flex; flex-direction:column;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset; min-height:0;
+  }
+  .imgplate .cap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid var(--rule-soft);
+  }
+  .imgplate .cap .t{ font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:650; }
+  .imgplate img{ width:100%; height:100%; object-fit:contain; display:block; flex:1; min-height:0; }
+  .src{ margin-top:6px; font-size:13px; color:var(--ink-3); letter-spacing:.01em; line-height:1.4; }
+  .src b{ color:var(--ink-2); font-weight:600; }
+
+  /* ── right rail — readings ── */
+  .rail{ display:flex; flex-direction:column; justify-content:center; gap:0; }
+  .kpi{ margin-bottom:22px; }
+  .kpi .v{ font-size:52px; font-weight:700; letter-spacing:-0.025em; color:var(--ink);
+    line-height:1; font-variant-numeric:tabular-nums; }
+  .kpi .v small{ font-size:24px; font-weight:650; color:var(--ink-2); margin-left:2px; }
+  .kpi .k{ margin-top:9px; font-size:15px; line-height:1.45; color:var(--ink-2); }
+  .kpi .k .lab{ color:var(--signature); font-weight:700; text-transform:uppercase;
+    letter-spacing:.04em; font-size:12.5px; display:block; margin-bottom:3px; }
+  .kpi .k b{ color:var(--ink); font-weight:650; }
+  .rail hr{ border:0; border-top:1px solid var(--rule-soft); margin:0 0 20px; }
+
+  .reads{ list-style:none; display:flex; flex-direction:column; gap:13px; }
+  .reads li{ display:grid; grid-template-columns:18px 1fr; gap:11px;
+    font-size:15px; line-height:1.4; color:var(--ink-2); }
+  .reads li .mk{ margin-top:7px; width:14px; height:2.5px; border-radius:2px; align-self:start; }
+  .reads li .mk.dot{ width:8px; height:8px; border-radius:50%; margin-top:5px; }
+  .reads li b{ color:var(--ink); font-weight:650; }
+  .reads li .num{ color:var(--ink); font-weight:650; }
+
+  .quote{ margin-top:16px; font-size:15.5px; line-height:1.5; color:var(--ink-2); font-weight:400; }
+  .quote b{ color:var(--ink); font-weight:650; }
+
+  /* ============ TABLE ============ */
+  table{ width:100%; border-collapse:collapse; font-size:15.5px; margin-top:6px; }
+  th,td{ text-align:left; padding:9px 13px; vertical-align:top; }
+  th{ color:var(--ink-3); font-weight:600; font-size:12px; text-transform:uppercase;
+    letter-spacing:.06em; border-bottom:1px solid var(--rule); }
+  td{ color:var(--ink-2); border-bottom:1px solid var(--rule); }
+  td b{ font-weight:700; color:var(--ink); }
+  td .mono{ color:var(--ink); }
+  tr:last-child td{ border-bottom:none; }
+  td .lab{ color:var(--ink-3); }
+  tr.key b{ color:var(--signature); }
+  td.num{ font-variant-numeric:tabular-nums; }
+
+  /* ============ CLEAN LIST ============ */
+  ul.clean{ list-style:none; }
+  ul.clean li{ padding:6px 0 6px 18px; position:relative; color:var(--ink-2);
+    font-size:15.5px; line-height:1.5; }
+  ul.clean li::before{ content:""; position:absolute; left:0; top:14px; width:8px; height:1px;
+    background:var(--ink-3); }
+  ul.clean li b{ color:var(--ink); font-weight:650; }
+  ul.clean li .mono{ color:var(--ink); }
+  ul.clean li.risk::before{ width:6px; height:6px; border-radius:50%; top:11px; background:var(--risk-hi); }
+
+  /* ============ PANELS / CARDS ============ */
+  .grid{ display:grid; gap:16px; }
+  .g2{ grid-template-columns:1fr 1fr; } .g3{ grid-template-columns:repeat(3,1fr); }
+  .g4{ grid-template-columns:repeat(4,1fr); }
+  .card{
+    background:var(--surface); border:1px solid var(--rule-soft); border-radius:6px;
+    padding:15px 18px; box-shadow:0 1px 0 rgba(255,255,255,.7) inset; position:relative;
+  }
+  .card.mark{ padding-left:20px; }
+  .card.mark::before{ content:""; position:absolute; top:16px; left:0; bottom:16px; width:3px;
+    border-radius:0 2px 2px 0; background:var(--signature); }
+  .card.m-hi::before{ background:var(--risk-hi); }
+  .card.m-mid::before{ background:var(--risk-mid); }
+  .card.m-lo::before{ background:var(--risk-lo); }
+  .card.m-sig::before{ background:var(--signature); }
+  .card h3{ font-size:15px; font-weight:650; margin-bottom:6px; letter-spacing:-.01em; color:var(--ink); }
+  .card h3.hi{ color:var(--risk-hi); } .card h3.mid{ color:var(--risk-mid); }
+  .card h3.lo{ color:var(--risk-lo); } .card h3.sig{ color:var(--signature); }
+  .card p{ font-size:14px; color:var(--ink-2); line-height:1.55; }
+  .card p b{ color:var(--ink); font-weight:650; }
+  .tag{ font-size:13px; color:var(--ink-3); letter-spacing:.01em; }
+
+  /* chips */
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .chip{ font-size:13px; color:var(--ink-2); background:var(--surface);
+    border:1px solid var(--rule); border-radius:3px; padding:5px 11px; letter-spacing:.01em; }
+
+  /* flow steps */
+  .flow{ display:flex; align-items:stretch; gap:0; margin-top:8px; }
+  .flow .step{ flex:1; background:var(--paper-deep); border:1px solid var(--rule-soft);
+    border-radius:4px; padding:10px 8px; text-align:center; }
+  .flow .step .n{ font-size:11px; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase; }
+  .flow .step .t{ font-weight:650; margin-top:3px; font-size:14px; color:var(--ink); }
+  .flow .step.out{ border-color:var(--rule-hard); background:var(--surface); }
+  .flow .step.out .t{ color:var(--signature); }
+  .flow .arr{ align-self:center; color:var(--faint); font-size:15px; padding:0 8px; }
+
+  /* big numeral conclusion */
+  .bignum{ font-weight:700; letter-spacing:-.04em; line-height:1; font-size:30px;
+    color:var(--signature); width:34px; flex:0 0 34px; font-variant-numeric:tabular-nums; }
+
+  /* ============ DEMO CAPTURE SLOT (S4) ============ */
+  .demoslot{
+    flex:1; min-height:0; margin-top:8px;
+    border:1px solid var(--rule); border-radius:8px;
+    background: var(--surface);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:10px; position:relative;
+  }
+  .demoslot .badge{ font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--signature); font-weight:700; border:1px solid var(--signature);
+    border-radius:3px; padding:4px 12px; background:var(--surface); }
+  .demoslot .big{ font-size:24px; font-weight:700; color:var(--ink-2); letter-spacing:-.01em; }
+  .demoslot .big .mono{ color:var(--ink); }
+  .demoslot .sub{ font-size:14.5px; color:var(--ink-3); max-width:62ch; line-height:1.55; }
+  .demoslot .corner{ position:absolute; width:16px; height:16px; border:2px solid var(--rule-hard); opacity:.6; }
+  .demoslot .corner.tl{ top:14px; left:14px; border-right:0; border-bottom:0; }
+  .demoslot .corner.tr{ top:14px; right:14px; border-left:0; border-bottom:0; }
+  .demoslot .corner.bl{ bottom:14px; left:14px; border-right:0; border-top:0; }
+  .demoslot .corner.br{ bottom:14px; right:14px; border-left:0; border-top:0; }
+
+  /* ============ "쉽게 말하면" — plain-language takeaway ============ */
+  .plain{
+    margin-top:14px; display:flex; align-items:flex-start; gap:12px;
+    background:var(--signature-wash); border:1px solid var(--rule-soft);
+    border-left:4px solid var(--signature); border-radius:4px;
+    padding:11px 16px;
+  }
+  .plain .tag{
+    flex:none; font-size:12px; font-weight:700; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--signature);
+    padding-top:2px; white-space:nowrap;
+  }
+  .plain .txt{ font-size:17px; line-height:1.42; color:var(--ink); font-weight:600; letter-spacing:-0.01em; }
+  .plain .txt b{ color:var(--signature); font-weight:700; }
+
+  /* ============ FOOTER ============ */
+  .foot{ margin-top:12px; padding-top:11px; border-top:1px solid var(--rule);
+    display:flex; align-items:baseline; gap:14px; }
+  .foot .q{ font-size:17px; line-height:1.35; color:var(--ink); letter-spacing:-0.01em; }
+  .foot .q .pre{ color:var(--ink-3); margin-right:4px; }
+  .foot .q b{ color:var(--signature); font-weight:700; }
+  .foot .pg{ margin-left:auto; font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-3); white-space:nowrap; }
+
+  /* footnote (정직 각주 — 분리된 줄) */
+  .footnote{ margin-top:8px; font-size:13px; color:var(--ink-3); line-height:1.45; letter-spacing:.01em; }
+  .footnote .mono{ color:var(--ink-2); }
+  .footnote .lab{ color:var(--amber-ink); font-weight:650; letter-spacing:.02em; }
+
+  /* ============ CHROME ============ */
+  .count{ position:fixed; bottom:14px; right:20px; font-size:13px; color:var(--ink-3);
+    z-index:20; letter-spacing:.04em; font-variant-numeric:tabular-nums; }
+  .hint{ position:fixed; bottom:14px; left:20px; font-size:12px; color:var(--faint);
+    z-index:20; letter-spacing:.02em; }
+
+  /* ============ SPEAKER NOTES (N) ============ */
+  .notes{ position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:linear-gradient(180deg, rgba(244,242,236,0), rgba(244,242,236,.985) 22%);
+    padding:2.2rem 7vw 1.4rem; transform:translateY(101%);
+    transition:transform .24s ease; pointer-events:none; }
+  .notes.show{ transform:translateY(0); }
+  .notes .lbl{ display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--signature); font-weight:600; margin-bottom:8px; }
+  .notes .lbl::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--signature); }
+  .notes .nbody{ font-size:14.5px; color:var(--ink); line-height:1.6; max-width:112ch; font-weight:400; }
+  .notes .nbody b{ color:var(--signature); font-weight:650; }
+
+  @media (prefers-reduced-motion: reduce){ .slide.active{ animation:none; } }
+</style>
+</head>
+<body>
+
+<div class="count mono" id="count"></div>
+<div class="hint">←  →   ·   F 전체화면   ·   N 발표자 노트</div>
+
+<div class="deck" id="deck">
+
+  <!-- ════════════════════════════════════════════════════════════
+       01 · 문제 — 비대칭 비용
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide active"
+    data-notes="안녕하세요. 한 가지 큰 그림으로 엽니다 — AI 시대엔 잘 구축된 데이터베이스만 있으면 누구나 다양한 걸 쉽게 만들 수 있습니다. 그래서 오늘 주인공은 예측 한 개가 아니라, 그걸 가능하게 하는 '데이터 모으는 도구'예요. 자, 문제부터 한 화면에 띄우고 시작합니다. 예약 10건 중 약 4건이 취소됩니다 — 전체 취소율 37%, 테스트 구간으로 보면 38.7%예요. 오늘 발표 내내 이 37%가 주인공입니다. 그런데 이 숫자 자체보다 중요한 건 양쪽 손해의 '모양이 다르다'는 점입니다. 손님 쪽으로 보면, 취소할 손님을 못 잡아내는 것 — 머신러닝에서 FN(놓침)이라고 부르는데 — 그러면 그 방은 그날이 지나면 영원히 못 팝니다. 비행기 빈 좌석처럼요. 한 번 비면 그 밤의 매출은 0이 되고 회복이 안 됩니다. 반대로 호텔 쪽으로 보면, 안 취소할 손님을 취소할 거라 잘못 보는 것 — FP(헛다리)인데 — 호텔이 그걸 믿고 방을 너무 많이 더 받으면 손님이 다 나타나 방이 모자랍니다. 그러면 손님을 다른 호텔로 보내야 하는 마찰, 즉 보상도 물어주고 평판도 깎이죠. 핵심은 이 둘의 비용이 같지 않다는 겁니다 — 비대칭이에요. 빈 방 손해와 오버부킹 보상이 서로 크기가 달라서, '몇 대 몇으로 받을까'를 한 줄 규칙으로 못 정합니다. 그래서 데이터로 최적점을 찾아주는 도구가 필요한 거예요. 한 가지 더, 이 취소율은 호텔마다 크게 다릅니다 — 도심 호텔(리스본)은 41.7%, 리조트(알가르브)는 27.8%. 그래서 한 가지 규칙으로 두 곳을 다 다룰 수 없다는 게, 도구가 필요한 또 하나의 이유입니다. 데이터는 이 두 호텔의 실제 2년치 기록, 11만 9,390건·32개 항목입니다. 슬라이드에는 숫자 세 개만 띄웠고 나머지는 지금 말로 드리는 거예요. 다음 장에서 오늘 발표의 전체 여정을 지도처럼 먼저 펼쳐 보여드리겠습니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">01</span><span class="tick"></span>
+        <span class="seg">Hotel No-Show DSS · 최종발표 · 문제</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1 class="title">예약 10건 중 <span class="accent">4건이 취소</span> —<br>빈 방은 그날 지나면 <span class="accent serif">영원히 손해</span></h1>
+      <p class="dek">손님 손해(놓침)와 호텔 손해(헛다리)의 <b>비용이 서로 다릅니다</b> — 그래서 최적점을 찾을 도구가 필요합니다.</p>
+    </div>
+    <div class="body single center">
+      <div class="grid g3" style="max-width:1020px">
+        <div class="card mark m-sig"><h3 class="sig">전체 취소율</h3><p><span class="mono" style="color:var(--ink);font-size:34px;font-weight:700">37<small style="font-size:18px">%</small></span> <span class="tag">· 테스트 38.7%</span></p></div>
+        <div class="card mark m-hi"><h3 class="hi">도심 · 리스본</h3><p><span class="mono" style="color:var(--ink);font-size:34px;font-weight:700">41.7<small style="font-size:18px">%</small></span></p></div>
+        <div class="card mark m-lo"><h3 class="lo">리조트 · 알가르브</h3><p><span class="mono" style="color:var(--ink);font-size:34px;font-weight:700">27.8<small style="font-size:18px">%</small></span></p></div>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">취소될 방을 못 잡아도, 너무 많이 더 받아도 손해 — <b>두 손해의 크기가 달라서</b> 최적점을 찾을 도구가 필요합니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">시작 —</span> 오늘 우리는 이 문제를 <b>어떤 순서로</b> 풀어갈까요?</p>
+      <span class="pg">Hotel No-Show DSS · 2026.06.10</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       02 · 로드맵 — Demo → Math → Ethics (신뢰 곡선)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="본론 들어가기 전에 오늘의 여정을 지도처럼 펼쳐 드립니다. 청중이 전체 흐름을 미리 알면 안심하고 따라오실 수 있거든요. 오늘은 딱 세 단계, 신뢰를 쌓는 순서로 갑니다. 먼저 데모(Demo) — '이거 진짜 돌아가긴 해?'라는 첫 의심에 답합니다. 실제 앱을 띄워 예약 데이터가 들어와 쌓이고 모델이 0.387에서 0.820까지 자라는 걸 눈으로 보여드려요. 둘째 수학(Math) — '그 숫자 믿어도 돼?'에 답합니다. 0.820이 뭘 뜻하는지 PR-AUC로 풀고, 시간이 지나며 성능이 출렁이는 드리프트도, 점수가 보수적으로 나오는 캘리브레이션 약점도 먼저 공개합니다. 약점을 숨기지 않고 먼저 까는 게 이 단계의 핵심이에요. 셋째 윤리(Ethics) — '그거 공정해?'에 답합니다. 시스템을 다 보여드린 뒤, 윤리와 법으로 우리를 검토하는 단계예요. 동의를 먼저 받는 설계라 윤리가 형식 점검이 아니라 바탕에 깔려 있고, 거기서 예측 1순위인 국적을 차별에 쓰지 않는지, GDPR 7조 동의와 22조 자동결정 거부권까지 점검합니다. 이 세 단계는 곧 세 기둥 — 수집 인프라(Demo), 정직한 수치(Math), 합법 설계(Ethics) — 이고, 마지막 장에서 다시 이 세 기둥으로 닫습니다. 슬라이드 숫자들(0.820, 8~30%)은 각 단계 핵심 결과의 미끼예요. 자, 첫 단계 데모로 가시죠.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">02</span><span class="tick"></span>
+        <span class="seg">로드맵 · Demo → Math → Ethics</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>오늘의 여정 — <span class="accent">눈으로 보고 → 믿고 → 안전하게</span> 씁니다</h1>
+      <p class="dek">세 단계로 <b>신뢰를 쌓습니다</b> — 약점도 먼저 공개합니다.</p>
+    </div>
+    <div class="body single center">
+      <div class="flow">
+        <div class="step"><div class="n">1 · 동작함?</div><div class="t">Demo · 라이브 수집</div></div>
+        <div class="arr">→</div>
+        <div class="step"><div class="n">2 · 0.820</div><div class="t">Math · 수치·약점</div></div>
+        <div class="arr">→</div>
+        <div class="step out"><div class="n">3 · 8~30%</div><div class="t">Ethics · 윤리·결정</div></div>
+      </div>
+      <div class="row" style="margin-top:22px;justify-content:center">
+        <span class="chip">기둥 ① 수집 인프라</span><span class="chip">기둥 ② 정직한 수치</span><span class="chip">기둥 ③ 합법 설계</span>
+        <span style="color:var(--ink-3);font-size:14px;margin-left:6px">→ 마지막 장(11)에서 다시 이 세 기둥으로 닫습니다</span>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">먼저 <b>지도를 드립니다</b> — 보여주고(Demo), 믿게 하고(Math), 마지막에 <b>공정한지 검토</b>(Ethics)합니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 지도를 펼쳤으니 —</span> 첫 걸음, <b>데이터가 실제로 들어오는 모습</b>부터 봅니다.</p>
+      <span class="pg">02 · 로드맵</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       03 · Demo — 데이터 유입 + 성장곡선 [기둥 ①]
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="여기가 첫 단계 데모입니다. 첫 기둥, '수집 인프라'를 눈으로 보여드리는 자리예요. 손님은 여러 경로로 예약하죠 — 직접 전화, 온라인 여행사, 오프라인 여행사, 기업 단체, 그리고 항공·여행사가 함께 쓰는 예약 시스템(GDS)까지. 이렇게 흩어진 예약들이 시간 순서대로 저희 도구 한곳에 모입니다. 화면의 점 하나가 예약 한 건인데, 그 안엔 얼마나 미리 예약했는지·국적·요청사항·예약 경로·1박 평균 요금 같은 수십 가지 정보가 담겨 있어요. 실제 앱 화면(/dashboard/hub)을 띄워, 왼쪽 카드에 예약이 누적되고 오른쪽 성장곡선이 동시에 자라는 모습을 보여드립니다 — 정상은 초록 점, 취소는 빨간 점. 데이터가 쌓일수록 예측력이 0.387에서 0.820까지 올라가는 걸 곡선으로 직접 보실 수 있어요. 곡선 옆엔 '재학습 현황' 패널을 띄워 누적 학습량과 현재 PR-AUC가 같이 올라가는 걸 보여드리는데, 이건 발표용으로 미리 계산해 온 값입니다 — 실시간 재학습이 아니라요. 시간을 넉넉히 잡고 '봐요, 지금 n번째 예약이 들어왔어요' 하고 짚어주는 게 포인트입니다. ★정직 프레이밍이 중요합니다 — 이건 지금 이 순간 모델을 새로 학습시키는 게 아니라, 미리 계산해 둔 성장 과정을 '재생'하는 겁니다. 실제 재학습은 Phase 2 운영 영역이고, 오늘 화면은 그 결과를 정적 JSON으로 확정해 재생하는 거예요. 그래서 무조건 돌아갑니다. 데모 데이터는 hub_stream.json인데 화면이 버벅이지 않게 전체 11만 9천 건 중 2만 5천 건만 뽑은 경량판이고, 출처는 캐글 공개 두 호텔 실제 2년치입니다. 폴백은 3단계 — 1순위 라이브, 안 되면 미리 찍어둔 녹화, 그것도 안 되면 정지 프레임. D-1 리허설 필수. 핵심 메시지 하나 — '예약 하나하나가 곧 데이터다, 이게 우리 수집 창구다.'">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">03</span><span class="tick"></span>
+        <span class="seg">Demo · 데이터 유입 + 성장곡선 (기둥 ① 수집 인프라)</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>데이터가 들어오고 — 모델이 <span class="accent">0.387 → 0.820</span>으로 <span class="accent serif">자라는 걸 눈으로</span></h1>
+      <p class="dek">예약이 시간순으로 쌓이면 <b>예측력이 곡선으로 자랍니다</b>.</p>
+    </div>
+    <div class="body single">
+      <div class="row" style="gap:8px;margin-top:2px">
+        <span class="chip">직접 예약</span><span class="chip">온라인 여행사</span><span class="chip">오프라인 여행사</span>
+        <span class="chip">기업 단체</span><span class="chip">예약 시스템(GDS)</span>
+        <span style="color:var(--ink-3);font-size:14px;margin-left:6px">→ 우리 도구가 한곳으로 모음</span>
+      </div>
+      <!-- ★ 라이브 데모 슬롯 — 실제 앱 /dashboard/hub 구동 위치 -->
+      <div class="demoslot">
+        <span class="corner tl"></span><span class="corner tr"></span>
+        <span class="corner bl"></span><span class="corner br"></span>
+        <span class="badge">live demo · /dashboard/hub</span>
+        <div class="big">실제 앱 라이브 구동 — <span class="mono">데이터 유입 + 성장곡선 + 재학습 현황</span></div>
+        <p class="sub">정상 <b style="color:var(--risk-lo)">초록 점</b> / 취소 <b style="color:var(--risk-hi)">빨간 점</b> · 옆에 <b>재학습 현황 패널</b>(누적 학습량·현재 PR-AUC) — <b>데모용 사전계산</b>, 실시간 재학습은 Phase 2 · 폴백: 라이브 → 녹화 → 정지 프레임.</p>
+      </div>
+      <div class="src" style="margin-top:6px">점 하나 = <b>수십 가지 정보</b>를 담은 예약 한 건 · 실제 데이터(Kaggle, 두 호텔 2년치)</div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">예약이 들어올 때마다 <b>학습 재료가 한곳에 쌓이고</b> — 쌓일수록 예측이 좋아지는 걸 곡선으로 보여드립니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 0.820까지 자랐습니다 —</span> 그런데 <b>0.820이 대체 뭘 의미</b>할까요?</p>
+      <span class="pg">03 · Demo</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       04 · Math — PR-AUC 풀이 [기둥 ②]
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="이제 두 번째 기둥 Math입니다. 데모에서 본 0.820이 정확히 뭘 의미하는지, 한 장 들여서 제대로 풀겠습니다. 이게 오늘 가장 단단한 숫자예요. 두 호텔 실제 2년치로 학습시켰더니 취소 예측 점수 0.820이 나왔습니다(정확히는 LightGBM 0.8189). 아무거나 찍는 기준선은 0.387이니 2.1배 더 잘합니다. 차트는 다섯 방법 비교인데 가장 좋은 게 LightGBM 0.820, XGBoost 0.81, 로지스틱·랜덤포레스트 0.78 순이에요. ★여기서 PR-AUC를 천천히 풀겠습니다. 이름이 어렵지만 뜻은 단순해요. 우리는 '몇 퍼센트 넘으면 취소로 칠지', 그 자르는 선(임계값)을 아직 안 정했습니다. PR-AUC는 그 선을 정하기 '전에', 모델이 위험한 예약을 위로 잘 줄세우는가 — 그 줄세우기 품질만 재는 지표예요. 비유하면, 시험 점수로 합격선을 긋기 전에 '등수를 얼마나 잘 매겼나'를 보는 거죠. 그래서 임계값과 무관하고(임계값-독립), 취소가 많은 불균형 데이터에서 특히 정직합니다. 그럼 왜 F1은 메인으로 안 썼을까요? 참고로 임계값을 딱 0.5로 정하면 F1은 0.687이 나옵니다. 그런데 F1은 '0.5에서 자른다'는 가정을 이미 깔고 있어요. 우리는 그 선을 안 정했는데 F1을 메인으로 쓰면, 정하지도 않은 가정을 슬쩍 들여오는 셈이라 틀립니다. 그래서 줄세우기 지표(PR-AUC)를 메인으로, F1은 참고로만 둡니다. 한 문장으로 못박을게요 — 0.820은 '순위 문제'를 푼 점수지 '몇 개가 취소할지'라는 '수량 문제'를 푼 게 아닙니다. 이 구분이 뒤에서 두 번 더 중요해집니다 — 드리프트(05)와, 점수가 보수적인 캘리브레이션(10)에서요. 다음 장, 그 0.820이 1년 내내 어떻게 출렁이는지 정직하게 보겠습니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">04</span><span class="tick"></span>
+        <span class="seg">Math · 0.820은 무슨 뜻인가 (PR-AUC 풀이)</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>0.820은 <span class="accent">"위험한 예약 줄세우기"</span> 점수 — <span class="accent serif">자르는 선 정하기 전</span>의 실력</h1>
+      <div class="pinline"><span class="pin">PR-AUC = 임계값과 무관 · 순위 품질</span><span class="pin" style="margin-left:8px">F1=0.687은 임계값 0.5 가정 → 참고만</span></div>
+    </div>
+    <div class="body rail-2" style="align-items:stretch">
+      <div class="imgplate">
+        <div class="cap"><span class="t">5가지 방법 비교 · 0.820 vs 그냥 찍기 0.387 (2.1배)</span></div>
+        <img src="charts/c_models.png" alt="5가지 예측 방법 비교: 가장 좋은 방법의 점수 0.820이 그냥 찍기 0.387의 2.1배">
+        <div class="src">실제 데이터 — Kaggle, <b>두 호텔 실제 2년치</b>(도심 리스본 · 리조트 알가르브) · LightGBM 0.8189 · 지어낸 데이터 안 씀</div>
+      </div>
+      <div class="rail">
+        <div class="kpi"><div class="v mono">0.820</div>
+          <div class="k"><span class="lab">예측 점수 <span class="mono" style="font-weight:400;color:var(--ink-3)">(PR-AUC)</span></span>가장 자신 있는 숫자</div></div>
+        <hr>
+        <div class="kpi"><div class="v mono">2.1<small>×</small></div>
+          <div class="k"><span class="lab">그냥 찍기(0.387) 대비</span>의미있는 차이</div></div>
+        <hr>
+        <p class="src" style="margin:0">이건 <b style="color:var(--ink-2)">'순위 문제'</b> · <b style="color:var(--ink-2)">'몇 개가 취소할지(수량)'</b>는 다른 얘기 — 점수 보정은 <span class="mono">(→ 10번 장)</span></p>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">0.820은 <b>"누가 위험한지 줄세우기"를 그냥 찍기보다 2.1배 잘한다</b>는 뜻 — 합격선을 긋기 전 '등수 매기는 실력'입니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 줄세우기는 잘합니다 —</span> 그런데 이 점수, <b>1년 내내 똑같을까요?</b></p>
+      <span class="pg">04 · Math</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       05 · Math — 드리프트 = 지속 재학습의 증거 [기둥 ②]
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="여기가 정직성 슬라이드입니다. 청중이 '아 실제로는 안 되는군?'으로 읽지 않도록, 프레이밍을 분명히 잡겠습니다. 결론부터 — 성능이 출렁이는 건 실패가 아니라 시스템이 '살아 있다'는 증거이고, 그래서 우리는 한 번 만들고 끝이 아니라 계속 재학습합니다. 두 가지 채점법을 비교합니다. 하나는 한 시점에 딱 한 번 채점하는 고정 테스트 — 여기선 0.841처럼 높게 나와요. 다른 하나는 실제 운영을 흉내 낸 워크-포워드 검증 — 매주 그다음 한 달을 미리 맞혀보고, 끝나면 그 달을 학습에 넣고 또 다음 달을 맞히는 방식이에요. 이게 현장에 훨씬 가깝습니다. 이 방식으로 1년을 쭉 돌리면 성능이 후반에 0.841에서 0.680까지 내려갑니다. 왜냐? 손님 패턴이 계절·수요에 따라 바뀌니까요. 여름 성수기 손님과 겨울 손님이 다르고, 그래서 출렁임 폭이 고정 테스트보다 1.4에서 2.2배 큽니다. 중요한 해석을 두 번 강조할게요. 첫째, 이 출렁임은 모델이 고장난 게 아니라 세상이 변한 거예요. 둘째, 그래서 우리는 '두 가지로 같이 쟀다'는 것 자체가 정직함의 증거입니다 — 유리한 0.841만 골라 보여주지 않았다는 뜻이니까요. 운영 약속으로 연결됩니다 — 주 1회 드리프트를 감시하고, 월 1회 재학습을 돌립니다. 데모에서 본 성장곡선이 바로 이 재학습의 시각화예요. 앞 장(04)에서 0.820은 '순위 점수'라고 했죠? 드리프트도 순위 능력이 시간에 따라 변한다는 얘기이고, 점수가 보수적이라는 또 다른 약점은 잠시 뒤 10번 장에서 따로 풀겠습니다. 다음 장, 이제 그 줄세우기를 실제 결정으로 — 방을 몇 % 더 받을지로 옮깁니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">05</span><span class="tick"></span>
+        <span class="seg">Math · 드리프트 = 계속 재학습한다는 증거</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>모델은 <span class="accent">1년 내내 배웁니다</span> — 출렁임은 <span class="accent serif">고장이 아니라 살아있음</span></h1>
+      <p class="dek">매주 다음 달을 미리 맞히면 후반 <b>0.841 → 0.680</b> — 그래서 <b>매달 재학습</b>합니다.</p>
+    </div>
+    <div class="body rail-2" style="align-items:stretch">
+      <div class="imgplate">
+        <div class="cap"><span class="t">두 채점법 · 고정 테스트 0.841 vs 매주 다음 달 미리 맞히기 (드리프트)</span></div>
+        <img src="charts/c_growth.png" alt="두 평가법 비교와 시간에 따른 성능 드리프트: 워크포워드 검증은 후반 0.841에서 0.680으로 하락">
+        <div class="src">워크-포워드(실제 운영 흉내) = 현장에 가까움 · 출렁임 폭이 고정 테스트의 <b>1.4~2.2배</b> · 손님 패턴이 계절마다 변함</div>
+      </div>
+      <div class="rail">
+        <div class="kpi"><div class="v mono">1.4~2.2<small>×</small></div>
+          <div class="k"><span class="lab">출렁임 폭 (드리프트)</span>실패 아님 · 세상이 변함</div></div>
+        <hr>
+        <div class="kpi"><div class="v mono">주 1회</div>
+          <div class="k"><span class="lab">드리프트 감시 · 월 1회 재학습</span>데모 성장곡선이 그 시각화</div></div>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">손님이 계절마다 바뀌니 성능도 자연히 변합니다 — <b>고정 모델이 아니라 매주 보고 매달 다시 배우는</b> 살아있는 시스템입니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 줄세우기를 계속 갱신합니다 —</span> 그럼 그 줄로 <b>방을 몇 % 더 받을까요?</b></p>
+      <span class="pg">05 · Math</span>
+    </div>
+    <p class="footnote"><span class="lab">정직 각주 ·</span> 두 가지 채점법을 함께 공개하는 것 자체가 정직함의 증거 — 유리한 고정 테스트(0.841)만 보여주지 않음. 워크-포워드는 매주 다음 달을 미리 맞히고 그 달을 다시 학습에 넣는 방식.</p>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       06 · 의사결정 ① — 오버부킹 8~30% (예약 종류별)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="이제 줄세우기를 실제 결정으로 옮깁니다 — 방을 몇 % 더 받을까. 손님을 '얼마나 미리 예약했는지'로 묶었더니 아주 직관적인 결과가 나왔어요 — 일찍 예약한 손님일수록 취소를 더 많이 합니다. 그래서 세그먼트별로, 일주일 안에 예약한 그룹은 8%만 더 받고, 8~30일 16%, 31~90일 24%, 91~180일 29%, 그리고 반년 넘게 미리 예약한 그룹은 30%까지 더 받으라고 나옵니다. 임의로 정한 게 아니라 실제 취소 데이터에서 자동 계산된 숫자예요. 원리는 뉴스벤더 최적화 — 한 명 더 받을 때 생기는 이득과 손해가 같아지는 지점에서 멈추는 겁니다. ★중요한 단서를 두 개 답니다. 첫째, 이 8~30%는 모델 '원점수'가 아니라 '보정된 확률'에다 그 호텔의 진짜 비용 비율을 곱해 다시 맞춰야 합니다 — 왜 원점수를 그대로 안 쓰는지는 잠시 뒤 9번 장에서 따로 풀게요. 미리 말하면, 우리 모델은 순위는 잘 매기지만 확률 자체는 보수적으로 낮게 부르거든요. 둘째, 이 결정에 국적은 들어가지 않습니다 — 국적 윤리는 뒤 10번 장에서 따로 검토합니다. 솔직한 각주도 답니다 — 우리 데이터 전체 최적치는 18~20%로 업계 평균 5~15%보다 높은데, 이 데이터셋 취소율 자체가 37~38.7%로 유독 높아서 그렇습니다. 업계 리서치로 봐도 OTA 채널 취소율이 평균 37%대라, 고취소 구간 30%는 글로벌 평균과 맞고 저취소 구간 8%는 직접 예약 수준이라 데이터 기반으로 정당합니다. 그래도 최종 결정은 항상 호텔 매니저가 합니다. 한 가지 더 — 앱이 RevPAR(객실당 매출) 개선치를 크게 보여주기도 하는데, 그건 사전 계산된 미검증값이라 헤드라인으론 안 씁니다. 묻거든 '방향성 참고치'라고만 답하세요. 다음 장, 그럼 못 받은 손님에게 얼마를 보상할지 — 정답 없는 그 금액을 어떻게 정하는지로 갑니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">06</span><span class="tick"></span>
+        <span class="seg">의사결정 ① · 방을 몇 % 더 받을까 (예약 종류별)</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>그래서 방을 <span class="accent">8~30% 더</span> 받습니다 — <span class="accent serif">일찍 예약할수록 더</span></h1>
+      <div class="pinline"><span class="pin">국적은 빼고 결정 (윤리·법 검토 → 10번 장)</span><span class="pin" style="margin-left:8px">원점수 아닌 보정 확률 → 9번 장</span></div>
+    </div>
+    <div class="body rail-2" style="align-items:stretch">
+      <div class="imgplate">
+        <div class="cap"><span class="t">예약 시점별 권장 오버부킹 8~30% · 이득=손해 지점에서 자동 계산</span></div>
+        <img src="charts/c_overbooking.png" alt="예약 시점이 빠를수록 취소율과 권장 오버부킹 비율 상승: 7일 이내 8%에서 180일 초과 30%까지">
+        <div class="src">≤7일 <b>8%</b> · 8~30일 16% · 31~90일 24% · 91~180일 29% · &gt;180일 <b>30%</b> · 뉴스벤더 최적화 · 최종 결정은 매니저</div>
+      </div>
+      <div class="rail">
+        <div class="kpi"><div class="v mono">8~30<small>%</small></div>
+          <div class="k"><span class="lab">권장 오버부킹</span>예약 시점이 빠를수록 ↑</div></div>
+        <hr>
+        <p class="src" style="margin:0;font-size:14px">한 명 더 받을 때 <b style="color:var(--ink-2)">이득 = 손해</b>가 같아지는 지점에서 멈춤 — 실제 취소 데이터에서 <b style="color:var(--ink-2)">자동 계산</b></p>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">비행기처럼 <b>취소될 만큼만 방을 더 받습니다</b> — 일찍 예약한 손님이 많이 취소하니 그 그룹은 더 많이.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 더 받았는데 손님이 다 오면? —</span> 못 받은 손님에게 <b>얼마를 보상</b>할까요?</p>
+      <span class="pg">06 · 의사결정 ①</span>
+    </div>
+    <p class="footnote"><span class="lab">정직 각주 ·</span> 우리 데이터 최적 18~20%는 업계 평균 5~15%보다 높음 — 이 데이터셋 취소율(37~38.7%)이 유독 높아서(OTA 평균과 일치). 실제 적용 땐 호텔 비용 비율 + 보정 확률로 재조정.</p>
+  </section>
+
+  
+
+  <!-- ════════════════════════════════════════════════════════════
+       07 · 의사결정 ② — 보상 삼각측량 (수렴 €46~107)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="보상 금액엔 정답이 없습니다. 어느 호텔도 '이 손님에게 얼마를 물어주면 적당한가'를 딱 떨어지게 정해두지 않았어요. 정답이 없는 값을 정할 땐 한 갈래로 우기면 안 되고, 서로 독립적인 여러 갈래가 같은 구간에서 만나는지를 봐야 합니다 — 이걸 삼각측량이라고 해요. 우리는 세 갈래를 독립적으로 뽑았습니다. 가) 손님과의 흥정 시뮬레이션에서 나온 약 46유로 — 손님이 받아들이는 최소선이에요. 1박 요금의 0.4배쯤 되고, 이 금액에서 손님 수락률이 약 42%입니다. 나) 업계 관행 — 디나이드 룸이 생기면 동급 호텔 첫날 숙박비를 대주는 게 표준이고, 그게 약 107유로, 1박 요금의 1.0배 수준입니다. 다) 빈 방 기회손실의 상한 — 방을 못 팔아 날린 손해도 약 107유로로, 1박 손해의 100%에 해당해요. 세 갈래가 서로 다른 출처(손님 심리·업계 표준·기회비용)인데 46~107유로 한 구간에서 겹친다 — 이 수렴 자체가 신뢰의 근거입니다. ★강조할 점은, 이 보상은 동의 먼저 받고, 국적 차별 없이, 매니저 최종승인으로 이뤄진다는 거예요. 그 윤리·법 검토는 뒤 10번 장에서 따로 다룹니다. 업계·법 리서치로도 이 범위가 정당합니다 — EU 소비자법 기준 중급 호텔 보상이 150~300유로 선이고 항공사는 운임의 200~400%까지 가는데, 우리 46~107유로는 교통+소액 인센티브 수준이라 오히려 보수적이에요. 동시에, 보상을 너무 짜게 하면 나쁜 후기 한 건이 큰 매출 손실로 돌아오니, 평판 리스크와 수익성 사이의 균형점이기도 합니다. 다음 장에서, 이 세 갈래 중 가장 새로운 가) 46유로를 우리가 데이터도 없는 상태에서 어떻게 뽑아냈는지 — 그 생성 과정을 자세히 보겠습니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">07</span><span class="tick"></span>
+        <span class="seg">의사결정 ② · 보상 — 세 갈래로 검증 후 수렴</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>보상엔 정답이 없으니 — <span class="accent">세 갈래가 만나는 구간</span>으로 <span class="accent serif">€46~107</span></h1>
+      <p class="dek">서로 독립인 세 출처가 <b>같은 구간에서 겹치는 것</b>이 신뢰의 근거입니다.</p>
+    </div>
+    <div class="body single center">
+      <div class="grid g3">
+        <div class="card mark m-sig"><h3 class="sig">가) 손님 흥정</h3><p><span class="mono" style="color:var(--ink);font-size:26px;font-weight:700">€46</span><br>손님이 받아들이는 최소선 · 1박의 0.4배 · 수락 약 42%</p></div>
+        <div class="card mark m-sig"><h3 class="sig">나) 업계 관행</h3><p><span class="mono" style="color:var(--ink);font-size:26px;font-weight:700">€107</span><br>동급 호텔 첫날 숙박비 표준 · 1박의 1.0배</p></div>
+        <div class="card mark m-sig"><h3 class="sig">다) 빈방 손해</h3><p><span class="mono" style="color:var(--ink);font-size:26px;font-weight:700">€107</span><br>못 판 방 기회손실 상한 · 빈 방 손해 약 100%</p></div>
+      </div>
+      <div class="row" style="margin-top:18px;justify-content:center">
+        <span class="chip" style="border-left:3px solid var(--signature)">세 갈래 수렴 = <b style="color:var(--ink)">€46 ~ €107</b></span>
+        <span style="color:var(--ink-3);font-size:14px;margin-left:6px">· 동의 먼저 · 매니저 최종승인 (윤리·법 검토 → 10번 장)</span>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">정답 없는 금액은 <b>서로 다른 세 방법으로 따로 재서, 겹치는 €46~107</b>을 씁니다 — 한 갈래로 우기지 않습니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 그런데 손님 흥정 €46은 —</span> 데이터도 없는데 <b>어떻게 뽑았을까요?</b></p>
+      <span class="pg">07 · 의사결정 ②</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       08 · 협상 — €46 생성 (SHAP · 앵커링) [기둥 ③ 데이터 생성]
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="앞 장 세 갈래 중 가장 새로운 게 가) 46유로였죠. 이게 우리의 진짜 차별화 포인트입니다. 손님이 할인과 유연한 조건을 받아들이는 '흥정 기록'은 세상에 아직 0건이에요. 어느 호텔도 '이 손님에게 얼마를 제안하면 받아들일까'를 체계적으로 기록해두지 않았거든요. 그래서 우리가 직접 만들었습니다 — AI로 손님 40명을 만들고, 제안 금액을 바꿔가며 수락하는지 거절하는지를 시뮬레이션해서 수락곡선을 그렸어요. 금액마다 40명씩 돌렸습니다. 결과가 흥미롭습니다. 수락에는 계단형 문턱이 있어요 — 29유로를 제안하면 거의 다 거절하는데, 46유로를 넘어가면 사실상 100% 수락합니다. 그러니까 수락 문턱이 29에서 46유로 사이에 있는 거죠. 그래서 앞 장의 가) 46유로가 여기서 나온 겁니다. 더 재밌는 건 앵커링 효과예요 — 처음 부른 금액이 손님의 최종 행동을 좌우합니다. 첫 제안을 어디서 시작하느냐가 수락률을 바꿔요. 이게 우연이 아니라는 걸 통계로 확인했습니다 — 먼저 부른 금액(앵커)의 효과가 통계적으로 유의했고, p값이 10의 마이너스 6승보다 작습니다. 백만 분의 일 확률로도 우연이 아니란 뜻이에요. 여기서 SHAP이 한 번 더 등장합니다 — '모델이 어떤 신호에 반응해서 수락·거절을 가르는가'를 시각화해주는 거죠. ★정직 프레이밍 — 이건 AI 시뮬레이션으로 만든 합성 데이터라 실제 사람과는 차이가 있습니다. 그래서 끝이 아니에요. 우리 도구는 동의를 먼저 받는 설계라, 실제 운영에서 진짜 협상이 쌓이면 이 합성 곡선을 언제든 진짜 데이터로 재보정합니다. 마지막으로 앞 장과 한 번 더 묶어드릴게요 — 손님 흥정(46) · 업계 관행(107) · 빈방 손해(107), 이 세 갈래가 46~107유로에서 만났고, 그중 첫 갈래를 우리가 없던 데이터에서 이렇게 추론해냈습니다. 다음 장, 그럼 아까 미뤄둔 숙제 — 왜 우리가 모델 원점수를 그대로 안 쓰는지를 풀겠습니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">08</span><span class="tick"></span>
+        <span class="seg">협상 · €46을 없던 데이터에서 추론 (기둥 ③ 데이터 생성)</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>흥정 기록은 <span class="accent">0건</span> — 그래서 시뮬레이션으로 <span class="accent serif">€29→€46 문턱</span>을 찾았습니다</h1>
+      <p class="dek"><b>29유로 거부, 46유로 수락.</b> 처음 부른 금액이 행동을 바꿉니다 <span class="mono">(p &lt; 10⁻⁶)</span>.</p>
+    </div>
+    <div class="body rail-2" style="align-items:stretch">
+      <div class="imgplate">
+        <div class="cap"><span class="t">손님 협상 수락곡선 · 계단형 문턱 €29→€46 · 앵커링 효과</span></div>
+        <img src="charts/c_negotiation.png" alt="협상 수락곡선: 29유로는 거부, 46유로에서 100% 수락. 처음 제안한 금액이 수락률을 좌우하는 앵커링 효과">
+        <div class="src">AI 손님 40명 × 금액마다 40명 시뮬레이션 → 수락곡선 생성 · 먼저 부른 금액(앵커) 효과 통계 유의 <span class="mono">(p &lt; 10⁻⁶)</span> · SHAP로 반응 시각화</div>
+      </div>
+      <div class="rail">
+        <div class="kpi"><div class="v mono">0<small>건</small></div>
+          <div class="k"><span class="lab">기존 흥정 데이터</span>세상에 없어서 우리가 생성</div></div>
+        <hr>
+        <div class="kpi"><div class="v mono">€29→46</div>
+          <div class="k"><span class="lab">수락 문턱 (계단형)</span>거부 → 사실상 100% 수락 → 07의 €46 근거</div></div>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">아무도 못 모은 <b>흥정 기록을 우리가 처음 만들었고</b> — 첫 제안 금액이 결과를 바꿉니다. <b>실데이터로 계속 보정</b>합니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 세 갈래(€46·€107·€107)가 만났습니다 —</span> 그런데 왜 <b>모델 원점수는 안 쓸까요?</b></p>
+      <span class="pg">08 · 협상</span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       09 · Math 재명확 — 캘리브레이션 (순위 ≠ 수량)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="아까 06번 장에서 '오버부킹 %는 원점수가 아니라 보정된 확률로 다시 맞춘다'고 했죠. 그 숙제를 여기서 풉니다. 또 04번 장에서 0.820은 '순위 점수'지 '수량'이 아니라고 못박았는데, 그 두 얘기가 여기서 하나로 합쳐져요. 핵심 현상은 언더-캘리브레이션입니다. 우리 모델이 모든 예약에 매긴 취소 확률을 평균 내면 0.23이 나오는데, 실제 취소율은 0.387이에요. 그러니까 모델이 위험을 실제보다 '낮게' 부르고 있는 겁니다 — 점수가 보수적이에요. 여기서 헷갈리면 안 되는 게, 이건 모델이 틀렸다는 뜻이 아닙니다. 줄세우기는 여전히 정확해요(PR-AUC 0.820 그대로 유효). 누가 더 위험한지 등수는 잘 매기는데, 그 등수에 붙은 '절대 확률 숫자'만 낮게 부르는 거죠. 이게 머신러닝에서 자연스러운 성질이에요 — 판별형 모델은 경계를 잘 긋는 데 최적화돼 있지, 확률을 정확히 부르는 데 최적화된 게 아니거든요. 그래서 '두 얼굴'입니다 — 순위로는 1등 선수인데, 확률 해석으로는 보수적인. 그럼 왜 이게 06번 장 오버부킹에 중요하냐. 방을 몇 % 더 받을지는 '확률의 절대값'에 직접 달려 있거든요. 모델이 0.23이라고 보수적으로 부르는 걸 그대로 쓰면 방을 너무 적게 받게 됩니다. 그래서 우리는 캘리브레이션 보정을 한 번 거친 확률을 오버부킹 계산에 넣고, 그게 잘 됐는지는 Brier 점수 같은 캘리브레이션 지표로 따로 검증합니다. 정리하면 — 순위가 필요한 곳(누가 위험한지)엔 PR-AUC를, 수량이 필요한 곳(몇 %를 더 받을지)엔 보정 확률을. 약점을 숨기지 않고 먼저 밝히는 게 이 발표의 일관된 태도이고, 이것도 그중 하나예요. 다음 장에서 윤리·법으로 우리를 검토하겠습니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">09</span><span class="tick"></span>
+        <span class="seg">Math 재명확 · 왜 원점수를 안 쓰나 (순위 ≠ 수량)</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>순위는 정확해도 <span class="accent">확률은 보수적</span> — 예측 평균 <span class="accent serif">0.23 &lt; 실제 0.387</span></h1>
+      <div class="pinline"><span class="pin">06번 오버부킹은 보정 확률을 씀</span><span class="pin" style="margin-left:8px">PR-AUC 0.820은 그대로 유효</span></div>
+    </div>
+    <div class="body single center">
+      <div class="grid g3" style="max-width:1040px">
+        <div class="card mark m-sig"><h3 class="sig">모델 예측 평균</h3><p><span class="mono" style="color:var(--ink);font-size:30px;font-weight:700">0.23</span><br>위험을 보수적으로 낮게 부름</p></div>
+        <div class="card mark m-hi"><h3 class="hi">실제 취소율</h3><p><span class="mono" style="color:var(--ink);font-size:30px;font-weight:700">0.387</span><br>실제는 더 높음 → 언더-캘리브레이션</p></div>
+        <div class="card mark m-lo"><h3 class="lo">순위 능력</h3><p><span class="mono" style="color:var(--ink);font-size:30px;font-weight:700">0.820</span><br>줄세우기는 그대로 정확</p></div>
+      </div>
+      <div class="row" style="margin-top:18px;justify-content:center">
+        <span style="color:var(--ink-2);font-size:15px">순위가 필요한 곳엔 <b style="color:var(--ink)">PR-AUC</b> · 수량(몇 %)이 필요한 곳엔 <b style="color:var(--ink)">보정 확률</b> — Brier 등으로 검증</span>
+      </div>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">모델은 <b>등수는 잘 매기지만 확률은 낮게 부릅니다</b> — 그래서 오버부킹 %는 '원점수'가 아니라 '보정 확률'로 계산합니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 수치 약점까지 공개했으니 —</span> 이제 <b>윤리·법으로</b> 우리를 검토합니다.</p>
+      <span class="pg">09 · Math 재명확</span>
+    </div>
+    <p class="footnote"><span class="lab">정직 각주 ·</span> 언더-캘리브레이션은 판별형 모델의 자연스러운 성질(경계는 잘 긋되 확률은 보수적) — 순위(PR-AUC)는 영향 없음, 수량 결정에서만 보정 필요.</p>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       10 · Ethics — 윤리·법 검토 (필요 시 우리를 검토)
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="이제 시스템을 다 보여드렸으니, 윤리와 법으로 우리 스스로를 검토합니다. 발표 흐름의 핵심이라기보다 '이거 공정하고 합법적이냐'를 검토가 필요할 때 우리를 점검하는 자리예요. 앞 04번 장에서 봤듯, 예측에 가장 큰 영향을 준 정보 1순위가 '국적'입니다 — SHAP이라는 도구로 보면 국적이 1위예요. 그런데 국적으로 손님을 다르게 대하면 차별이 될 수 있죠. 그래서 실험했습니다. 국적을 완전히 빼면 점수가 5% 떨어집니다(0.8189 → 0.7783, 통계적으로 분명한 차이). 그런데 국적을 통째로 쓰는 대신 '내국인이냐 외국인이냐' 한 가지로만 바꾸면, 손실이 단 1%(0.8189 → 0.8107)예요. 이건 통계적으로 차이가 없다고 볼 수준입니다. 그래서 우리는 후자, '내국인 여부'만 쓰기로 했습니다. 이유 셋 — 특정 국가를 콕 집어 차별한다는 인상을 없애고, 상위 10개국을 그대로 쓸 때 생기는 정보 유출 위험을 줄이고, 운영이 단순해집니다. 1%는 거의 무손실이라 충분히 감수할 만하죠. 법 얘기를 짚습니다. GDPR 22조 — 사람이 '전적으로 자동결정만으로' 불이익받지 않을 권리. 그래서 우리는 권고만 하고 최종결정은 항상 매니저예요. 핵심 리서치 근거를 인용하면, 22조는 의미 있는 인간 개입을 '선택'이 아니라 '의무'로 봅니다 — 검토자가 진짜로 거부할 권한·이해·시간을 가져야 하고, 그냥 위험점수만 띄우는 건 불충분하다고요. EU AI Act 14조도 같은 맥락에서, override(무시·번복) 가능성과 그 로그(운영자ID·시각·사유) 기록을 요구하고, override 비율을 KPI로 추적하랍니다 — 너무 낮으면 자동화 편향 신호라는 거죠. 7조는 동의는 자유롭고 명확해야 하며 언제든 철회 가능 — 그래서 동의 먼저 받고 거부해도 불이익 없게 설계합니다. 다크패턴(숨긴 거부 버튼, 사전체크) 금지도 2026년 강하게 단속 중이고요. 한계도 정직하게 — 국적을 빼도 요금·예약유형으로 간접차별이 남을 수 있고, 6일 안에 다 검증은 못 합니다. 그래서 분기마다 감시하겠다는 선언까지가 오늘 정직한 범위예요. 이렇게 윤리·법 검토까지 마쳤으니, 다음 장에서 세 기둥으로 닫습니다.">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">10</span><span class="tick"></span>
+        <span class="seg">Ethics · 윤리·법으로 우리를 검토 (기둥 ③ 합법 설계)</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>국적은 <span class="accent">예측 1순위</span>지만 차별엔 안 씁니다 — <span class="accent serif">−1% 손실</span>로 우려 해소</h1>
+      <div class="pinline"><span class="pin">SHAP 영향도 1위 = 국적</span><span class="pin" style="margin-left:8px">최종 결정은 항상 매니저 · 동의 먼저</span></div>
+    </div>
+    <div class="body single">
+      <div class="grid g2" style="flex:1;min-height:0">
+        <div class="imgplate">
+          <div class="cap"><span class="t">왜 검토가 필요한가 · SHAP 영향도 1위 = 국적</span></div>
+          <img src="charts/c_shap.png" alt="SHAP 영향도 분석: 국적이 취소 예측에 가장 큰 영향을 주는 1순위 변수">
+          <div class="src">SHAP(어떤 정보가 예측을 가장 크게 움직였나) — <b>국적이 1순위</b> · 그래서 차별 위험을 점검</div>
+        </div>
+        <div class="imgplate">
+          <div class="cap"><span class="t">어떻게 막는가 · 완전 제거 −5% vs '내국인 여부' −1%</span></div>
+          <img src="charts/c_ablation.png" alt="국적을 완전히 빼면 점수 5% 하락, 내국인 여부로 단순화하면 1% 하락에 그침">
+          <div class="src">통째로 빼면 <b>−5%</b>(0.8189→0.7783) · '내국인 여부'로 단순화 <b>−1%</b>(0.8189→0.8107, 거의 무손실) → 후자 채택</div>
+        </div>
+      </div>
+      <p class="src" style="margin-top:8px"><b style="color:var(--ink-2)">GDPR 22조</b> 자동결정 거부권 → 최종은 매니저(권고만) · <b style="color:var(--ink-2)">7조</b> 동의 철회 → 동의 먼저, 거부해도 불이익 없음 · <span class="mono">EU AI Act 14조</span> override 로그·KPI</p>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">국적은 <b>예측에만, 차별엔 안 씁니다</b> — 손실 1%로 우려를 없애고, <b>최종 결정은 항상 사람</b>이 합니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">… 윤리·법 검토도 통과했으니 —</span> 이제 오늘 만든 것을 <b>세 기둥으로</b> 닫습니다.</p>
+      <span class="pg">10 · Ethics</span>
+    </div>
+    <p class="footnote"><span class="lab">정직 각주 ·</span> 국적을 빼도 요금·예약유형 등으로 <b style="color:var(--ink-2)">간접 차별</b>은 남을 수 있음 — 6일 내 전부 검증은 불가, 오늘은 위험 인지 + 분기별 감시 선언까지.</p>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       11 · 결론 — 세 기둥 + 운영 약속
+  ═════════════════════════════════════════════════════════════ -->
+  <section class="slide"
+    data-notes="정리하겠습니다. 02번 장에서 약속한 세 기둥으로 닫습니다. 첫째 기둥 Demo — '데이터 모으는 도구'입니다. 직접·온라인·여행사·기업·예약시스템 등 흩어진 예약을 한곳에 모아 예측을 계속 생산하는 인프라예요. 예측 프로그램 한 개가 아니라 그걸 계속 만들어내고 데이터로 자라는 시스템이 주인공이라는 메시지를 여기서 닫습니다. 둘째 기둥 Math — '정직한 수치'입니다. 두 호텔 실제 2년치로 검증한 0.820, 그냥 찍기의 2.1배. 그리고 우리는 약점을 먼저 밝혔어요 — 시간이 지나면 출렁이는 드리프트(05), 확률을 보수적으로 부르는 언더-캘리브레이션(09). 숨기지 않고 먼저 깐 게 오히려 신뢰의 근거입니다. 셋째 기둥 Ethics — '합법 설계'입니다. 국적 차별을 막는 윤리·법 검토를 거쳤고(10번 장, −1% 손실), 없던 흥정 데이터를 동의 먼저 받는 설계로 합법적으로 생성했습니다(08번 장). GDPR 7조·22조, EU AI Act 14조까지 점검했고요. 신뢰의 근거를 한 번 더 — 우리는 손님이 입을 피해, 즉 평판 손상까지 비용에 넣어 계산했습니다. 그래서 답이 일부러 보수적으로, 손님에게 후하게 나와요. 마지막으로 운영 약속 세 가지를 분명히 합니다 — 주 1회 드리프트 모니터링, 월 1회 재학습, 분기 1회 윤리 감사. 한 문장으로 닫겠습니다 — 우리는 판단을 돕는 두뇌를 만들었고, 그 두뇌는 호텔 데이터로 쓸수록 똑똑해집니다. 그리고 AI 시대엔 이렇게 잘 쌓인 데이터베이스 하나가 곧 경쟁력입니다 — 그 위에선 누구나 다양한 걸 쉽게 만들 수 있으니까요. 감사합니다, 질문 받겠습니다. (Q&A 대비: RevPAR 개선치는 앱 사전계산·미검증값이라 방향성 참고치로만 답. hub_stream.json은 11.9만 중 2.5만 경량판. 워크-포워드 후반 0.680, 고정 테스트 0.841.)">
+    <span class="reg tr"></span><span class="reg br"></span>
+    <div class="topbar">
+      <div class="eyebrow"><span class="num">11</span><span class="tick"></span>
+        <span class="seg">결론 · 세 기둥 + 운영 약속</span></div>
+      <div class="progress"></div>
+    </div>
+    <div class="head">
+      <h1>판단을 돕는 두뇌 — 그 두뇌는 <span class="accent serif">쓸수록 자랍니다</span></h1>
+      <p class="dek"><b>AI 시대엔 잘 쌓인 데이터가 곧 경쟁력</b> — 좋은 데이터베이스 위에선 누구나 다양한 걸 쉽게 만들 수 있으니까요.</p>
+    </div>
+    <div class="body single center">
+      <div class="grid" style="gap:13px">
+        <div class="card"><div class="row" style="gap:16px;flex-wrap:nowrap"><div class="bignum mono">1</div>
+          <p style="font-size:16.5px;color:var(--ink);line-height:1.5"><b>Demo · 수집 인프라</b> — 흩어진 예약을 한곳으로, 예측을 계속 생산 (데이터로 자람)</p></div></div>
+        <div class="card"><div class="row" style="gap:16px;flex-wrap:nowrap"><div class="bignum mono">2</div>
+          <p style="font-size:16.5px;color:var(--ink);line-height:1.5"><b>Math · 정직한 수치</b> — <b class="mono" style="color:var(--signature)">0.820</b>(<span class="mono">2.1배</span>) · 오버부킹 <span class="mono">8~30%</span> · 보상 <span class="mono">€46~107</span> · 약점(드리프트·보정) 선공개</p></div></div>
+        <div class="card"><div class="row" style="gap:16px;flex-wrap:nowrap"><div class="bignum mono">3</div>
+          <p style="font-size:16.5px;color:var(--ink);line-height:1.5"><b>Ethics · 합법 설계</b> — 윤리·법 검토 통과(국적 <span class="mono">−1%</span>) · 없던 흥정 데이터 생성(동의 먼저) · GDPR 7·22조</p></div></div>
+      </div>
+      <div class="row" style="margin-top:14px;justify-content:center">
+        <span class="chip">운영 약속 — 주 1회 드리프트 감시</span><span class="chip">월 1회 재학습</span><span class="chip">분기 1회 윤리 감사</span>
+      </div>
+      <p class="footnote" style="margin-top:12px"><span class="lab">신뢰의 근거 ·</span> <b style="color:var(--ink-2)">손님 피해(평판)까지 비용에</b> — 그래서 답이 손님에게 후하게. 약점을 먼저 밝히고, 보수적으로 설계하고, 동의 기반 합법 설계.</p>
+    </div>
+    <div class="plain"><span class="tag">쉽게 말하면</span>
+      <span class="txt">우리는 <b>판단을 돕는 두뇌를 만들었고, 그 두뇌는 쓸수록 자랍니다</b>. 감사합니다.</span></div>
+    <div class="foot">
+      <p class="q"><span class="pre">마무리 —</span> 두뇌(예측 엔진)를 만들었고, 그 두뇌는 <b>쓸수록 똑똑해집니다.</b> 질문 받겠습니다.</p>
+      <span class="pg">11 · 결론</span>
+    </div>
+  </section>
+
+</div>
+
+<div class="notes" id="notes">
+  <div class="lbl">발표자 노트 · N키로 닫기</div>
+  <div class="nbody" id="notesBody"></div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const N=slides.length;
+  let i=0, notesOn=false;
+  const count=document.getElementById('count');
+  const notes=document.getElementById('notes'), notesBody=document.getElementById('notesBody');
+  const deck=document.getElementById('deck');
+
+  // ── 진행 표시 동적 생성: 슬라이드 수(N)에 맞춰 dot + 라벨 자동 구성 ──
+  slides.forEach((s,k)=>{
+    const p=s.querySelector('.progress');
+    if(!p) return;
+    let dots='';
+    for(let j=0;j<N;j++) dots += '<i'+(j===k?' class="on"':'')+'></i>';
+    const lbl=String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0');
+    p.innerHTML = dots + '<span class="lbl">'+lbl+'</span>';
+  });
+
+  function fit(){
+    const m=40;
+    const s=Math.min((window.innerWidth-m)/1280,(window.innerHeight-m)/720);
+    deck.style.transform='scale('+s+')';
+  }
+  window.addEventListener('resize',fit); fit();
+
+  function renderNotes(){ notesBody.textContent = slides[i].dataset.notes || '(노트 없음)'; }
+
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    count.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+    if(notesOn) renderNotes();
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+  function toggleNotes(){ notesOn=!notesOn; notes.classList.toggle('show',notesOn); if(notesOn) renderNotes(); }
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){next();e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){prev();e.preventDefault();}
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement)document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+    else if(e.key==='n'||e.key==='N'){ toggleNotes(); }
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(slides.length-1)}
+  });
+  deck.addEventListener('click',e=>{
+    if(e.target.closest('a')) return;
+    if(e.clientX < window.innerWidth*0.22) prev();
+    else if(e.clientX > window.innerWidth*0.78) next();
+  });
+
+  // deep-link: #s4 jumps to slide 4 (presenter/QA convenience)
+  function fromHash(){ const m=/^#s(\d+)$/.exec(location.hash); return m?Math.max(0,Math.min(slides.length-1,(+m[1])-1)):0; }
+  window.addEventListener('hashchange',()=>show(fromHash()));
+  show(fromHash());
+</script>
+</body>
+</html>
