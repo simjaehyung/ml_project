@@ -97,9 +97,9 @@ export default function FlexiPolicyPage() {
   return (
     <div className="p-6 space-y-6 text-white">
       <div>
-        <h1 className="text-xl font-semibold">Flexi Policy</h1>
+        <h1 className="text-xl font-semibold">Flexi 정책</h1>
         <p className="text-xs text-white/40 mt-0.5">
-          임계값 조정 → Pool Size / Walk Rate 실시간 미리보기
+          임계값 조정 → 풀 규모 / Walk Rate 실시간 미리보기
         </p>
       </div>
 
@@ -141,7 +141,7 @@ export default function FlexiPolicyPage() {
       {/* KPI Preview */}
       <div className="grid grid-cols-3 gap-4">
         <StatCard
-          label="Flexi Pool Size"
+          label="Flexi 풀 규모"
           value={preview?.estimated_pool_size ?? "—"}
           sub="임계값 초과 예약 수"
           accent="#3B82F6"
@@ -200,13 +200,13 @@ export default function FlexiPolicyPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-white/50">Booking ID</TableHead>
-                <TableHead className="text-white/50">Hotel</TableHead>
-                <TableHead className="text-white/50">Country</TableHead>
-                <TableHead className="text-white/50">Arrival</TableHead>
-                <TableHead className="text-white/50">Nights</TableHead>
-                <TableHead className="text-white/50">Risk Score</TableHead>
-                <TableHead className="text-white/50">Discount</TableHead>
+                <TableHead className="text-white/50">예약 ID</TableHead>
+                <TableHead className="text-white/50">호텔</TableHead>
+                <TableHead className="text-white/50">국가</TableHead>
+                <TableHead className="text-white/50">도착일</TableHead>
+                <TableHead className="text-white/50">숙박</TableHead>
+                <TableHead className="text-white/50">위험도</TableHead>
+                <TableHead className="text-white/50">할인율</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

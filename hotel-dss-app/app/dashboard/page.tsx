@@ -15,6 +15,7 @@ import {
 import { formatRiskScore } from "@/types/api";
 import { AlertTriangle, Zap, Hotel, Activity } from "lucide-react";
 import Link from "next/link";
+import { leadDays, daysUntilArrival, DEMO_AS_OF_LABEL } from "@/lib/demo";
 import {
   ScatterChart,
   Scatter,
@@ -31,12 +32,7 @@ import {
 // ── 뷰 모드 타입 ──
 type ViewMode = "overview" | "priority" | "list";
 
-// ── 리드타임 계산 ──
-function calcLeadTime(arrivalDate: string): number {
-  return Math.ceil(
-    (new Date(arrivalDate).getTime() - Date.now()) / 86400000
-  );
-}
+// 리드타임(예약→도착)·도착 카운트다운은 @/lib/demo (as-of 기준, 2017 스냅샷 호환)
 
 // ── 위험도 색상 ──
 function getRiskColor(score: number): string {
@@ -48,7 +44,7 @@ function getRiskColor(score: number): string {
 // ── Risk badge helper — inline bar 통합 ──
 function RiskBadge({ score }: { score: number }) {
   const bg = getRiskColor(score);
-  const label = score >= 0.7 ? "High" : score >= 0.4 ? "Med" : "Low";
+  const label = score >= 0.7 ? "고" : score >= 0.4 ? "중" : "저";
   return (
     <div className="flex items-center gap-2">
       <span
@@ -119,11 +115,11 @@ function BookingsTable({
     <Table>
       <TableHeader>
         <TableRow className="border-white/10 hover:bg-transparent">
-          <TableHead className="text-white/50">Booking ID</TableHead>
-          <TableHead className="text-white/50">Hotel</TableHead>
-          <TableHead className="text-white/50">Country</TableHead>
-          <TableHead className="text-white/50">Arrival Date</TableHead>
-          <TableHead className="text-white/50">Risk Score</TableHead>
+          <TableHead className="text-white/50">예약 ID</TableHead>
+          <TableHead className="text-white/50">호텔</TableHead>
+          <TableHead className="text-white/50">국가</TableHead>
+          <TableHead className="text-white/50">도착일</TableHead>
+          <TableHead className="text-white/50">위험도</TableHead>
           <TableHead className="w-8" />
         </TableRow>
       </TableHeader>
@@ -174,7 +170,7 @@ function BookingsTable({
                     })}
                   </span>
                   <span className="text-[10px] text-white/30">
-                    {calcLeadTime(b.arrival_date)}d
+                    {daysUntilArrival(b.arrival_date)}d
                   </span>
                 </div>
               </TableCell>
@@ -210,11 +206,11 @@ export default function OverviewPage() {
           listBookings(),
         ]);
         setSummary(s);
-        // risk_score 내림차순 상위 10건
+        // 전체 장부를 위험도 내림차순으로 보관 (분포·산점도는 전체 기준, 표는 limit으로 상위만).
         const sorted = [...r.bookings].sort(
           (a, b) => b.risk_score - a.risk_score
         );
-        setBookings(sorted.slice(0, 10));
+        setBookings(sorted);
         setError(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Unknown error");
@@ -234,7 +230,7 @@ export default function OverviewPage() {
     hotel: b.hotel,
     country: b.country,
     riskScore: b.risk_score,
-    leadTime: calcLeadTime(b.arrival_date),
+    leadTime: leadDays(b),
     raw: b,
   }));
 
@@ -242,13 +238,34 @@ export default function OverviewPage() {
     <div className="p-6 space-y-6 text-white">
       {/* 헤더 */}
       <div>
-        <h1 className="text-xl font-semibold">Overview</h1>
+        <h1 className="text-xl font-semibold">현황</h1>
         {summary && (
           <p className="text-xs text-white/40 mt-0.5">
-            Last updated:{" "}
+            데이터 갱신:{" "}
             {new Date(summary.last_updated).toLocaleTimeString()}
           </p>
         )}
+      </div>
+
+      {/* 신선도 · 모델 경계 — 정리=실시간 / 채점=정적 / 재학습=배치 (신뢰의 핵심 경계) */}
+      <div className="rounded-xl border border-white/10 bg-[var(--bg-card)] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <span className="text-[10px] uppercase tracking-wider text-white/40 shrink-0">신선도 · 모델 경계</span>
+          {[
+            { label: "정리(라우팅·피처화)", value: "실시간", color: "var(--risk-low)" },
+            { label: "모델 채점", value: "정적 · LightGBM 0.820", color: "var(--flexi-color)" },
+            { label: "재학습", value: "월 1회 배치 · 현재 freeze", color: "rgba(255,255,255,0.45)" },
+          ].map((b) => (
+            <span key={b.label} className="flex items-center gap-1.5 text-xs">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: b.color }} />
+              <span className="text-white/40">{b.label}</span>
+              <span className="font-medium" style={{ color: b.color }}>{b.value}</span>
+            </span>
+          ))}
+          <span className="ml-auto text-[10px] text-white/30">
+            기준일(as-of) {DEMO_AS_OF_LABEL} · 데모 성장곡선 = 사전계산 재생
+          </span>
+        </div>
       </div>
 
       {error && (
@@ -271,7 +288,7 @@ export default function OverviewPage() {
             <span className="text-3xl font-bold" style={{ color: "var(--risk-low)" }}>
               {summary?.total_bookings ?? "—"}
             </span>
-            <p className="text-[10px] text-white/30 mt-1">목업 데이터 기준</p>
+            <p className="text-[10px] text-white/30 mt-1">캐글 테스트셋 · as-of 2017-06-01</p>
           </CardContent>
         </Card>
 
@@ -362,22 +379,21 @@ export default function OverviewPage() {
       <div className="flex items-center gap-1">
         {(
           [
-            { key: "overview", label: "Overview", icon: "📊" },
-            { key: "priority", label: "Priority", icon: "🔴" },
-            { key: "list", label: "All Bookings", icon: "☰" },
-          ] as { key: ViewMode; label: string; icon: string }[]
-        ).map(({ key, label, icon }) => (
+            { key: "overview", label: "현황" },
+            { key: "priority", label: "우선순위" },
+            { key: "list", label: "전체" },
+          ] as { key: ViewMode; label: string }[]
+        ).map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setViewMode(key)}
             className={[
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               viewMode === key
                 ? "bg-white/10 text-white"
                 : "text-white/40 hover:text-white/70 hover:bg-white/5",
             ].join(" ")}
           >
-            <span>{icon}</span>
             {label}
           </button>
         ))}
@@ -657,7 +673,7 @@ export default function OverviewPage() {
             <Card className="bg-[var(--bg-card)] border-white/10 text-white">
               <CardHeader>
                 <CardTitle className="text-sm">
-                  최근 예약 (위험도 상위 10건)
+                  예약 목록 (위험도순)
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -736,7 +752,7 @@ export default function OverviewPage() {
                     ],
                     [
                       "리드타임",
-                      `${calcLeadTime(selectedBooking.arrival_date)}일`,
+                      `${leadDays(selectedBooking)}일`,
                     ],
                     ["숙박", `${selectedBooking.nights}박`],
                     ["인원", `${selectedBooking.adults}명`],
@@ -781,7 +797,7 @@ export default function OverviewPage() {
           <Card className="bg-[var(--bg-card)] border-white/10 text-white">
             <CardHeader>
               <CardTitle className="text-sm">
-                전체 예약 (위험도 상위 10건)
+                전체 예약 (위험도순)
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">

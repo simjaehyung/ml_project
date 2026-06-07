@@ -13,9 +13,11 @@ URL, 스키마, CORS 설정은 main_mock.py와 완전히 동일 — 이고은의
     - 나머지 엔드포인트: main_mock.py와 동일
 """
 
+import json
 import random
 import uuid
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -57,8 +59,42 @@ _bookings: list[BookingListItem] = []
 _analyses: dict[str, BookingAnalysis] = {}  # booking_id → 분석 데이터
 
 
+# 발표용 실제 스냅샷(테스트셋 기간 'as-of' 예약). src/build_demo_snapshot.py 산출물.
+SNAPSHOT_PATH = Path(__file__).resolve().parent.parent / "data" / "demo_snapshot.json"
+
+
+def _load_snapshot() -> Optional[dict]:
+    try:
+        if SNAPSHOT_PATH.exists():
+            data = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
+            if data.get("bookings"):
+                return data
+    except Exception:
+        pass
+    return None
+
+
 def _seed_bookings() -> None:
-    """앱 시작 시 더미 예약 20건 주입."""
+    """앱 시작 시 예약 주입 — 발표용 실제 스냅샷 우선(data/demo_snapshot.json), 없으면 랜덤 더미."""
+    snap = _load_snapshot()
+    if snap:
+        for r in snap["bookings"]:
+            _bookings.append(BookingListItem(
+                booking_id=r["booking_id"],
+                hotel=r["hotel"],
+                country=r["country"],
+                arrival_date=date.fromisoformat(r["arrival_date"]),
+                nights=r["nights"],
+                adults=r["adults"],
+                risk_score=r["risk_score"],
+                flexi_recommended=r["flexi_recommended"],
+                discount_rate=r.get("discount_rate"),
+                status=r["status"],
+                created_at=datetime.fromisoformat(r["created_at"]),
+            ))
+        return
+
+    # ── 폴백: 랜덤 더미 20건 (스냅샷 없을 때 demo-stable) ──
     countries = ["PRT", "GBR", "FRA", "ESP", "DEU", "IRL", "BEL", "BRA", "NLD", "ITA"]
     hotels = ["City Hotel", "Resort Hotel"]
     statuses: list[BookingStatus] = ["confirmed", "high-risk", "flexi-routed"]
@@ -267,7 +303,8 @@ def get_booking_analysis(booking_id: str) -> BookingAnalysis:
 )
 def dashboard_summary() -> DashboardSummary:
     high_risk = [b for b in _bookings if b.risk_score >= CURRENT_THRESHOLD]
-    flexi_routed = [b for b in _bookings if b.status == "flexi-routed"]
+    # Flexi 권장 건수(=라우팅 대상). status는 high-risk가 우선이라, 권장 플래그로 집계.
+    flexi_routed = [b for b in _bookings if b.flexi_recommended]
     avg = round(sum(b.risk_score for b in _bookings) / len(_bookings), 4) if _bookings else 0.0
     return DashboardSummary(
         total_bookings=len(_bookings),

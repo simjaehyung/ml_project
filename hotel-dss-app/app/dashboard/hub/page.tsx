@@ -18,7 +18,7 @@
  * 성능: 25k DOM 동시 렌더 금지(최근 ~36장만) · 누적은 카운터/분포바 · 곡선 path 1회 계산 후 clip 폭만 이동.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 
 // ── 덱 팔레트(에디토리얼/인스트루먼트, dss_story_demo.html 기준) ──────────────
@@ -55,6 +55,24 @@ const OPTIONAL_MODELS = [
   { key: "XGBoost", color: C.forest, width: 1.6, dash: "2 3", label: "XGBoost" },
   { key: "Random Forest", color: C.brick, width: 1.4, dash: "2 3", label: "Random Forest" },
 ] as const;
+
+// 재학습 현황 패널: 5개 모델 전체에서 "현재 채택(최고 PR-AUC)" 모델을 고른다.
+const ALL_MODEL_KEYS = ["Dummy", "Logistic Regression", "Random Forest", "XGBoost", "LightGBM"] as const;
+const MODEL_SHORT: Record<string, string> = {
+  "Dummy": "Dummy",
+  "Logistic Regression": "Logistic Reg.",
+  "Random Forest": "Random Forest",
+  "XGBoost": "XGBoost",
+  "LightGBM": "LightGBM",
+};
+const MODEL_COLOR: Record<string, string> = {
+  "Dummy": C.muted,
+  "Logistic Regression": C.amber,
+  "Random Forest": C.brick,
+  "XGBoost": C.forest,
+  "LightGBM": C.indigo,
+};
+const PR_BASELINE = 0.387; // Dummy 바닥 (전 구간 고정)
 
 // ── 데이터 타입 ──────────────────────────────────────────────────────────────
 interface StreamRow {
@@ -347,6 +365,33 @@ export default function HubPage() {
     });
   }, [growth, showOptional]);
 
+  // ── 재학습 현황 (재생 동기 · hub_growth.json 사전계산값에서 파생, 런타임 학습 없음) ──
+  const retrain = useMemo(() => {
+    const wkc = Math.min(WK_MAX, Math.max(WK_MIN, cursorWk));
+    let best: { model: string; pr: number; n: number } | null = null;
+    for (const k of ALL_MODEL_KEYS) {
+      const v = valueAt(k, wkc);
+      if (!v) continue;
+      if (!best || v.pr > best.pr) best = { model: k, pr: v.pr, n: v.n };
+    }
+    // 각 성장곡선 포인트 = 누적 데이터로 다시 학습한 "재학습 체크포인트"(walk-forward).
+    const lg = growth.find((g) => g.model === "LightGBM");
+    const pts = (lg?.points ?? []).filter((p) => p.wk >= WK_MIN && p.wk <= wkc);
+    // 채택 모델 = LightGBM(최종 동결 모델, model_final.pkl). 선두 = 5개 중 argmax(정직한 경쟁).
+    const lgbm = valueAt("LightGBM", wkc);
+    const lgbmPr = lgbm?.pr ?? 0;
+    return {
+      started: cursorWk >= WK_MIN,
+      lgbmPr,
+      delta: lgbmPr - PR_BASELINE,
+      leaderModel: best?.model ?? "Dummy",
+      leaderPr: best?.pr ?? 0,
+      checkpoints: pts.length,
+      lastWk: pts.length ? pts[pts.length - 1].wk : WK_MIN,
+      full: cursorWk >= WK_MAX,
+    };
+  }, [growth, cursorWk, valueAt]);
+
   const revealW = xScale(cursorWk) - PAD.l;
   const curClamped = Math.max(WK_MIN, Math.min(WK_MAX, cursorWk));
   const showCursorLine = cursorWk >= WK_MIN && cursorWk <= WK_MAX;
@@ -372,10 +417,22 @@ export default function HubPage() {
       className="min-h-full select-none"
       style={{ background: C.paper, color: C.ink, fontFamily: '"Helvetica Neue", Arial, "Noto Sans KR", sans-serif' }}
     >
+      {/* ── 페이지 헤더 (앱 컨벤션: h1 + 부제 · 캡쳐 모드에서 숨김) ── */}
+      {!capture && (
+        <div className="px-6 pt-5 pb-3" style={{ background: C.paper }}>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: C.ink }}>
+            Hub — 데이터 수집 → 모델 성장
+          </h1>
+          <p className="mt-0.5 text-xs" style={{ color: C.muted }}>
+            예약 데이터가 시간순으로 유입될수록 모델 성능(PR-AUC)이 자랍니다 · Dummy 0.387 → LightGBM 0.820
+          </p>
+        </div>
+      )}
+
       {/* ── 컨트롤 바 (캡쳐 모드에서 숨김) ── */}
       {!capture && (
         <div
-          className="flex items-center gap-3 px-6 py-3 border-b"
+          className="flex items-center gap-3 px-6 py-3 border-y"
           style={{ borderColor: C.line, background: C.card }}
         >
           <button
@@ -596,7 +653,9 @@ export default function HubPage() {
             ≤W까지 모인 데이터로 학습한 모델의 고정 평가셋 성능 · 누적(cumulative)
           </p>
 
-          <div className="relative mt-2 flex-1">
+          <div className="mt-2 grid grid-cols-[1fr_minmax(196px,228px)] gap-4 flex-1 min-h-0">
+            <div className="flex min-w-0 flex-col">
+              <div className="relative flex-1">
             <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full h-auto" style={{ maxHeight: 460 }}>
               <defs>
                 <clipPath id="hub-reveal">
@@ -690,6 +749,10 @@ export default function HubPage() {
               );
             })}
           </div>
+            </div>
+            {/* ── 재학습 현황 패널 (재생 동기 · hub_growth.json 사전계산값에서 파생) ── */}
+            <RetrainPanel retrain={retrain} curDate={counts.curDate} trainCount={counts.train} pastCrossover={pastCrossover} />
+          </div>
         </div>
       </div>
 
@@ -729,5 +792,115 @@ function Legend({ color, label, v }: { color: string; label: string; v: number }
       <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
       {label} <span className="font-mono tabular-nums" style={{ color: C.inkSoft }}>{v.toLocaleString()}</span>
     </span>
+  );
+}
+
+// ── 재학습 현황 패널 ────────────────────────────────────────────────────────
+// 모든 수치는 hub_growth.json 사전계산값에서 파생된다 (런타임 학습 없음).
+// "데이터가 쌓일 때마다 모델을 재학습한 결과"를 정직하게 시각화하는 것이 목적.
+interface RetrainState {
+  started: boolean;
+  lgbmPr: number;
+  delta: number;
+  leaderModel: string;
+  leaderPr: number;
+  checkpoints: number;
+  lastWk: number;
+  full: boolean;
+}
+function RetrainPanel({ retrain, curDate, trainCount, pastCrossover }: { retrain: RetrainState; curDate: string; trainCount: number; pastCrossover: boolean }) {
+  const leaderColor = MODEL_COLOR[retrain.leaderModel] ?? C.inkSoft;
+  const dash = "—";
+  return (
+    <aside
+      className="flex flex-col gap-2.5 rounded-lg p-3.5"
+      style={{ background: C.card, border: `1px solid ${C.lineSoft}`, alignSelf: "start" }}
+    >
+      {/* 헤더 */}
+      <div className="flex items-center gap-1.5">
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ background: retrain.full ? C.forest : C.indigo }}
+        />
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: C.ink }}>
+          재학습 현황
+        </h3>
+      </div>
+
+      {/* 필수 정직 라벨 */}
+      <div
+        className="rounded-md px-2 py-1.5 text-[9px] leading-snug"
+        style={{ background: C.paper2, color: C.amber, border: `1px dashed ${C.ochre}` }}
+      >
+        <b>데모용 사전 계산</b> · 실시간 재학습 아님
+        <br />
+        운영 시 월 1회 재학습 (Phase 2)
+      </div>
+
+      {/* 채택 모델(LightGBM, 최종 동결) PR-AUC */}
+      <div>
+        <div className="text-[9px] uppercase tracking-wide" style={{ color: C.muted }}>
+          채택 모델 PR-AUC · LightGBM
+        </div>
+        <div className="font-mono text-2xl font-semibold tabular-nums leading-none" style={{ color: C.indigo }}>
+          {retrain.started ? retrain.lgbmPr.toFixed(3) : dash}
+        </div>
+        {retrain.started && retrain.delta > 0 && (
+          <div className="mt-0.5 text-[9.5px] font-mono" style={{ color: C.forest }}>
+            ▲ +{retrain.delta.toFixed(3)} vs Dummy 0.387
+          </div>
+        )}
+      </div>
+
+      {/* 현재 선두 모델 (5개 중 argmax — 정직한 경쟁) */}
+      <PanelRow label="현재 선두 (5개 중)">
+        <span
+          className="rounded px-1.5 py-0.5 text-[11px] font-semibold"
+          style={{ background: retrain.started ? `${leaderColor}1A` : "transparent", color: retrain.started ? leaderColor : C.muted }}
+        >
+          {retrain.started ? `${MODEL_SHORT[retrain.leaderModel] ?? retrain.leaderModel} ${retrain.leaderPr.toFixed(3)}` : dash}
+        </span>
+      </PanelRow>
+
+      {/* 학습 누적 예약 (좌측 스트림과 동일 기준 = 25k 시각화 샘플) */}
+      <PanelRow label="학습 누적 예약">
+        <span className="font-mono text-sm font-semibold tabular-nums" style={{ color: C.ink }}>
+          {trainCount.toLocaleString("en-US")}
+          <span className="ml-0.5 text-[10px] font-normal" style={{ color: C.muted }}>건</span>
+        </span>
+      </PanelRow>
+
+      {/* 재학습 체크포인트 */}
+      <PanelRow label="재학습 체크포인트">
+        <span className="font-mono text-sm font-semibold tabular-nums" style={{ color: C.ink }}>
+          {retrain.checkpoints}
+          <span className="ml-0.5 text-[10px] font-normal" style={{ color: C.muted }}>회</span>
+        </span>
+      </PanelRow>
+
+      {/* 컷오프 / 일정 (가상) */}
+      <div className="mt-1 border-t pt-2 text-[9px] leading-relaxed" style={{ borderColor: C.lineSoft, color: C.muted }}>
+        <div>
+          데이터 컷오프{" "}
+          <span className="font-mono" style={{ color: C.inkSoft }}>
+            {retrain.started ? `wk ${retrain.lastWk}${curDate ? ` · ${curDate}` : ""}` : dash}
+          </span>
+        </div>
+        <div className="mt-0.5" style={{ color: pastCrossover ? C.amber : C.muted }}>
+          {retrain.full
+            ? "전체 학습데이터 소진 · 모델 동결(freeze)"
+            : "데이터 유입 → 주기적 재학습 재생 중"}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function PanelRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[10px]" style={{ color: C.muted }}>{label}</span>
+      {children}
+    </div>
   );
 }

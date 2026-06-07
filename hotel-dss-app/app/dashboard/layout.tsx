@@ -14,31 +14,31 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   {
-    label: "Overview",
+    label: "현황",
     href: "/dashboard",
     icon: LayoutDashboard,
     exact: true,
   },
   {
-    label: "New Booking",
+    label: "신규 예약",
     href: "/dashboard/reservations/new",
     icon: Plus,
     exact: false,
   },
   {
-    label: "Reservations",
+    label: "예약 목록",
     href: "/dashboard/reservations",
     icon: ClipboardList,
     exact: false,
   },
   {
-    label: "Flexi Policy",
+    label: "Flexi 정책",
     href: "/dashboard/flexi",
     icon: Settings2,
     exact: false,
   },
   {
-    label: "Hub",
+    label: "수집 허브",
     href: "/dashboard/hub",
     icon: Activity,
     exact: false,

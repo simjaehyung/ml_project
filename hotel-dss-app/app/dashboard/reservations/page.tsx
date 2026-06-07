@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listBookings } from "@/lib/api";
 import type { BookingListItem } from "@/types/api";
 import { formatDiscount } from "@/types/api";
+import { leadDays, daysUntilArrival } from "@/lib/demo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -38,13 +39,10 @@ function getRiskColor(score: number): string {
   return "var(--risk-low)";
 }
 
-function calcLeadTime(arrivalDate: string): number {
-  return Math.ceil((new Date(arrivalDate).getTime() - Date.now()) / 86400000);
-}
+// 리드타임·도착 카운트다운은 @/lib/demo (as-of 기준, 2017 스냅샷 호환)
 
 function filterByTime(bookings: BookingListItem[], filter: TimeFilter): BookingListItem[] {
   if (filter === "all") return bookings;
-  const today = Date.now();
   const limits: Record<TimeFilter, number> = {
     today: 2,
     week: 7,
@@ -53,7 +51,7 @@ function filterByTime(bookings: BookingListItem[], filter: TimeFilter): BookingL
   };
   const maxDays = limits[filter];
   return bookings.filter((b) => {
-    const d = Math.ceil((new Date(b.arrival_date).getTime() - today) / 86400000);
+    const d = daysUntilArrival(b.arrival_date);
     return d >= 0 && d <= maxDays;
   });
 }
@@ -135,19 +133,19 @@ export default function ReservationsPage() {
   }
 
   const COLUMNS: { key: SortKey; label: string }[] = [
-    { key: "booking_id", label: "Booking ID" },
-    { key: "hotel", label: "Hotel" },
-    { key: "country", label: "Country" },
-    { key: "arrival_date", label: "Arrival" },
-    { key: "nights", label: "Nights" },
-    { key: "risk_score", label: "Risk Score" },
+    { key: "booking_id", label: "예약 ID" },
+    { key: "hotel", label: "호텔" },
+    { key: "country", label: "국가" },
+    { key: "arrival_date", label: "도착일" },
+    { key: "nights", label: "숙박" },
+    { key: "risk_score", label: "위험도" },
   ];
 
   return (
     <div className="p-6 space-y-4 text-white">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Reservations</h1>
+          <h1 className="text-xl font-semibold">예약 목록</h1>
           <p className="text-xs text-white/40 mt-0.5">총 {total}건</p>
         </div>
       </div>
@@ -197,7 +195,7 @@ export default function ReservationsPage() {
           <div className="flex items-center gap-3 mb-4">
             <input
               type="text"
-              placeholder="Booking ID 또는 Country 검색..."
+              placeholder="예약 ID 또는 국가 검색..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-72 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
@@ -281,11 +279,7 @@ export default function ReservationsPage() {
                               })}
                             </span>
                             <span className="text-[10px] text-white/30">
-                              {Math.ceil(
-                                (new Date(b.arrival_date).getTime() - Date.now()) /
-                                  86400000
-                              )}
-                              d
+                              {daysUntilArrival(b.arrival_date)}d
                             </span>
                           </div>
                         </TableCell>
@@ -393,7 +387,7 @@ export default function ReservationsPage() {
                       day: "numeric",
                     }),
                   ],
-                  ["리드타임", `${calcLeadTime(selectedBooking.arrival_date)}일`],
+                  ["리드타임", `${leadDays(selectedBooking)}일`],
                   ["숙박", `${selectedBooking.nights}박`],
                   ["인원", `${selectedBooking.adults}명`],
                 ] as [string, React.ReactNode][]

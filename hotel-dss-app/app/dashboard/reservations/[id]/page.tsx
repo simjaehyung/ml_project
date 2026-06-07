@@ -4,15 +4,12 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { getBooking, getBookingAnalysis } from "@/lib/api";
 import type { BookingListItem, BookingAnalysis } from "@/types/api";
+import { daysUntilArrival } from "@/lib/demo";
 
 function getRiskColor(score: number): string {
   if (score >= 0.7) return "var(--risk-high)";
   if (score >= 0.4) return "var(--risk-medium)";
   return "var(--risk-low)";
-}
-
-function calcLeadTime(arrivalDate: string): number {
-  return Math.ceil((new Date(arrivalDate).getTime() - Date.now()) / 86400000);
 }
 
 export default function BookingDetailPage({
@@ -47,7 +44,7 @@ export default function BookingDetailPage({
     );
   }
 
-  const leadTime = calcLeadTime(booking.arrival_date);
+  const leadTime = daysUntilArrival(booking.arrival_date);
   const riskColor = getRiskColor(booking.risk_score);
 
   return (

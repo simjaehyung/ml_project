@@ -11,6 +11,10 @@ import type {
   MealType,
   CustomerType,
 } from "@/types/api"
+import DomainInbox from "./domain-inbox"
+import AutoFeedDemo from "./auto-feed-demo"
+
+type NewBookingView = "form" | "autofeed" | "inbox"
 
 const inputCls =
   "w-full rounded-lg border border-white/10 bg-[#18181B] px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/30"
@@ -43,7 +47,7 @@ const INITIAL_FORM = {
   total_of_special_requests: 0,
 }
 
-export default function NewBookingPage() {
+function NewBookingForm() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<BookingResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -101,7 +105,7 @@ export default function NewBookingPage() {
   const today = new Date().toISOString().split("T")[0]
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="max-w-2xl">
       {/* 헤더 */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white">신규 예약 위험도 평가</h1>
@@ -587,6 +591,41 @@ export default function NewBookingPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── 페이지: [신규 입력 | 도메인 인박스] 뷰 토글 ──────────────────────────
+export default function NewBookingPage() {
+  const [view, setView] = useState<NewBookingView>("form")
+
+  const TABS: { key: NewBookingView; label: string }[] = [
+    { key: "form", label: "신규 입력" },
+    { key: "autofeed", label: "자동 유입 데모" },
+    { key: "inbox", label: "도메인 인박스" },
+  ]
+
+  return (
+    <div className="p-6 text-white">
+      {/* 뷰 토글 */}
+      <div className="mb-6 flex items-center gap-1">
+        {TABS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            className={[
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+              view === key
+                ? "bg-white/10 text-white"
+                : "text-white/40 hover:text-white/70 hover:bg-white/5",
+            ].join(" ")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "form" ? <NewBookingForm /> : view === "autofeed" ? <AutoFeedDemo /> : <DomainInbox />}
     </div>
   )
 }

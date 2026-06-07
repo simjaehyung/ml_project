@@ -1,0 +1,11 @@
+import { pathToFileURL } from "node:url";
+const pw = await import(pathToFileURL(process.env.PW_MODULE).href);
+const chromium = pw.chromium || pw.default?.chromium;
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1600, height: 900 } });
+const errs=[]; p.on("pageerror",e=>errs.push(String(e)));
+await p.goto("http://localhost:3000/dashboard/hub", { waitUntil: "networkidle" });
+await p.waitForTimeout(700);
+await p.screenshot({ path: "presentations/captures/hub_live_header.png" });
+console.log("LIVE_ERRORS="+JSON.stringify(errs));
+await b.close();
